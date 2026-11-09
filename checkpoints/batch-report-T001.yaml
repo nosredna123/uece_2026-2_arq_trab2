@@ -1,0 +1,48 @@
+batch_id: "T001"
+completed_tasks: ["T001"]
+blocked_tasks: []
+files_changed:
+  T001:
+    - file: "docs/development/environment-setup.md"
+      change_type: "created"
+      description: "Documented Git, Docker, and Compose prerequisites, safe per-OS installation, and verification."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T001 complete."
+upstream_artifacts_consumed:
+  T001:
+    - artifact: "plan.md"
+      used_for: "Phase 0.1 scope, prerequisites, and safe installation constraints."
+    - artifact: "constitution.md"
+      used_for: "FailFast, least-privilege, and no-secrets principles."
+    - artifact: "processo.md"
+      used_for: "Environment readiness and reproducibility context."
+    - artifact: "especificação-preliminar-sistema.md"
+      used_for: "RQ07 and RQ08 traceability."
+evidence_mapping:
+  T001:
+    - upstream: "plan.md#tarefas-T001"
+      output: "docs/development/environment-setup.md"
+      evidence: "Guide covers inventory, version policy, safe installation and verification for Linux, macOS, and Windows."
+    - upstream: "plan.md#tarefas-T001"
+      output: "Docker Compose CLI"
+      evidence: "Installed v2.40.3 to the current user's Docker CLI plugin directory; SHA-256 verified; docker compose version succeeded."
+traceability:
+  - requirement: "RQ07/RQ08"
+    plan_item: "0.1"
+    task: "T001"
+    files:
+      - "docs/development/environment-setup.md"
+      - "plan.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "No repository test suite or build manifest exists; this is a documentation-only task."
+test_results:
+  T001:
+    command: "git diff --check; git --version; docker version; docker info; docker compose version"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []
