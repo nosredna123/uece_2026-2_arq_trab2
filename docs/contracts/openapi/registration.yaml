@@ -1,0 +1,121 @@
+openapi: 3.0.3
+info: {title: EventHub Registration, version: 1.0.0}
+security: [{BearerAuth: []}]
+components:
+  securitySchemes:
+    BearerAuth: {$ref: './common.yaml#/components/securitySchemes/BearerAuth'}
+  schemas:
+    Registration:
+      type: object
+      additionalProperties: false
+      required: [id, activityId, participantId, organizationId, status, refundStatus, createdAt, version]
+      properties:
+        id: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        participantId: {type: string, format: uuid}
+        organizationId: {type: string, format: uuid}
+        status: {type: string, enum: [WAITLISTED, OFFERED, PENDING_PAYMENT, CONFIRMED, REFUSED, EXPIRED, CANCELLED]}
+        refundStatus: {type: string, enum: [NONE, PENDING, APPROVED]}
+        createdAt: {type: string, format: date-time}
+        version: {type: integer, minimum: 1}
+        expiresAt: {type: string, format: date-time, nullable: true}
+        offerExpiresAt: {type: string, format: date-time, nullable: true}
+        waitlistSequence: {type: integer, format: int64, minimum: 1, nullable: true}
+        price: {$ref: './common.yaml#/components/schemas/Money'}
+      description: Paid refund pending keeps status CONFIRMED and occupied capacity. Expiry uses Registration database clock; late results cannot resurrect a terminal state.
+    Availability:
+      type: object
+      additionalProperties: false
+      required: [activityId, capacity, occupied, available, asOf]
+      properties:
+        activityId: {type: string, format: uuid}
+        capacity: {type: integer, minimum: 1}
+        occupied: {type: integer, minimum: 0}
+        available: {type: integer, minimum: 0}
+        asOf: {type: string, format: date-time}
+      description: Includes active offers and pending reservations; available equals capacity minus occupied. Observation is not a promise of admission.
+paths:
+  /registrations:
+    parameters: [{$ref: './common.yaml#/components/parameters/CorrelationId'}]
+    post:
+      operationId: requestRegistration
+      description: Derive participant from validated principal; validate/freeze activity before local ledger lock. Free confirms, paid reserves, full joins enabled FIFO or returns 409. Same principal/key/payload replays initial response.
+      x-roles: [PARTICIPANT]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [activityId]
+              properties:
+                activityId: {type: string, format: uuid}
+      responses:
+        '201':
+          description: Registration created; status explicitly distinguishes confirmation, payment reservation and waiting.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Registration'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+    get:
+      operationId: listOwnRegistrations
+      description: Only registrations of authenticated participant; ordered by createdAt and id. No participant override.
+      x-roles: [PARTICIPANT]
+      parameters:
+        - {$ref: './common.yaml#/components/parameters/Limit'}
+        - {$ref: './common.yaml#/components/parameters/Offset'}
+      responses:
+        '200':
+          description: Own registrations.
+          content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Registration'}}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /registrations/{id}:
+    parameters: [{$ref: './common.yaml#/components/parameters/ResourceId'}]
+    get:
+      operationId: getOwnRegistration
+      description: Return own current status; foreign resource is concealed with 404.
+      x-roles: [PARTICIPANT]
+      responses:
+        '200':
+          description: Own registration.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Registration'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /registrations/{id}/cancel:
+    parameters: [{$ref: './common.yaml#/components/parameters/ResourceId'}]
+    post:
+      operationId: cancelOwnRegistration
+      description: Cancel own eligible registration. Paid confirmed cancellation requires configured window and pre-start request, keeps CONFIRMED with refund PENDING until approval; failures retry without limit. Other occupied states release once and promote FIFO atomically.
+      x-roles: [PARTICIPANT]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200':
+          description: Cancelled or already terminal registration, no duplicate release.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Registration'}}}
+        '202':
+          description: Refund pending; still confirmed and occupying a slot.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Registration'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /registrations/{id}/accept-offer:
+    parameters: [{$ref: './common.yaml#/components/parameters/ResourceId'}]
+    post:
+      operationId: acceptOwnOffer
+      description: Accept own unexpired FIFO offer under activity lock. Free confirms; paid transfers slot into new payment reservation/deadline. Expired offer returns 409, never double occupies.
+      x-roles: [PARTICIPANT]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200':
+          description: Offer accepted.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Registration'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /activities/{activityId}/availability:
+    parameters: [{$ref: './common.yaml#/components/parameters/ActivityId'}]
+    get:
+      operationId: getPublishedAvailability
+      description: Public availability for a published eligible activity. Before ledger initialization, validate Event Management capacity without activating it. Dependency failure is 503, not zero or guessed availability; unpublished activity is 404.
+      x-roles: [public]
+      security: []
+      responses:
+        '200':
+          description: Current availability observation.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Availability'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}

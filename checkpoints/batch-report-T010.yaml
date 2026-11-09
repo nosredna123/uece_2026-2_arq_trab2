@@ -1,0 +1,40 @@
+batch_id: "T010"
+completed_tasks: ["T010"]
+blocked_tasks: []
+files_changed:
+  T010:
+    - {file: "docs/contracts/openapi/event-management.yaml", change_type: "created", description: "Catalog, event/activity lifecycle and internal admission activation."}
+    - {file: "docs/contracts/openapi/registration.yaml", change_type: "created", description: "Own enrollment, cancellation/refund, FIFO offer and public availability."}
+    - {file: "docs/contracts/openapi/attendance-certification.yaml", change_type: "created", description: "Own idempotent check-in and eligible certificate."}
+    - {file: "docs/contracts/openapi/reporting.yaml", change_type: "created", description: "Organization-scoped eventual indicators."}
+    - {file: "docs/contracts/openapi/identity-mock.yaml", change_type: "created", description: "Restricted synthetic identity validation."}
+    - {file: "docs/contracts/openapi/common.yaml", change_type: "created", description: "Errors, identity, correlation and idempotency components."}
+    - {file: "docs/contracts/README.md", change_type: "created", description: "Semantics, status codes, concurrency limits and validation."}
+    - {file: "tests/contracts/test_openapi.py", change_type: "created", description: "Full specification/reference and authorization checks."}
+    - {file: "requirements-validation.txt", change_type: "created", description: "Pinned validation tooling; installed in isolated venv after missing-validator failure."}
+upstream_artifacts_consumed:
+  T010:
+    - {artifact: "plan.md", used_for: "Five contract scope and endpoint capabilities."}
+    - {artifact: "constitution.md", used_for: "Explicit errors, authorization and contract gates."}
+    - {artifact: "docs/architecture/domain-scenarios.md", used_for: "Enrollment, refund, FIFO and certificate requirements."}
+    - {artifact: "docs/adr/ADR-002-data-ownership.md", used_for: "Snapshot activation and separated data access."}
+    - {artifact: "docs/adr/ADR-005-prototype-scope.md", used_for: "User/service credentials and mock scope."}
+evidence_mapping:
+  T010:
+    - upstream: "plan.md T010"
+      output: "docs/contracts/openapi"
+      evidence: "All five OpenAPI 3.0.3 specifications pass validator including local cross-file references."
+traceability:
+  - {requirement: "RF01-RF11, RN01-RN07, RQ04-RQ07", plan_item: "2.1", task: "T010", files: ["docs/contracts/openapi/event-management.yaml", "docs/contracts/openapi/registration.yaml", "docs/contracts/openapi/attendance-certification.yaml", "docs/contracts/openapi/reporting.yaml", "docs/contracts/openapi/identity-mock.yaml"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "Specifications only: no running application endpoints exist yet."
+  - "Event cancellation does not claim completed refunds; domain-wide event-cancellation compensation requires approved policy."
+test_results:
+  T010:
+    command: "validation-venv/bin/python -m pytest -x; git diff --check"
+    passed: 12
+    failed: 0
+    skipped: 0
+    failures: []

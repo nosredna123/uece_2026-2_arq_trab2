@@ -1,0 +1,31 @@
+openapi: 3.0.3
+info:
+  title: EventHub Identity and Access MOCK
+  version: 1.0.0
+  description: Synthetic deterministic identity only; not a production identity lifecycle service.
+security: [{ServiceAuth: []}]
+components:
+  securitySchemes:
+    ServiceAuth: {$ref: './common.yaml#/components/securitySchemes/ServiceAuth'}
+paths:
+  /internal/identity/validate:
+    parameters: [{$ref: './common.yaml#/components/parameters/CorrelationId'}]
+    post:
+      operationId: validateSyntheticIdentity
+      description: Authorized domain service submits opaque user token over restricted internal interface. Resolve configured synthetic fixture; invalid token is 401, unavailable scenario is 503. Never log token or accept caller-supplied role/organization.
+      x-roles: [domain-service]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token: {type: string, minLength: 1, maxLength: 4096, writeOnly: true}
+      responses:
+        '200':
+          description: Validated synthetic principal.
+          content: {application/json: {schema: {$ref: './common.yaml#/components/schemas/Principal'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}

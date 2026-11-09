@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 9
+  completed_tasks: 10
   in_progress_tasks: 0
-  pending_tasks: 35
-  completion_percentage: 20.45
+  pending_tasks: 34
+  completion_percentage: 22.73
 
 tasks:
   - task_id: "T001"
@@ -311,8 +311,30 @@ tasks:
       requirements: ["RQ01", "RQ04-RQ08"]
       full_trace: "RQ -> Phase-1.3 -> T009 -> docs/rationales/ADR-001..005.json"
 
-pending_tasks:
   - task_id: "T010"
+    description: "Definir cinco contratos OpenAPI e componentes comuns."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/contracts/openapi/event-management.yaml"
+        - file: "docs/contracts/openapi/registration.yaml"
+        - file: "docs/contracts/openapi/attendance-certification.yaml"
+        - file: "docs/contracts/openapi/reporting.yaml"
+        - file: "docs/contracts/openapi/identity-mock.yaml"
+        - file: "docs/contracts/openapi/common.yaml"
+        - file: "docs/contracts/README.md"
+        - file: "tests/contracts/test_openapi.py"
+        - file: "requirements-validation.txt"
+    verification:
+      build_passed: null
+      test_results: {command: "python -m pytest -x", passed: 12, failed: 0, skipped: 0}
+      notes: "All contracts validated with OpenAPI validator, including external references. Endpoints are not implemented yet."
+    upstream_trace:
+      plan_item: "2.1"
+      requirements: ["RF01-RF11", "RN01-RN07", "RQ04-RQ07"]
+      full_trace: "RF/RN/RQ -> Phase-2.1 -> T010 -> docs/contracts/openapi"
+
+pending_tasks:
   - task_id: "T011"
   - task_id: "T012"
   - task_id: "T013"
@@ -438,6 +460,19 @@ traceability_chain:
       - "docs/rationales/ADR-003.json"
       - "docs/rationales/ADR-004.json"
       - "docs/rationales/ADR-005.json"
+    status: "complete"
+
+  - chain_id: "TRACE-T010"
+    requirement: "RF01-RF11/RN01-RN07/RQ04-RQ07"
+    plan_phase: "Phase-2"
+    plan_item: "2.1"
+    tasks: ["T010"]
+    files:
+      - "docs/contracts/openapi/event-management.yaml"
+      - "docs/contracts/openapi/registration.yaml"
+      - "docs/contracts/openapi/attendance-certification.yaml"
+      - "docs/contracts/openapi/reporting.yaml"
+      - "docs/contracts/openapi/identity-mock.yaml"
     status: "complete"
 
 validation:

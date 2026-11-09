@@ -1,0 +1,224 @@
+openapi: 3.0.3
+info: {title: EventHub Event Management, version: 1.0.0}
+security: [{BearerAuth: []}]
+components:
+  securitySchemes:
+    BearerAuth: {$ref: './common.yaml#/components/securitySchemes/BearerAuth'}
+    ServiceAuth: {$ref: './common.yaml#/components/securitySchemes/ServiceAuth'}
+  schemas:
+    EventInput:
+      type: object
+      additionalProperties: false
+      required: [organizationId, title, description, startsAt, endsAt]
+      properties:
+        organizationId: {type: string, format: uuid}
+        title: {type: string, minLength: 1, maxLength: 200}
+        description: {type: string, maxLength: 10000}
+        startsAt: {type: string, format: date-time}
+        endsAt: {type: string, format: date-time}
+      description: Start precedes end. Organization is authorized against validated principal, not trusted as identity.
+    Event:
+      type: object
+      additionalProperties: false
+      required: [id, organizationId, title, description, startsAt, endsAt, status, version]
+      properties:
+        id: {type: string, format: uuid}
+        organizationId: {type: string, format: uuid}
+        title: {type: string, minLength: 1, maxLength: 200}
+        description: {type: string, maxLength: 10000}
+        startsAt: {type: string, format: date-time}
+        endsAt: {type: string, format: date-time}
+        status: {type: string, enum: [DRAFT, PUBLISHED, CANCELLED]}
+        version: {type: integer, minimum: 1}
+    ActivityInput:
+      type: object
+      additionalProperties: false
+      required: [title, startsAt, endsAt, location, responsible, capacity, price]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 200}
+        startsAt: {type: string, format: date-time}
+        endsAt: {type: string, format: date-time}
+        location: {type: string, minLength: 1}
+        responsible: {type: string, minLength: 1}
+        capacity: {type: integer, minimum: 1}
+        price: {$ref: './common.yaml#/components/schemas/Money'}
+      description: Dates within event period, start before end. Zero price means free. Capacity immutable after activation.
+    Activity:
+      type: object
+      additionalProperties: false
+      required: [id, eventId, organizationId, title, startsAt, endsAt, location, responsible, capacity, price, version, capacityFrozen]
+      properties:
+        id: {type: string, format: uuid}
+        eventId: {type: string, format: uuid}
+        organizationId: {type: string, format: uuid}
+        title: {type: string, minLength: 1, maxLength: 200}
+        startsAt: {type: string, format: date-time}
+        endsAt: {type: string, format: date-time}
+        location: {type: string, minLength: 1}
+        responsible: {type: string, minLength: 1}
+        capacity: {type: integer, minimum: 1}
+        price: {$ref: './common.yaml#/components/schemas/Money'}
+        version: {type: integer, minimum: 1}
+        capacityFrozen: {type: boolean}
+    AdmissionSnapshot:
+      type: object
+      required: [activity, snapshotId, snapshotVersion, frozenCapacity]
+      properties:
+        activity: {$ref: '#/components/schemas/Activity'}
+        snapshotId: {type: string, format: uuid}
+        snapshotVersion: {type: integer, minimum: 1}
+        frozenCapacity: {type: integer, minimum: 1}
+      description: Stable snapshot identity/version/capacity across retries; current activity metadata and eligibility are validated on every request.
+paths:
+  /events:
+    parameters:
+      - {$ref: './common.yaml#/components/parameters/CorrelationId'}
+    get:
+      operationId: listPublishedEvents
+      description: Public published catalog, ordered by id; optional case-insensitive title search.
+      x-roles: [public]
+      security: []
+      parameters:
+        - {$ref: './common.yaml#/components/parameters/Limit'}
+        - {$ref: './common.yaml#/components/parameters/Offset'}
+        - {name: q, in: query, schema: {type: string, maxLength: 200}}
+      responses:
+        '200':
+          description: Published events.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Event'}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+    post:
+      operationId: createEvent
+      description: Create draft for the authorized organization; global admin may select any organization.
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters:
+        - {$ref: './common.yaml#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EventInput'}
+      responses:
+        '201':
+          description: Created draft.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Event'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /events/{eventId}:
+    parameters:
+      - {$ref: './common.yaml#/components/parameters/EventId'}
+    get:
+      operationId: getPublishedEvent
+      description: Return published public event; drafts and cancelled events return 404.
+      x-roles: [public]
+      security: []
+      responses:
+        '200':
+          description: Public event.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Event'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+    put:
+      operationId: updateEvent
+      description: Replace editable event fields in own organization; organization reassignment is forbidden.
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters:
+        - {$ref: './common.yaml#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/EventInput'}}}
+      responses:
+        '200':
+          description: Updated event.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Event'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /events/{eventId}/publish:
+    parameters:
+      - {$ref: './common.yaml#/components/parameters/EventId'}
+    post:
+      operationId: publishEvent
+      description: Publish own eligible draft with valid activity schedule; cancelled state cannot be republished.
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200':
+          description: Published event.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Event'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /events/{eventId}/cancel:
+    parameters: [{$ref: './common.yaml#/components/parameters/EventId'}]
+    post:
+      operationId: cancelEvent
+      description: Cancel own event idempotently; blocks subsequent eligibility validations. Does not itself claim participant refunds completed.
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200':
+          description: Cancelled event.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Event'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /events/{eventId}/activities:
+    parameters: [{$ref: './common.yaml#/components/parameters/EventId'}]
+    get:
+      operationId: listPublishedActivities
+      description: Published event program; ordered by start and id.
+      x-roles: [public]
+      security: []
+      parameters:
+        - {$ref: './common.yaml#/components/parameters/Limit'}
+        - {$ref: './common.yaml#/components/parameters/Offset'}
+      responses:
+        '200':
+          description: Program.
+          content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Activity'}}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+    post:
+      operationId: createActivity
+      description: Add activity to own non-cancelled event with authorized organization.
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/ActivityInput'}}}
+      responses:
+        '201':
+          description: Activity created.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Activity'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /activities/{activityId}:
+    parameters: [{$ref: './common.yaml#/components/parameters/ActivityId'}]
+    get:
+      operationId: getPublishedActivity
+      description: Public details only for an activity of a published event. Availability is obtained from Registration, never inferred from capacity.
+      x-roles: [public]
+      security: []
+      responses:
+        '200':
+          description: Activity details.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Activity'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+    put:
+      operationId: updateActivity
+      description: Replace own activity metadata; changed frozen capacity returns 409. Same capacity is allowed.
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/ActivityInput'}}}
+      responses:
+        '200':
+          description: Updated activity.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Activity'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /internal/activities/{activityId}/admission:
+    parameters: [{$ref: './common.yaml#/components/parameters/ActivityId'}]
+    post:
+      operationId: activateOrValidateAdmission
+      description: Registration-only atomic freeze/validation. Published activity must not have started; retry returns stable snapshot. Outage is 503, ineligible is 422. No cross-database reads.
+      x-roles: [registration-service]
+      security: [{ServiceAuth: []}]
+      responses:
+        '200':
+          description: Validated activity and frozen capacity.
+          content: {application/json: {schema: {$ref: '#/components/schemas/AdmissionSnapshot'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}

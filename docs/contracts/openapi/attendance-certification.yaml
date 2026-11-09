@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info: {title: EventHub Attendance and Certification, version: 1.0.0}
+security: [{BearerAuth: []}]
+components:
+  securitySchemes:
+    BearerAuth: {$ref: './common.yaml#/components/securitySchemes/BearerAuth'}
+  schemas:
+    CheckIn:
+      type: object
+      additionalProperties: false
+      required: [registrationId, participantId, checkedInAt]
+      properties:
+        registrationId: {type: string, format: uuid}
+        participantId: {type: string, format: uuid}
+        checkedInAt: {type: string, format: date-time}
+    Certificate:
+      type: object
+      additionalProperties: false
+      required: [id, registrationId, participantId, activityId, issuedAt]
+      properties:
+        id: {type: string, format: uuid}
+        registrationId: {type: string, format: uuid}
+        participantId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        issuedAt: {type: string, format: date-time}
+paths:
+  /registrations/{id}/check-in:
+    parameters:
+      - {$ref: './common.yaml#/components/parameters/ResourceId'}
+      - {$ref: './common.yaml#/components/parameters/CorrelationId'}
+    post:
+      operationId: checkInOwnRegistration
+      description: Own confirmed registration from local event-fed eligibility facts. Missing/incomplete projection is 409 ELIGIBILITY_NOT_READY, non-confirmed is 422; never fabricate eligibility. Unique registration check-in returns same record on repeats.
+      x-roles: [PARTICIPANT]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200':
+          description: Idempotent check-in record.
+          content: {application/json: {schema: {$ref: '#/components/schemas/CheckIn'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /registrations/{id}/certificate:
+    parameters: [{$ref: './common.yaml#/components/parameters/ResourceId'}]
+    post:
+      operationId: issueOwnCertificate
+      description: Own confirmed registration, check-in present and activity ended according to locally consumed facts/database time. No percentage threshold. Incomplete projection is 409; ineligible is 422. Repeats return the same unique certificate.
+      x-roles: [PARTICIPANT]
+      parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200':
+          description: Issued certificate.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Certificate'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+    get:
+      operationId: getOwnCertificate
+      description: Retrieve previously issued own certificate; missing or foreign record is 404.
+      x-roles: [PARTICIPANT]
+      responses:
+        '200':
+          description: Own certificate.
+          content: {application/json: {schema: {$ref: '#/components/schemas/Certificate'}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}

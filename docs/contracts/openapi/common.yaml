@@ -1,0 +1,88 @@
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Synthetic opaque credential validated by Identity mock; never trust caller role headers.
+    ServiceAuth:
+      type: apiKey
+      in: header
+      name: X-Service-Key
+      description: External restricted service credential; never a participant credential.
+  parameters:
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      schema: {type: string, format: uuid}
+      description: Optional input; generate if absent and propagate in all responses, messages and diagnostics.
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 128}
+      description: Scoped by authenticated principal and operation. Same key/payload replays original status/body; different payload returns 409.
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    ActivityId:
+      name: activityId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    Limit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+    Offset:
+      name: offset
+      in: query
+      schema: {type: integer, minimum: 0, default: 0}
+  headers:
+    CorrelationId:
+      description: Correlation identifier for this request.
+      schema: {type: string, format: uuid}
+  responses:
+    Error:
+      description: >-
+        Explicit failure with no false success. 400 invalid input; 401 missing/invalid identity;
+        403 forbidden scope; 404 absent resource (or concealed foreign resource);
+        409 capacity/state/idempotency conflict; 422 domain ineligibility;
+        503 unavailable dependency or retryable storage/lock failure; 500 unexpected error.
+        No protected payload is disclosed on denied access.
+      headers:
+        X-Correlation-ID: {$ref: '#/components/headers/CorrelationId'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message, correlationId]
+      properties:
+        code: {type: string, minLength: 1}
+        message: {type: string, minLength: 1}
+        correlationId: {type: string, format: uuid}
+    Money:
+      type: object
+      additionalProperties: false
+      required: [amountMinor, currency]
+      properties:
+        amountMinor: {type: integer, format: int64, minimum: 0}
+        currency: {type: string, pattern: '^[A-Z]{3}$'}
+    Principal:
+      type: object
+      additionalProperties: false
+      required: [subjectId, role]
+      properties:
+        subjectId: {type: string, format: uuid}
+        role: {type: string, enum: [PARTICIPANT, ORGANIZER, GLOBAL_ADMIN]}
+        organizationId: {type: string, format: uuid, nullable: true}
+      description: ORGANIZER must have organizationId; GLOBAL_ADMIN cannot manage users/organizations.

@@ -1,0 +1,47 @@
+openapi: 3.0.3
+info: {title: EventHub Reporting, version: 1.0.0}
+security: [{BearerAuth: []}]
+components:
+  securitySchemes:
+    BearerAuth: {$ref: './common.yaml#/components/securitySchemes/BearerAuth'}
+  schemas:
+    Report:
+      type: object
+      additionalProperties: false
+      required: [organizationId, activityId, confirmed, pendingPayment, offered, waiting, occupied, checkedIn, certificates, paymentsApproved, paymentsRefused, refundsApproved, projectedAt]
+      properties:
+        organizationId: {type: string, format: uuid}
+        activityId: {type: string, format: uuid}
+        confirmed: {type: integer, minimum: 0}
+        pendingPayment: {type: integer, minimum: 0}
+        offered: {type: integer, minimum: 0}
+        waiting: {type: integer, minimum: 0}
+        occupied: {type: integer, minimum: 0}
+        checkedIn: {type: integer, minimum: 0}
+        certificates: {type: integer, minimum: 0}
+        paymentsApproved: {type: integer, minimum: 0}
+        paymentsRefused: {type: integer, minimum: 0}
+        refundsApproved: {type: integer, minimum: 0}
+        projectedAt: {type: string, format: date-time}
+      description: Event-fed observation, not authoritative admission capacity. Counts reflect deduplicated operation outcomes; no cross-currency amount summation.
+paths:
+  /organizations/{organizationId}/reports:
+    parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - {$ref: './common.yaml#/components/parameters/CorrelationId'}
+    get:
+      operationId: getOrganizationReports
+      description: Organizer's own organization or any organization for global admin; 403 for foreign organization. Query only Reporting database; empty projection returns empty array, never calls upstream databases. projectedAt makes eventual consistency visible.
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters:
+        - {name: activityId, in: query, schema: {type: string, format: uuid}}
+        - {$ref: './common.yaml#/components/parameters/Limit'}
+        - {$ref: './common.yaml#/components/parameters/Offset'}
+      responses:
+        '200':
+          description: Activity-level reports ordered by activityId.
+          content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Report'}}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
