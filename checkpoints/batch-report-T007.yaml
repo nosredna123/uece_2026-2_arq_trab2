@@ -1,0 +1,62 @@
+batch_id: "T007"
+completed_tasks: ["T007"]
+blocked_tasks: []
+files_changed:
+  T007:
+    - file: "docs/architecture/paid-registration-flow.md"
+      change_type: "created"
+      description: "Documented paid-registration workflow, payment outcomes, capacity/state rules, dependency failure recovery, refund behavior, and validation scenarios."
+    - file: "docs/architecture/paid-registration-flow.puml"
+      change_type: "created"
+      description: "Added sequence diagram with explicit approval, refusal, expiry, late-approval, and dependency-failure branches."
+    - file: "docs/architecture/context-map.md"
+      change_type: "modified"
+      description: "Added links to the paid-registration sequence and PlantUML diagram."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T007 complete."
+upstream_artifacts_consumed:
+  T007:
+    - artifact: "plan.md"
+      used_for: "Phase 1.2 paid-registration flow scope and dependency-failure requirements."
+    - artifact: "docs/architecture/domain-scenarios.md"
+      used_for: "Approved capacity, payment, timeout, refund, FIFO waitlist, authorization, and decoupling invariants."
+    - artifact: "docs/architecture/context-map.md"
+      used_for: "Seven candidate boundaries and API/event dependency relationships."
+    - artifact: "docs/architecture/service-boundaries.md"
+      used_for: "Data ownership, Registration authority, and dependency failure boundaries."
+    - artifact: "especificação-preliminar-sistema.md"
+      used_for: "RF04-RF08, RN01-RN05, and RQ03-RQ06 traceability."
+evidence_mapping:
+  T007:
+    - upstream: "plan.md#tarefas-T007"
+      output: "docs/architecture/paid-registration-flow.md#normal-flow"
+      evidence: "Documents query, identity and activity validation, reservation/outbox, Billing result, confirmation, and asynchronous consumers."
+    - upstream: "plan.md#tarefas-T007"
+      output: "docs/architecture/paid-registration-flow.md#failure-and-recovery-behavior"
+      evidence: "Covers identity, Event Management, persistence, RabbitMQ, Billing, duplicate/late results, Notification, Reporting, and Attendance failures."
+    - upstream: "plan.md#tarefas-T007"
+      output: "docs/architecture/paid-registration-flow.puml"
+      evidence: "Structural validation confirms explicit approval/refusal/expiry alternatives, late-result and dependency branches, and balanced alt/opt blocks."
+traceability:
+  - requirement: "RF04-RF08, RN01-RN05, RQ03-RQ06"
+    plan_item: "1.2"
+    task: "T007"
+    files:
+      - "docs/architecture/paid-registration-flow.md"
+      - "docs/architecture/paid-registration-flow.puml"
+      - "docs/architecture/context-map.md"
+      - "plan.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "No project test suite or Mermaid/PlantUML renderer is configured; flow coverage and diagram block structure were validated programmatically."
+  - "Exact endpoint/event contracts, retry schedules, broker acknowledgment, and reservation concurrency mechanism remain deferred to the assigned ADR and contract tasks."
+test_results:
+  T007:
+    command: "Structural Mermaid/PlantUML branch checks and git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []

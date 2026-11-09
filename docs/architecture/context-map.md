@@ -94,6 +94,10 @@ schemas, identity transport, retry/dead-letter behavior, and activity metadata
 needed for certificate eligibility are contract decisions for the following
 architecture/contract tasks; this map does not invent those wire details.
 
+The paid-registration sequence, refusal/expiry paths, and dependency-failure
+behavior are detailed in [paid-registration-flow.md](paid-registration-flow.md)
+and [its PlantUML diagram](paid-registration-flow.puml).
+
 ## Candidate deployment scope
 
 | Candidate | Prototype treatment | Primary capability |

@@ -1,0 +1,128 @@
+@startuml
+title EventHub - Paid registration, outcomes, and dependency failures
+autonumber
+hide footbox
+
+actor Participant as P
+participant "Event Management\n(Java service)" as EM
+participant "Identity & Access\nmock" as IAM
+participant "Registration\n(Java service)" as REG
+database "Registration-owned DB\n+ outbox" as DB
+queue RabbitMQ as MQ
+participant "Billing mock" as BILL
+participant "Notification mock" as NOTIF
+participant "Attendance &\nCertification" as ATT
+participant Reporting as REP
+
+P -> EM : Browse published activity
+alt Event Management available and activity published
+  EM --> P : Activity details and configured capacity
+  P -> REG : Request paid registration + identity
+  REG -> IAM : Validate identity and participant scope
+  alt Identity valid
+    IAM --> REG : Principal and authorization facts
+    REG -> EM : Validate activity and registration rules
+    alt Activity is published and eligible
+      EM --> REG : Activity facts (no database access)
+      REG -> DB : Reserve capacity atomically\nand persist payment intent/outbox
+      alt Capacity available and transaction committed
+        DB --> REG : Pending registration, expiry,\nregistrationId
+        REG --> P : Pending payment (not confirmed)
+        REG -> MQ : Publish outbox request\n(idempotent identity)
+        alt Broker delivers request
+          MQ -> BILL : Payment request
+          alt Billing approves before expiry
+            BILL -> MQ : Approved result
+            MQ -> REG : Payment result
+            REG -> DB : Confirm if reservation still valid
+            DB --> REG : Confirmed, idempotently
+            REG --> P : Confirmed
+            REG -> MQ : Publish registration/payment facts
+            par Independent consumers
+              MQ -> NOTIF : Notification event
+              alt Notification available
+                NOTIF --> MQ : Record simulated delivery
+              else Notification unavailable
+                NOTIF -> NOTIF : Record failure for observation/reprocessing
+                note right of REG
+                  Confirmation remains committed.
+                  Notification cannot roll it back.
+                end note
+              end
+            else
+              MQ -> ATT : Registration eligibility facts
+              ATT -> MQ : Attendance/certificate facts later
+            else
+              MQ -> REP : Registration/payment facts
+              alt Reporting available
+                REP -> REP : Update owned projection
+              else Reporting unavailable
+                REP -> REP : Projection delayed; registration unaffected
+              end
+            end
+          else Billing refuses
+            BILL -> MQ : Refused result
+            MQ -> REG : Payment result
+            REG -> DB : Mark refused; release slot once
+            DB --> REG : Refused; slot released
+            REG --> P : Registration refused
+            opt Waitlist enabled and participant queued
+              REG -> DB : Offer freed slot to next FIFO participant
+            end
+          else No result before reservation expiry
+            ... Configured reservation deadline ...
+            REG -> DB : Expire pending reservation;\nrelease slot once
+            REG --> P : Registration expired
+            opt Waitlist enabled and participant queued
+              REG -> DB : Offer freed slot to next FIFO participant
+            end
+            opt Late approval arrives
+              BILL -> MQ : Late approved result
+              MQ -> REG : Correlated late result
+              REG -> DB : Keep expired state;\nrecord manual compensation
+              note right of REG
+                Never reclaim a slot allocated
+                to another participant.
+              end note
+            end
+          end
+        else RabbitMQ unavailable
+          note over REG,DB
+            Keep committed outbox item observable and retry by the
+            approved messaging policy. Do not claim confirmation.
+            Reservation is still subject to expiry.
+          end note
+        end
+      else Capacity exhausted
+        DB --> REG : No slot
+        alt Waitlist enabled
+          REG -> DB : Enqueue participant FIFO
+          REG --> P : Waiting-list position/status
+        else
+          REG --> P : Capacity unavailable
+        end
+      else Reservation persistence fails
+        DB --> REG : Explicit persistence error
+        REG --> P : Request failed; no success reported
+      end
+    else Activity unavailable or not eligible
+      EM --> REG : Explicit not-published/ineligible result
+      REG --> P : Registration rejected
+    else Event Management unavailable
+      EM --> REG : Dependency error
+      REG --> P : Explicit temporary failure; no reservation
+    end
+  else Invalid identity or Identity mock unavailable
+    IAM --> REG : Denied / dependency error
+    REG --> P : Explicit unauthorized/dependency failure
+  end
+else Event Management unavailable for public query
+  EM --> P : Explicit catalog dependency failure
+end
+
+note bottom
+  The diagram is business-level. Reservation concurrency, exact HTTP/event contracts,
+  outbox transaction/acknowledgment, retry timing, and dead-letter policy are pending
+  ADR/contract tasks. No service reads another service's database.
+end note
+@enduml
