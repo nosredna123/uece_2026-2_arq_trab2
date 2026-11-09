@@ -1,0 +1,55 @@
+batch_id: "T003"
+completed_tasks: ["T003"]
+blocked_tasks: []
+files_changed:
+  T003:
+    - file: "scripts/check-environment.sh"
+      change_type: "created"
+      description: "Created an executable readiness gate covering versions, Docker context/daemon, resources, TCP ports, container execution, bridge networking, and temporary volume I/O."
+    - file: "docs/development/environment-setup.md"
+      change_type: "modified"
+      description: "Documented readiness thresholds, expected dependency ports, invocation, and temporary-resource cleanup."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T003 complete."
+upstream_artifacts_consumed:
+  T003:
+    - artifact: "plan.md"
+      used_for: "Phase 0.3 readiness requirements and RQ07/RQ08 traceability."
+    - artifact: "constitution.md"
+      used_for: "FailFast behavior, explicit errors, and avoiding permission or service changes."
+    - artifact: "docs/development/environment-setup.md"
+      used_for: "Compose v2 requirement and documented CPU, memory, disk, and port thresholds."
+    - artifact: "especificação-preliminar-sistema.md"
+      used_for: "RQ07 security and RQ08 reproducible operability."
+evidence_mapping:
+  T003:
+    - upstream: "plan.md#tarefas-T003"
+      output: "scripts/check-environment.sh"
+      evidence: "Syntax check and full traced gate succeeded; container execution, bridge request, and volume write/read passed."
+    - upstream: "plan.md#tarefas-T003"
+      output: "scripts/check-environment.sh#EVENTHUB_CHECK_PORTS"
+      evidence: "Invalid port value was rejected with an actionable message and nonzero exit."
+    - upstream: "plan.md#tarefas-T003"
+      output: "docs/development/environment-setup.md#machine-readiness-check"
+      evidence: "Documents minimum resources, PostgreSQL/RabbitMQ ports, configurable application ports, and cleanup policy."
+traceability:
+  - requirement: "RQ07/RQ08"
+    plan_item: "0.3"
+    task: "T003"
+    files:
+      - "scripts/check-environment.sh"
+      - "docs/development/environment-setup.md"
+      - "plan.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "No pre-existing repository test suite exists. Phase 2 service ports are not assigned yet and must be added to EVENTHUB_CHECK_PORTS when defined."
+test_results:
+  T003:
+    command: "bash -n scripts/check-environment.sh; bash -x scripts/check-environment.sh; EVENTHUB_CHECK_PORTS='5432 nope' ./scripts/check-environment.sh"
+    passed: 2
+    failed: 0
+    skipped: 0
+    failures: []

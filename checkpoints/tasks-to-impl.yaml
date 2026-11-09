@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 2
+  completed_tasks: 3
   in_progress_tasks: 0
-  pending_tasks: 42
-  completion_percentage: 4.55
+  pending_tasks: 41
+  completion_percentage: 6.82
 
 tasks:
   - task_id: "T001"
@@ -65,8 +65,38 @@ tasks:
       requirements: ["RQ05", "RQ08"]
       full_trace: "RQ05/RQ08 -> Phase-0.2 -> T002 -> docs/development/environment-setup.md"
 
-pending_tasks:
   - task_id: "T003"
+    description: "Criar gate de prontidão do ambiente com verificações Docker."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "scripts/check-environment.sh"
+          changes:
+            - change_type: "added"
+              description: "Added executable checks for versions, Docker daemon/resources, TCP ports, container execution, bridge networking, and temporary volume I/O."
+        - file: "docs/development/environment-setup.md"
+          changes:
+            - change_type: "modified"
+              description: "Documented readiness thresholds, default/deferred ports, command usage, and scoped cleanup."
+        - file: "plan.md"
+          changes:
+            - change_type: "modified"
+              description: "Marked T003 complete."
+    verification:
+      build_passed: null
+      test_results:
+        command: "bash -n scripts/check-environment.sh; bash -x scripts/check-environment.sh; EVENTHUB_CHECK_PORTS='5432 nope' ./scripts/check-environment.sh"
+        passed: 2
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The readiness gate passed against the active Docker daemon; invalid port input exited nonzero with an explicit error. Temporary diagnostic container, network, and volume were removed."
+    upstream_trace:
+      plan_item: "0.3"
+      requirements: ["RQ07", "RQ08"]
+      full_trace: "RQ07/RQ08 -> Phase-0.3 -> T003 -> scripts/check-environment.sh"
+
+pending_tasks:
   - task_id: "T004"
   - task_id: "T005"
   - task_id: "T006"
@@ -128,10 +158,19 @@ traceability_chain:
     files:
       - "docs/development/environment-setup.md"
     status: "complete"
+  - chain_id: "TRACE-T003"
+    requirement: "RQ07/RQ08"
+    plan_phase: "Phase-0"
+    plan_item: "0.3"
+    tasks: ["T003"]
+    files:
+      - "scripts/check-environment.sh"
+      - "docs/development/environment-setup.md"
+    status: "complete"
 
 validation:
   passed: true
   errors: []
   warnings:
-    - "No repository test suite exists yet; T001 and T002 are documentation-only."
+    - "No repository test suite exists yet; T001 and T002 are documentation-only. T003 was validated by its functional Docker gate and shell-level checks."
   blocking_issues: []

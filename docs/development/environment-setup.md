@@ -172,6 +172,43 @@ this initial setup guide. Their healthchecks, build/test stages, environment
 configuration, and executable test commands are added in Phase 2. Run these
 commands after those files exist.
 
+## Machine-readiness check
+
+After Docker Engine/Desktop and Compose v2 are installed and running, run the
+repository gate from the project root:
+
+```sh
+./scripts/check-environment.sh
+```
+
+The script requires Git 2.x and Docker Compose v2, a reachable Docker daemon
+and its active context, at least 2 CPUs and 4096 MiB of Docker memory, and at
+least 5120 MiB of free space on the project filesystem. It also checks for
+available TCP host ports **5432** (PostgreSQL), **5672** (RabbitMQ AMQP), and
+**15672** (RabbitMQ management, when exposed), then runs a disposable container
+and verifies temporary bridge-network and volume operations.
+
+The plan does not yet assign host ports to application services. When Phase 2
+defines those mappings, include them in the port check, for example:
+
+```sh
+EVENTHUB_CHECK_PORTS="5432 5672 15672 8080 8081" ./scripts/check-environment.sh
+```
+
+`EVENTHUB_CHECK_PORTS` accepts a whitespace-separated list of TCP ports from 1
+to 65535; its default is `5432 5672 15672`. A conflicting port, insufficient
+resources, missing version requirement, inaccessible daemon, or failed
+diagnostic operation returns a nonzero exit code with an actionable error. The
+gate uses uniquely named temporary containers, a bridge network, and a volume;
+it removes only resources created by that run. It does not stop or change other
+containers, services, ports, Docker contexts, firewall rules, or daemon
+settings. If cleanup itself fails, the gate reports the specific resource so
+it can be removed explicitly.
+
+These are initial project readiness thresholds, not performance or production
+capacity guarantees. Adjust them only when the team validates corresponding
+Compose and service requirements.
+
 ## Optional local development tools
 
 Local runtimes are optional conveniences for IDE navigation, debugging, and
