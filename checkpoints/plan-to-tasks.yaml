@@ -1,0 +1,248 @@
+# Plan-to-Tasks Traceability Checkpoint
+metadata:
+  generated: "2026-11-09"
+  source_plan: "plan.md"
+  target_tasks: "plan.md#tarefas"
+
+summary:
+  total_plan_items: 16
+  covered_plan_items: 16
+  missing_plan_items: 0
+  coverage_percentage: 100.0
+  total_tasks_generated: 38
+  orphan_tasks: 0
+
+phases:
+  - phase_id: "Phase-1"
+    phase_name: "Domínio e arquitetura"
+    items:
+      - item_id: "1.1"
+        description: "Consolidar glossário, invariantes e cenários BDD."
+        tasks:
+          - task_id: "T001"
+            description: "Consolidar glossário, invariantes e cenários Gherkin."
+        notes: "Inclui validação humana antes dos contratos técnicos."
+      - item_id: "1.2"
+        description: "Delimitar contextos, serviços e fluxos."
+        tasks:
+          - task_id: "T002"
+            description: "Desenhar dependências, limites e diagrama de containers."
+          - task_id: "T003"
+            description: "Documentar fluxo de inscrição paga e falhas."
+        notes: ""
+      - item_id: "1.3"
+        description: "Registrar decisões e rationales."
+        tasks:
+          - task_id: "T004"
+            description: "Registrar ADRs 001–005."
+          - task_id: "T005"
+            description: "Criar rationales JSON versionados."
+        notes: ""
+  - phase_id: "Phase-2"
+    phase_name: "Contratos e fundação técnica"
+    items:
+      - item_id: "2.1"
+        description: "Especificar APIs, eventos e dados."
+        tasks:
+          - task_id: "T006"
+            description: "Definir contratos OpenAPI dos serviços implementados."
+          - task_id: "T007"
+            description: "Definir contratos assíncronos e serviços modelados."
+          - task_id: "T008"
+            description: "Documentar estados, idempotência e propriedade de dados."
+        notes: ""
+      - item_id: "2.2"
+        description: "Criar fundação executável local."
+        tasks:
+          - task_id: "T009"
+            description: "Criar Docker Compose."
+          - task_id: "T010"
+            description: "Inicializar scaffolds Java."
+          - task_id: "T011"
+            description: "Inicializar scaffolds Python."
+          - task_id: "T012"
+            description: "Adicionar configuração de exemplo, dados e instruções."
+        notes: ""
+      - item_id: "2.3"
+        description: "Estabelecer qualidade contínua."
+        tasks:
+          - task_id: "T013"
+            description: "Configurar CI com validação determinística, auditoria semântica e política de merge."
+          - task_id: "T014"
+            description: "Adicionar testes de fronteira arquitetural."
+        notes: ""
+  - phase_id: "Phase-3"
+    phase_name: "US1: Identidade e catálogo"
+    items:
+      - item_id: "3.1"
+        description: "Implementar identidade e controle de acesso."
+        tasks:
+          - task_id: "T015"
+            description: "Escrever testes de contrato e autorização."
+          - task_id: "T016"
+            description: "Implementar cadastro, autenticação, perfis e autorização."
+        notes: ""
+      - item_id: "3.2"
+        description: "Implementar eventos, atividades e consulta."
+        tasks:
+          - task_id: "T017"
+            description: "Escrever testes de contrato e domínio."
+          - task_id: "T018"
+            description: "Implementar persistência, migrações e endpoints."
+        notes: ""
+  - phase_id: "Phase-4"
+    phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+    items:
+      - item_id: "4.1"
+        description: "Implementar reserva e inscrição."
+        tasks:
+          - task_id: "T019"
+            description: "Escrever testes JUnit/jqwik para reserva e invariantes."
+          - task_id: "T020"
+            description: "Implementar reserva e inscrição conforme os testes."
+        notes: ""
+      - item_id: "4.2"
+        description: "Implementar lista de espera e liberação de vagas."
+        tasks:
+          - task_id: "T021"
+            description: "Escrever testes property-based e concorrentes."
+          - task_id: "T022"
+            description: "Implementar fila, promoção e prazo de oferta."
+        notes: ""
+      - item_id: "4.3"
+        description: "Implementar pagamento simulado assíncrono."
+        tasks:
+          - task_id: "T023"
+            description: "Escrever testes de outbox e transições de pagamento."
+          - task_id: "T024"
+            description: "Implementar outbox e publicação idempotente."
+          - task_id: "T025"
+            description: "Implementar consumidor de pagamento e simulador."
+          - task_id: "T026"
+            description: "Implementar confirmação, liberação e expiração configurável."
+        notes: ""
+      - item_id: "4.4"
+        description: "Implementar notificações desacopladas."
+        tasks:
+          - task_id: "T027"
+            description: "Escrever testes de idempotência e falha."
+          - task_id: "T028"
+            description: "Implementar consumidor idempotente."
+        notes: ""
+  - phase_id: "Phase-5"
+    phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+    items:
+      - item_id: "5.1"
+        description: "Definir contratos de check-in e certificação."
+        tasks:
+          - task_id: "T029"
+            description: "Documentar Attendance & Certification e contrato."
+        notes: "Sem serviço executável."
+      - item_id: "5.2"
+        description: "Definir relatórios operacionais."
+        tasks:
+          - task_id: "T030"
+            description: "Documentar Reporting e projeções."
+        notes: "Sem serviço executável."
+  - phase_id: "Phase-6"
+    phase_name: "Integração e entrega"
+    items:
+      - item_id: "6.1"
+        description: "Demonstrar o fluxo integrado e os critérios de qualidade."
+        tasks:
+          - task_id: "T031"
+            description: "Criar teste ponta a ponta de inscrição paga."
+          - task_id: "T032"
+            description: "Criar testes de falha e lista de espera."
+          - task_id: "T033"
+            description: "Executar teste concorrente."
+          - task_id: "T034"
+            description: "Configurar mutation testing e score mínimo."
+          - task_id: "T035"
+            description: "Executar ensaio de carga comparativo."
+        notes: ""
+      - item_id: "6.2"
+        description: "Finalizar segurança, observabilidade e documentação."
+        tasks:
+          - task_id: "T036"
+            description: "Propagar correlation/trace ID e logs."
+          - task_id: "T037"
+            description: "Completar instruções e limitações."
+          - task_id: "T038"
+            description: "Consolidar evidências, trade-offs e declaração de IA."
+        notes: ""
+
+missing_plan_items: []
+orphan_tasks: []
+upstream_trace:
+  - plan_item: "1.1"
+    source_requirements: ["RF01", "RF02", "RF03", "RF04", "RF05", "RF06", "RF07", "RF08", "RF09", "RF10", "RF11", "RN01", "RN02", "RN03", "RN04", "RN05", "RN06", "RN07", "RQ01", "RQ02", "RQ03", "RQ04", "RQ05", "RQ06", "RQ07", "RQ08"]
+    tasks: ["T001"]
+    full_trace: "Requisitos funcionais, de negócio e qualidade → 1.1 → T001"
+  - plan_item: "1.2"
+    source_requirements: ["RF01", "RF02", "RF03", "RF04", "RF05", "RF06", "RF07", "RF08", "RF09", "RF10", "RF11", "RQ01", "RQ02", "RQ03", "RQ05"]
+    tasks: ["T002", "T003"]
+    full_trace: "Capacidades e forças arquiteturais → 1.2 → T002,T003"
+  - plan_item: "1.3"
+    source_requirements: ["RQ01", "RQ04", "RQ05", "RQ06", "RQ07", "RQ08"]
+    tasks: ["T004", "T005"]
+    full_trace: "Decisões/rationales → 1.3 → T004,T005"
+  - plan_item: "2.1"
+    source_requirements: ["RF01", "RF02", "RF03", "RF04", "RF05", "RF06", "RF07", "RF08", "RF09", "RF10", "RF11", "RN01", "RN02", "RN03", "RN04", "RN05", "RN06", "RN07", "RQ04", "RQ05", "RQ07"]
+    tasks: ["T006", "T007", "T008"]
+    full_trace: "Requisitos de APIs, eventos e propriedade → 2.1 → T006,T007,T008"
+  - plan_item: "2.2"
+    source_requirements: ["RQ01", "RQ05", "RQ06", "RQ07", "RQ08"]
+    tasks: ["T009", "T010", "T011", "T012"]
+    full_trace: "Operabilidade, interoperabilidade e segurança → 2.2 → T009,T010,T011,T012"
+  - plan_item: "2.3"
+    source_requirements: ["RQ04", "RQ05", "RQ06", "RQ07", "RQ08"]
+    tasks: ["T013", "T014"]
+    full_trace: "Gates e regressão arquitetural → 2.3 → T013,T014"
+  - plan_item: "3.1"
+    source_requirements: ["RF01", "RN07", "RQ07"]
+    tasks: ["T015", "T016"]
+    full_trace: "Identidade e autorização → 3.1 → T015,T016"
+  - plan_item: "3.2"
+    source_requirements: ["RF02", "RF03", "RF04", "RQ01", "RQ02", "RQ05"]
+    tasks: ["T017", "T018"]
+    full_trace: "Eventos, atividades e consultas → 3.2 → T017,T018"
+  - plan_item: "4.1"
+    source_requirements: ["RF05", "RF06", "RN01", "RQ02", "RQ04"]
+    tasks: ["T019", "T020"]
+    full_trace: "Reserva e inscrição → 4.1 → T019,T020"
+  - plan_item: "4.2"
+    source_requirements: ["RF06", "RN01", "RN03", "RN04", "RQ04"]
+    tasks: ["T021", "T022"]
+    full_trace: "Fila e liberação de vagas → 4.2 → T021,T022"
+  - plan_item: "4.3"
+    source_requirements: ["RF07", "RN02", "RN03", "RQ03", "RQ04", "RQ05"]
+    tasks: ["T023", "T024", "T025", "T026"]
+    full_trace: "Pagamento, idempotência e expiração → 4.3 → T023,T024,T025,T026"
+  - plan_item: "4.4"
+    source_requirements: ["RF08", "RN05", "RQ01", "RQ03", "RQ05"]
+    tasks: ["T027", "T028"]
+    full_trace: "Notificações desacopladas → 4.4 → T027,T028"
+  - plan_item: "5.1"
+    source_requirements: ["RF09", "RF10", "RN06", "RQ01", "RQ05"]
+    tasks: ["T029"]
+    full_trace: "Check-in e certificação modelados → 5.1 → T029"
+  - plan_item: "5.2"
+    source_requirements: ["RF11", "RQ01", "RQ03", "RQ05", "RQ06"]
+    tasks: ["T030"]
+    full_trace: "Relatórios modelados → 5.2 → T030"
+  - plan_item: "6.1"
+    source_requirements: ["RF05", "RF06", "RF07", "RF08", "RN01", "RN02", "RN03", "RN04", "RN05", "RQ02", "RQ03", "RQ04", "RQ05", "RQ06"]
+    tasks: ["T031", "T032", "T033", "T034", "T035"]
+    full_trace: "Fluxo integrado, resiliência, concorrência e escala → 6.1 → T031,T032,T033,T034,T035"
+  - plan_item: "6.2"
+    source_requirements: ["RF01", "RQ05", "RQ06", "RQ07", "RQ08"]
+    tasks: ["T036", "T037", "T038"]
+    full_trace: "Observabilidade, segurança e entregáveis → 6.2 → T036,T037,T038"
+
+validation:
+  passed: true
+  errors: []
+  warnings:
+    - "RF09, RF10 e RF11 têm tarefas de modelagem/contrato, mas não de implementação executável."
+    - "T005 é uma tarefa documental e não introduz um sistema de banco vetorial."

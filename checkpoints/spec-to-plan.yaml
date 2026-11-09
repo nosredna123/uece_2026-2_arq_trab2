@@ -1,0 +1,342 @@
+# Spec-to-Plan Traceability Checkpoint
+metadata:
+  generated: "2026-11-09"
+  source_spec: "especificação-preliminar-sistema.md"
+  target_plan: "plan.md"
+
+summary:
+  total_requirements: 26
+  covered_requirements: 26
+  missing_requirements: 0
+  coverage_percentage: 100.0
+
+requirements:
+  - req_id: "RF01"
+    req_description: "Cadastro, autenticação, perfis e permissões."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-3"
+      phase_name: "US1: Identidade e catálogo"
+      items:
+        - item_id: "3.1"
+          description: "Implementar identidade e controle de acesso."
+    notes: "Protótipo executável."
+  - req_id: "RF02"
+    req_description: "Criar, editar, publicar e cancelar eventos."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-3"
+      phase_name: "US1: Identidade e catálogo"
+      items:
+        - item_id: "3.2"
+          description: "Implementar eventos, atividades e consulta."
+    notes: "Protótipo executável."
+  - req_id: "RF03"
+    req_description: "Cadastrar atividades, horários, responsáveis, locais e regras."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-3"
+      phase_name: "US1: Identidade e catálogo"
+      items:
+        - item_id: "3.2"
+          description: "Implementar eventos, atividades e consulta."
+    notes: "Protótipo executável."
+  - req_id: "RF04"
+    req_description: "Consultar eventos publicados, programação, vagas e atividades."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-3"
+      phase_name: "US1: Identidade e catálogo"
+      items:
+        - item_id: "3.2"
+          description: "Implementar eventos, atividades e consulta."
+    notes: "Protótipo executável; disponibilidade consultada sem acesso cruzado ao banco."
+  - req_id: "RF05"
+    req_description: "Solicitar, consultar e cancelar inscrições."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.1"
+          description: "Implementar reserva e inscrição."
+    notes: "Protótipo executável."
+  - req_id: "RF06"
+    req_description: "Respeitar capacidade e suportar lista de espera."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.1"
+          description: "Implementar reserva e inscrição."
+        - item_id: "4.2"
+          description: "Implementar lista de espera e liberação de vagas."
+        - item_id: "6.1"
+          description: "Demonstrar o fluxo integrado e os critérios de qualidade."
+    notes: "Protótipo executável; concorrência será testada."
+  - req_id: "RF07"
+    req_description: "Simular pagamento e registrar aprovação, recusa ou expiração."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.3"
+          description: "Implementar pagamento simulado assíncrono."
+    notes: "Protótipo executável via RabbitMQ."
+  - req_id: "RF08"
+    req_description: "Notificar eventos sem bloquear operações essenciais."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.4"
+          description: "Implementar notificações desacopladas."
+        - item_id: "6.1"
+          description: "Demonstrar o fluxo integrado e os critérios de qualidade."
+    notes: "Protótipo executável; canais externos simulados."
+  - req_id: "RF09"
+    req_description: "Registrar check-in sem duplicidade."
+    priority: "P2"
+    plan_mapping:
+      phase: "Phase-5"
+      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      items:
+        - item_id: "5.1"
+          description: "Definir contratos de check-in e certificação."
+    notes: "Somente modelado, limitação explicitamente informada."
+  - req_id: "RF10"
+    req_description: "Emitir certificados para participantes elegíveis."
+    priority: "P2"
+    plan_mapping:
+      phase: "Phase-5"
+      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      items:
+        - item_id: "5.1"
+          description: "Definir contratos de check-in e certificação."
+    notes: "Somente modelado; elegibilidade confirmada por check-in."
+  - req_id: "RF11"
+    req_description: "Disponibilizar indicadores operacionais aos organizadores."
+    priority: "P2"
+    plan_mapping:
+      phase: "Phase-5"
+      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      items:
+        - item_id: "5.2"
+          description: "Definir relatórios operacionais."
+    notes: "Somente modelado, limitação explicitamente informada."
+  - req_id: "RN01"
+    req_description: "Impedir overbooking sob concorrência."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.1"
+          description: "Implementar reserva e inscrição."
+        - item_id: "4.2"
+          description: "Implementar lista de espera e liberação de vagas."
+        - item_id: "6.1"
+          description: "Demonstrar o fluxo integrado e os critérios de qualidade."
+    notes: "Invariante de bloqueio; validar por teste concorrente."
+  - req_id: "RN02"
+    req_description: "Confirmar inscrição paga após pagamento e expirar pendências."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.3"
+          description: "Implementar pagamento simulado assíncrono."
+    notes: "Prazo padrão 30 minutos, configurável."
+  - req_id: "RN03"
+    req_description: "Liberar reserva recusada/expirada sem confirmação indevida."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.2"
+          description: "Implementar lista de espera e liberação de vagas."
+        - item_id: "4.3"
+          description: "Implementar pagamento simulado assíncrono."
+        - item_id: "6.1"
+          description: "Demonstrar o fluxo integrado e os critérios de qualidade."
+    notes: "Testar recusa, expiração e idempotência da liberação."
+  - req_id: "RN04"
+    req_description: "Atualizar disponibilidade após cancelamento e oferecer vaga à fila."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.2"
+          description: "Implementar lista de espera e liberação de vagas."
+    notes: "Promoção automática conforme esclarecimento do usuário."
+  - req_id: "RN05"
+    req_description: "Falhas de notificação não desfazem inscrição confirmada."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.4"
+          description: "Implementar notificações desacopladas."
+        - item_id: "6.1"
+          description: "Demonstrar o fluxo integrado e os critérios de qualidade."
+    notes: "Cobrir indisponibilidade e reprocessamento."
+  - req_id: "RN06"
+    req_description: "Emitir certificados somente após evento e presença elegível."
+    priority: "P2"
+    plan_mapping:
+      phase: "Phase-5"
+      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      items:
+        - item_id: "5.1"
+          description: "Definir contratos de check-in e certificação."
+    notes: "Somente modelado; critério adotado é check-in registrado."
+  - req_id: "RN07"
+    req_description: "Restringir dados por participante e organização responsável."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-3"
+      phase_name: "US1: Identidade e catálogo"
+      items:
+        - item_id: "3.1"
+          description: "Implementar identidade e controle de acesso."
+    notes: "Validar com testes de autorização negativos."
+  - req_id: "RQ01"
+    req_description: "Permitir evolução/implantação independente de capacidades."
+    priority: "P2"
+    plan_mapping:
+      phase: "Phase-1"
+      phase_name: "Saneamento do domínio e arquitetura"
+      items:
+        - item_id: "1.2"
+          description: "Delimitar contextos, serviços e fluxos."
+        - item_id: "5.1"
+          description: "Definir contratos de check-in e certificação."
+        - item_id: "5.2"
+          description: "Definir relatórios operacionais."
+        - item_id: "2.2"
+          description: "Criar fundação executável local."
+    notes: "Limites e deploys isolados serão documentados; dois serviços ficam modelados."
+  - req_id: "RQ02"
+    req_description: "Escalar consultas e inscrições seletivamente até 20×."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-3"
+      phase_name: "US1: Identidade e catálogo"
+      items:
+        - item_id: "3.2"
+          description: "Implementar eventos, atividades e consulta."
+        - item_id: "4.1"
+          description: "Implementar reserva e inscrição."
+        - item_id: "6.1"
+          description: "Demonstrar o fluxo integrado e os critérios de qualidade."
+    notes: "Comparar carga em relação a baseline registrada."
+  - req_id: "RQ03"
+    req_description: "Isolar falhas temporárias de notificações e relatórios."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-4"
+      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      items:
+        - item_id: "4.3"
+          description: "Implementar pagamento simulado assíncrono."
+        - item_id: "4.4"
+          description: "Implementar notificações desacopladas."
+        - item_id: "5.2"
+          description: "Definir relatórios operacionais."
+        - item_id: "6.1"
+          description: "Demonstrar o fluxo integrado e os critérios de qualidade."
+    notes: "Falha de Notification é testada; Reporting permanece isolado no desenho."
+  - req_id: "RQ04"
+    req_description: "Controlar e recuperar transições de reserva, pagamento e confirmação."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-1"
+      phase_name: "Saneamento do domínio e arquitetura"
+      items:
+        - item_id: "1.3"
+          description: "Registrar decisões e rationales."
+        - item_id: "2.1"
+          description: "Especificar APIs, eventos e dados."
+        - item_id: "4.1"
+          description: "Implementar reserva e inscrição."
+        - item_id: "4.2"
+          description: "Implementar lista de espera e liberação de vagas."
+        - item_id: "4.3"
+          description: "Implementar pagamento simulado assíncrono."
+    notes: "Outbox, idempotência e testes de falha compõem a evidência."
+  - req_id: "RQ05"
+    req_description: "Interoperabilidade por contratos explícitos."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2"
+      phase_name: "Contratos e fundação técnica"
+      items:
+        - item_id: "2.1"
+          description: "Especificar APIs, eventos e dados."
+        - item_id: "3.2"
+          description: "Implementar eventos, atividades e consulta."
+        - item_id: "4.3"
+          description: "Implementar pagamento simulado assíncrono."
+        - item_id: "4.4"
+          description: "Implementar notificações desacopladas."
+        - item_id: "5.1"
+          description: "Definir contratos de check-in e certificação."
+        - item_id: "5.2"
+          description: "Definir relatórios operacionais."
+    notes: "Validar OpenAPI/AsyncAPI e integração Java/Python."
+  - req_id: "RQ06"
+    req_description: "Rastrear inscrição e diagnosticar falhas entre componentes."
+    priority: "P2"
+    plan_mapping:
+      phase: "Phase-5"
+      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      items:
+        - item_id: "5.2"
+          description: "Definir relatórios operacionais."
+        - item_id: "6.2"
+          description: "Finalizar segurança, observabilidade e documentação."
+    notes: "Correlation/trace ID será propagado em HTTP, mensagens e logs."
+  - req_id: "RQ07"
+    req_description: "Autenticação/autorização e ausência de segredos versionados."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-1"
+      phase_name: "Saneamento do domínio e arquitetura"
+      items:
+        - item_id: "1.3"
+          description: "Registrar decisões e rationales."
+        - item_id: "2.2"
+          description: "Criar fundação executável local."
+        - item_id: "3.1"
+          description: "Implementar identidade e controle de acesso."
+        - item_id: "6.2"
+          description: "Finalizar segurança, observabilidade e documentação."
+    notes: "Segredos fornecidos externamente; permissões testadas."
+  - req_id: "RQ08"
+    req_description: "Execução e testes locais reproduzíveis."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2"
+      phase_name: "Contratos e fundação técnica"
+      items:
+        - item_id: "2.2"
+          description: "Criar fundação executável local."
+        - item_id: "6.2"
+          description: "Finalizar segurança, observabilidade e documentação."
+    notes: "Docker Compose e README."
+
+missing_requirements: []
+orphan_plan_items: []
+validation:
+  passed: true
+  errors: []
+  warnings:
+    - "RF09, RF10 e RF11 estão cobertos por desenho/contratos, não por código executável, conforme o recorte de protótipo."
+    - "A especificação não informa latência-alvo absoluta para RQ02; registrar baseline e critério comparativo antes do teste de carga."
