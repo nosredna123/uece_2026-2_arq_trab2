@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 14
+  completed_tasks: 15
   in_progress_tasks: 0
-  pending_tasks: 30
-  completion_percentage: 31.82
+  pending_tasks: 29
+  completion_percentage: 34.09
 
 tasks:
   - task_id: "T001"
@@ -411,9 +411,32 @@ tasks:
       requirements: ["RQ01", "RQ05-RQ08"]
       full_trace: "RQ -> Phase-2.2 -> T015 -> independent FastAPI scaffolds and Alembic 0001"
 
+  - task_id: "T016"
+    description: "Proteger .env e validar configuração externa de negócio e infraestrutura."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "infra/.env.example"
+        - file: "infra/environment.schema.json"
+        - file: "scripts/validate-environment.py"
+        - file: "tests/configuration"
+        - file: "services/event-management-java/src"
+        - file: "services/registration-java/src"
+        - file: "services/attendance-certification-python/src/attendance_service/settings.py"
+        - file: "services/reporting-python/src/reporting_service/settings.py"
+        - file: "README.md"
+        - file: "docs/development/environment-setup.md"
+    verification:
+      build_passed: true
+      test_results: {command: "python -m pytest -x --import-mode=importlib; Docker Java/Python tests and runtime probes", passed: 46, failed: 0, skipped: 0}
+      notes: "42 Python plus four Java tests pass; explicit valid settings start all four runtimes against PostgreSQL, Java also RabbitMQ. Missing/invalid policies rejected; no real .env created."
+    upstream_trace:
+      plan_item: "2.2"
+      requirements: ["RN01-RN07", "RQ07", "RQ08"]
+      full_trace: "RN/RQ -> Phase-2.2 -> T016 -> safe environment template, schema and typed startup settings"
+
 pending_tasks:
   - task_id: "T013"
-  - task_id: "T016"
   - task_id: "T017"
   - task_id: "T018"
   - task_id: "T019"
@@ -578,6 +601,14 @@ traceability_chain:
     plan_item: "2.2"
     tasks: ["T015"]
     files: ["services/attendance-certification-python", "services/reporting-python"]
+    status: "complete"
+
+  - chain_id: "TRACE-T016"
+    requirement: "RN01-RN07/RQ07/RQ08"
+    plan_phase: "Phase-2"
+    plan_item: "2.2"
+    tasks: ["T016"]
+    files: ["infra/.env.example", "infra/environment.schema.json", "scripts/validate-environment.py"]
     status: "complete"
 
 validation:

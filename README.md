@@ -12,25 +12,75 @@ in containers; host Java/Python runtimes and host databases are optional.
 2. From the repository root, run `./scripts/check-environment.sh` to verify
    Docker access, resources, required host ports, and temporary container,
    network, and volume operations.
-3. Follow the guide for the Compose-based workflow. The Compose definition,
-   service images, and acceptance-test commands are Phase 2 deliverables and
-   are not present yet.
+3. Follow [service build/test instructions](services/README.md) for the four
+   independent scaffolds. The complete Compose stack and domain acceptance
+   flows remain pending; scaffold health is not proof of domain functionality.
 
 ## Local environment variables and secrets
 
-Phase 2 will provide `infra/.env.example` with fictitious development values.
-The local configuration file is `infra/.env`; it must be ignored by Git before
-being created. Once Phase 2 adds the example and ignore rule, copy the example
-to `infra/.env`, then verify the local file is ignored:
+The versioned [infra/.env.example](infra/.env.example) contains only synthetic
+demonstration values. First verify the ignore rule, then create the local file:
 
 ```sh
-cp infra/.env.example infra/.env
 git check-ignore -v infra/.env
+cp infra/.env.example infra/.env
+chmod 600 infra/.env
 ```
 
 Do not put real passwords, tokens, keys, or other credentials in `.env.example`,
 documentation, logs, or tracked files. Keep local secrets out of commits and
 share them only through an approved secret-management channel. Do not create
 `infra/.env` until the ignore rule exists and `git check-ignore` confirms it is
-ignored. Phase 2 task T016 owns the `.env.example`, ignore rule, and
-configuration validation; this repository does not yet include them.
+ignored. Never commit the real local file.
+
+Validate without printing values, using an isolated environment with
+[validation dependencies](requirements-validation.txt):
+
+```sh
+python scripts/validate-environment.py infra/.env
+python -m pytest -x --import-mode=importlib
+```
+
+Full Python tests also require installing both service `[test]` extras as
+described in [services/README.md](services/README.md). The validator itself may
+be run without a host Python installation:
+
+```sh
+docker run --rm -v "$PWD:/workspace:ro" -w /workspace python:3.12.9-slim-bookworm \
+  sh -c 'pip install --no-cache-dir jsonschema==4.23.0 && python scripts/validate-environment.py infra/.env'
+```
+
+The local template uses plain `KEY=value` lines, no shell execution, quoted
+values or interpolation. Do not `source` untrusted environment files.
+The [schema](infra/environment.schema.json) defines every required variable.
+The validator rejects missing/unknown keys, duplicate assignments, invalid
+booleans/ranges, conflicting host ports and contradictory retry delays, without
+printing supplied values.
+
+### Configuration mapping and policy
+
+Compose wiring must map `EVENT_*`/`REGISTRATION_*` database values to each Java
+service's `DATABASE_URL/USER/PASSWORD` and `MIGRATION_USER/PASSWORD`; Python
+`ATTENDANCE_*`/`REPORTING_*` URLs map to `DATABASE_URL` and
+`MIGRATION_DATABASE_URL`. Never reuse bootstrap credentials for runtime.
+Common integration/messaging variables are passed by their names.
+
+- Reservation and FIFO offer periods start at the approved configurable 30
+  minutes; cancellation window at seven days and refund percentage at 90.
+  Persisted deadlines do not change retroactively when configuration changes.
+- Waitlist may be enabled/disabled globally. Certificate policy is CHECK_IN
+  with issuance after activity completion; configuration cannot disable that
+  invariant. Event prices/capacity/dates are persisted data, not global defaults.
+- Billing payment/refund scenarios independently select APPROVED/REFUSED/TIMEOUT.
+  Notification availability selects true/false. These are synthetic controls,
+  not production integrations or public bypass endpoints.
+- Retry initial/max delays and HTTP timeout are externally configured positive
+  seconds; max delay cannot be below initial delay. Refund business attempts
+  remain unlimited regardless of the delay cap.
+- Java validated configuration records and Python typed settings fail startup
+  for missing/invalid required service settings. Mock startup validators must
+  enforce the same template contract when mocks are implemented.
+
+The template's host ports are 8081-8085 for the four services and Identity mock;
+database/broker ports are 5432, 5672 and 15672. Set different available ports
+explicitly if needed. No real local environment file is created by tests.

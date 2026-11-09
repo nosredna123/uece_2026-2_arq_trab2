@@ -1,0 +1,40 @@
+batch_id: "T016"
+completed_tasks: ["T016"]
+blocked_tasks: []
+files_changed:
+  T016:
+    - {file: "infra/.env.example", change_type: "created", description: "Synthetic policy, database/migration, broker, port and mock settings."}
+    - {file: "infra/environment.schema.json", change_type: "created", description: "Required key inventory and value constraints."}
+    - {file: "scripts/validate-environment.py", change_type: "created", description: "Strict secret-safe validation, range/cross-field/port checks."}
+    - {file: "tests/configuration", change_type: "created", description: "Invalid/missing values, ignored real .env, typed settings and secret redaction."}
+    - {file: "services/event-management-java/src", change_type: "modified", description: "Validated required integration properties and explicit test fixture settings."}
+    - {file: "services/registration-java/src", change_type: "modified", description: "Validated policy/integration properties and invalid-policy tests."}
+    - {file: "services/attendance-certification-python/src", change_type: "modified", description: "Required typed settings before engine/startup, completion policy enforced."}
+    - {file: "services/reporting-python/src", change_type: "modified", description: "Required typed integration settings before engine/startup."}
+    - {file: "README.md", change_type: "modified", description: "Secure copy, validation, mappings and demonstration values."}
+    - {file: "docs/development/environment-setup.md", change_type: "modified", description: "Replaces stale future-template instructions."}
+    - {file: "services/README.md", change_type: "modified", description: "Reflects delivered typed validation."}
+upstream_artifacts_consumed:
+  T016:
+    - {artifact: "constitution.md", used_for: "External policy, fail-fast, no real secrets or permissive defaults."}
+    - {artifact: "docs/architecture/domain-scenarios.md", used_for: "Configured durations, refund and certificate invariants."}
+    - {artifact: "docs/adr/ADR-005-prototype-scope.md", used_for: "Synthetic mocks, settings and credentials."}
+evidence_mapping:
+  T016:
+    - upstream: "plan.md T016"
+      output: "infra/.env.example, schema and service typed settings"
+      evidence: "42 Python and four Java tests pass; all four runtimes start with explicit synthetic config and real PostgreSQL, Java with RabbitMQ."
+traceability:
+  - {requirement: "RN01-RN07, RQ07-RQ08", plan_item: "2.2", task: "T016", files: ["infra/.env.example", "infra/environment.schema.json", "scripts/validate-environment.py"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "No real .env created; template uses only synthetic credentials."
+  - "Compose mapping and each future mock must wire the required validated settings; no mock runtime is claimed here."
+test_results:
+  T016:
+    command: "python -m pytest -x --import-mode=importlib; Docker test stages; real-dependency runtime probes; git diff --check"
+    passed: 46
+    failed: 0
+    skipped: 0
+    failures: []

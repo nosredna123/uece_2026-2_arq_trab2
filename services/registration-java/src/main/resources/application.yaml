@@ -22,3 +22,16 @@ management:
   endpoint:
     health:
       show-details: never
+policy:
+  reservation-expiry-minutes: ${RESERVATION_EXPIRY_MINUTES}
+  waitlist-enabled: ${WAITLIST_ENABLED}
+  waitlist-offer-expiry-minutes: ${WAITLIST_OFFER_EXPIRY_MINUTES}
+  cancellation-window-days: ${CANCELLATION_WINDOW_DAYS}
+  refund-percentage: ${REFUND_PERCENTAGE}
+integration:
+  identity-base-url: ${IDENTITY_BASE_URL}
+  event-management-base-url: ${EVENT_MANAGEMENT_BASE_URL}
+  internal-service-key: ${INTERNAL_SERVICE_KEY}
+  http-timeout-seconds: ${HTTP_TIMEOUT_SECONDS}
+  retry-initial-seconds: ${MESSAGE_RETRY_INITIAL_SECONDS}
+  retry-max-seconds: ${MESSAGE_RETRY_MAX_SECONDS}

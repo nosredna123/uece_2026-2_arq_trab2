@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -15,6 +16,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
           + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
           + "org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration"
     })
+@ActiveProfiles("test")
 class EventManagementApplicationTest {
   @Autowired private TestRestTemplate client;
 

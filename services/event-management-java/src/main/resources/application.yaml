@@ -22,3 +22,9 @@ management:
   endpoint:
     health:
       show-details: never
+integration:
+  identity-base-url: ${IDENTITY_BASE_URL}
+  internal-service-key: ${INTERNAL_SERVICE_KEY}
+  http-timeout-seconds: ${HTTP_TIMEOUT_SECONDS}
+  retry-initial-seconds: ${MESSAGE_RETRY_INITIAL_SECONDS}
+  retry-max-seconds: ${MESSAGE_RETRY_MAX_SECONDS}

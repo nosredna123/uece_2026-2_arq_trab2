@@ -23,7 +23,8 @@ jqwik 1.9.2 explicitly pinned.
 Tests deliberately isolate web startup from PostgreSQL/RabbitMQ and assert that
 domain routes are not fake success endpoints. Runtime requires explicit database,
 migration and RabbitMQ credentials and checks dependency health. T021-T030
-implement the real domain APIs and messaging; T016 adds typed business settings.
+implement the real domain APIs and messaging. Typed settings validate required
+business/integration configuration before startup; see the root README.
 
 Flyway V1 creates owner-local event/activity or capacity/enrollment tables.
 Later migrations must be new versions, never edits to already applied SQL.

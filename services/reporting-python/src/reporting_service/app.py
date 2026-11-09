@@ -1,17 +1,19 @@
 from contextlib import asynccontextmanager
 import logging
-import os
 
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+
+from reporting_service.settings import Settings
 
 
 LOGGER = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
-    engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)
+    settings = Settings.from_environment()
+    engine = create_engine(settings.database_url.get_secret_value(), pool_pre_ping=True)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
