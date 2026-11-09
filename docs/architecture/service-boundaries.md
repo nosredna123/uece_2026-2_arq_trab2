@@ -31,6 +31,8 @@ the shared local PostgreSQL cluster:
 | Reporting | Event-fed registration/payment/occupancy/attendance/certificate projection, source-event offsets/deduplication state. | Reporting only |
 
 This table states logical ownership, not a physical table design.
+The [data ownership model](data-ownership.md) defines states, constraints,
+idempotency keys, migrations and retention for each owner.
 [ADR-002](../adr/ADR-002-data-ownership.md) selects separate logical databases and
 a capacity snapshot frozen by Event Management before Registration opens
 admission. [ADR-003](../adr/ADR-003-registration-consistency.md) selects per-activity

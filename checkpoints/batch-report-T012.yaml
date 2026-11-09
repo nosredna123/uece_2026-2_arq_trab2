@@ -1,0 +1,35 @@
+batch_id: "T012"
+completed_tasks: ["T012"]
+blocked_tasks: []
+files_changed:
+  T012:
+    - {file: "docs/architecture/data-ownership.md", change_type: "created", description: "Entity ownership, state transitions, keys, migration/access and retention policies."}
+    - {file: "docs/architecture/service-boundaries.md", change_type: "modified", description: "Links detailed ownership model."}
+    - {file: "docs/contracts/README.md", change_type: "modified", description: "Links receipt retention policy."}
+    - {file: "tests/docs/test_data_ownership.py", change_type: "created", description: "States and recovery obligation consistency checks."}
+upstream_artifacts_consumed:
+  T012:
+    - {artifact: "docs/architecture/domain-scenarios.md", used_for: "Approved transitions and capacity/refund invariants."}
+    - {artifact: "docs/adr/ADR-002-data-ownership.md", used_for: "Logical database isolation and snapshot lifecycle."}
+    - {artifact: "docs/adr/ADR-003-registration-consistency.md", used_for: "Locked atomic state/FIFO transitions."}
+    - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "Inbox/outbox, replay and unlimited refund obligations."}
+    - {artifact: "docs/contracts/openapi/registration.yaml", used_for: "Consistent public states and idempotent commands."}
+    - {artifact: "docs/contracts/asyncapi/README.md", used_for: "Projection ordering and financial operation identities."}
+evidence_mapping:
+  T012:
+    - upstream: "plan.md T012"
+      output: "docs/architecture/data-ownership.md"
+      evidence: "Documents all service data owners, allowed access, state transitions, unique keys, migrations and no-purge prototype retention; state consistency tests pass."
+traceability:
+  - {requirement: "RF01-RF11, RN01-RN07, RQ04-RQ07", plan_item: "2.1", task: "T012", files: ["docs/architecture/data-ownership.md"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "No migration or database implementation is claimed; later integration must prove isolation, concurrency and recovery."
+test_results:
+  T012:
+    command: "python -m pytest -x; git diff --check"
+    passed: 23
+    failed: 0
+    skipped: 0
+    failures: []

@@ -24,7 +24,8 @@ in [asyncapi/eventhub.yaml](asyncapi/eventhub.yaml) and its
   subject, HTTP operation and target; canonical validated body identifies the
   payload. Same key/payload returns the original HTTP status/body, even if the
   resource has since changed; query GET for current state. Changed payload is
-  409. Still authorize every replay. Retention details are T012.
+  409. Still authorize every replay. Retention is defined in
+  [data ownership](../architecture/data-ownership.md).
 - Default error responses define status meanings for every operation. Domain
   refusals (422), state/capacity conflicts (409), identity denial (401/403),
   absence/concealment (404) and dependency failure (503) are never 2xx.

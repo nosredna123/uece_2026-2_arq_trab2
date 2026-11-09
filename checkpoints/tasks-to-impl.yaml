@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 11
+  completed_tasks: 12
   in_progress_tasks: 0
-  pending_tasks: 33
-  completion_percentage: 25.0
+  pending_tasks: 32
+  completion_percentage: 27.27
 
 tasks:
   - task_id: "T001"
@@ -358,8 +358,25 @@ tasks:
       requirements: ["RF07-RF11", "RN01-RN06", "RQ03-RQ06"]
       full_trace: "RF/RN/RQ -> Phase-2.1 -> T011 -> docs/contracts/asyncapi and schemas"
 
-pending_tasks:
   - task_id: "T012"
+    description: "Documentar dados, transições, idempotência, migrações e retenção."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/architecture/data-ownership.md"
+        - file: "docs/architecture/service-boundaries.md"
+        - file: "docs/contracts/README.md"
+        - file: "tests/docs/test_data_ownership.py"
+    verification:
+      build_passed: null
+      test_results: {command: "python -m pytest -x", passed: 23, failed: 0, skipped: 0}
+      notes: "Document consistency checks only; migrations and cross-service credential isolation remain implementation obligations."
+    upstream_trace:
+      plan_item: "2.1"
+      requirements: ["RF01-RF11", "RN01-RN07", "RQ04-RQ07"]
+      full_trace: "RF/RN/RQ -> Phase-2.1 -> T012 -> docs/architecture/data-ownership.md"
+
+pending_tasks:
   - task_id: "T013"
   - task_id: "T014"
   - task_id: "T015"
@@ -504,6 +521,14 @@ traceability_chain:
     plan_item: "2.1"
     tasks: ["T011"]
     files: ["docs/contracts/asyncapi/eventhub.yaml", "docs/contracts/schemas"]
+    status: "complete"
+
+  - chain_id: "TRACE-T012"
+    requirement: "RF01-RF11/RN01-RN07/RQ04-RQ07"
+    plan_phase: "Phase-2"
+    plan_item: "2.1"
+    tasks: ["T012"]
+    files: ["docs/architecture/data-ownership.md"]
     status: "complete"
 
 validation:
