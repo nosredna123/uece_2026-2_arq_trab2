@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 3
+  completed_tasks: 4
   in_progress_tasks: 0
-  pending_tasks: 41
-  completion_percentage: 6.82
+  pending_tasks: 40
+  completion_percentage: 9.09
 
 tasks:
   - task_id: "T001"
@@ -96,8 +96,42 @@ tasks:
       requirements: ["RQ07", "RQ08"]
       full_trace: "RQ07/RQ08 -> Phase-0.3 -> T003 -> scripts/check-environment.sh"
 
-pending_tasks:
   - task_id: "T004"
+    description: "Executar readiness gate e registrar evidências e proteção do ambiente."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/validation/environment-readiness.md"
+          changes:
+            - change_type: "added"
+              description: "Recorded non-secret host versions, resources, port availability, diagnostic results, and reproducible command."
+        - file: "docs/development/environment-setup.md"
+          changes:
+            - change_type: "modified"
+              description: "Documented infra/.env location, safe handling, and Phase 2 T016 dependency."
+        - file: "README.md"
+          changes:
+            - change_type: "added"
+              description: "Added quickstart, readiness command, and .env/.env.example protection guidance."
+        - file: "plan.md"
+          changes:
+            - change_type: "modified"
+              description: "Marked T004 complete."
+    verification:
+      build_passed: null
+      test_results:
+        command: "./scripts/check-environment.sh; verify no eventhub-readiness diagnostic resources remain"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Readiness gate passed on Linux Mint 22.3; Git 2.43.0, Docker 29.1.3, Compose v2.40.3; 16 CPUs, 60121 MiB Docker memory, 136314 MiB free disk; all default ports available. Container, network, volume, and HTTP checks passed and cleanup was verified."
+    upstream_trace:
+      plan_item: "0.3"
+      requirements: ["RQ07", "RQ08"]
+      full_trace: "RQ07/RQ08 -> Phase-0.3 -> T004 -> docs/validation/environment-readiness.md"
+
+pending_tasks:
   - task_id: "T005"
   - task_id: "T006"
   - task_id: "T007"
@@ -167,10 +201,20 @@ traceability_chain:
       - "scripts/check-environment.sh"
       - "docs/development/environment-setup.md"
     status: "complete"
+  - chain_id: "TRACE-T004"
+    requirement: "RQ07/RQ08"
+    plan_phase: "Phase-0"
+    plan_item: "0.3"
+    tasks: ["T004"]
+    files:
+      - "docs/validation/environment-readiness.md"
+      - "docs/development/environment-setup.md"
+      - "README.md"
+    status: "complete"
 
 validation:
   passed: true
   errors: []
   warnings:
-    - "No repository test suite exists yet; T001 and T002 are documentation-only. T003 was validated by its functional Docker gate and shell-level checks."
+    - "No repository application test suite exists yet; T001/T002/T004 are documentation/evidence tasks. T003/T004 readiness checks passed."
   blocking_issues: []

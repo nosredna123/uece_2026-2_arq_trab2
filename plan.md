@@ -259,7 +259,7 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 - [x] T001 [Plan:0.1] Documentar inventário, requisitos de versão, instalação/configuração de Git, Docker e Compose v2 por sistema operacional em `docs/development/environment-setup.md`; verificar instalações existentes antes de propor mudanças e exigir autorização para alterações de sistema.
 - [x] T002 [Plan:0.2] Documentar em `docs/development/environment-setup.md` a rota oficial containerizada e a alternativa opcional de JDK 21, Maven Wrapper, Python/venv e IDE; esclarecer que bancos, broker, builds e testes de aceitação não requerem runtimes locais.
 - [x] T003 [Plan:0.3] Criar `scripts/check-environment.sh` para verificar versões, daemon/contexto Docker, execução de container, rede, volume, recursos e portas conforme limites documentados; usar recursos temporários próprios, limpá-los e retornar erro explícito em falha, sem fallback silencioso.
-- [ ] T004 [Plan:0.3] Executar o gate de prontidão e registrar versões, recursos e resultados sem segredos em `docs/validation/environment-readiness.md`; documentar localização/proteção do `.env` e vínculo com a configuração entregue na Fase 2 em `docs/development/environment-setup.md` e `README.md`.
+- [x] T004 [Plan:0.3] Executar o gate de prontidão e registrar versões, recursos e resultados sem segredos em `docs/validation/environment-readiness.md`; documentar localização/proteção do `.env` e vínculo com a configuração entregue na Fase 2 em `docs/development/environment-setup.md` e `README.md`.
 
 ### Fase 1 — Domínio e arquitetura
 

@@ -209,6 +209,28 @@ These are initial project readiness thresholds, not performance or production
 capacity guarantees. Adjust them only when the team validates corresponding
 Compose and service requirements.
 
+## Local environment file and secrets
+
+The planned local configuration file is `infra/.env`, copied from the
+fictitious-value template `infra/.env.example` that Phase 2 task T016 will
+provide. The template must contain no real credentials. The `.env` file must
+be ignored by Git before it is created; until T016 adds that ignore rule and
+template, do not create or populate `infra/.env`. Once available, verify the
+ignore rule before adding local values:
+
+```sh
+cp infra/.env.example infra/.env
+git check-ignore -v infra/.env
+```
+
+If `git check-ignore` does not identify an ignore rule, stop and do not enter
+secrets. Keep passwords, tokens, and keys out of tracked files, examples,
+documentation, and command output. Store and share actual secrets only through
+an approved secret-management channel. T016 is responsible for adding
+`infra/.env.example`, the Git ignore rule, required-value validation, and
+instructions for the completed configuration. The readiness check does not
+read or print `.env` values.
+
 ## Optional local development tools
 
 Local runtimes are optional conveniences for IDE navigation, debugging, and

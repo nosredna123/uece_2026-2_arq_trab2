@@ -1,0 +1,60 @@
+batch_id: "T004"
+completed_tasks: ["T004"]
+blocked_tasks: []
+files_changed:
+  T004:
+    - file: "docs/validation/environment-readiness.md"
+      change_type: "created"
+      description: "Recorded readiness-gate versions, resources, free disk, port availability, functional checks, cleanup, and reproduction steps."
+    - file: "docs/development/environment-setup.md"
+      change_type: "modified"
+      description: "Documented the local infra/.env path, secret handling, and Phase 2 T016 configuration dependency."
+    - file: "README.md"
+      change_type: "created"
+      description: "Added project setup quickstart and local environment-file protection instructions."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T004 complete."
+upstream_artifacts_consumed:
+  T004:
+    - artifact: "plan.md"
+      used_for: "Phase 0.3 evidence requirements and RQ07/RQ08 traceability."
+    - artifact: "constitution.md"
+      used_for: "No-secret handling, FailFast, and reproducible local readiness."
+    - artifact: "scripts/check-environment.sh"
+      used_for: "Executed gate, documented thresholds, and cleanup expectations."
+    - artifact: "especificação-preliminar-sistema.md"
+      used_for: "RQ07 security and RQ08 operability."
+evidence_mapping:
+  T004:
+    - upstream: "plan.md#tarefas-T004"
+      output: "docs/validation/environment-readiness.md"
+      evidence: "Documents the successful gate run, versions, context, resource values, port checks, container/network/volume results, cleanup, and reproduction command."
+    - upstream: "plan.md#tarefas-T004"
+      output: "docs/development/environment-setup.md#local-environment-file-and-secrets"
+      evidence: "States infra/.env location, blocks creation until the ignore rule exists, and links ignore/template/validation ownership to Phase 2 T016."
+    - upstream: "plan.md#tarefas-T004"
+      output: "README.md#local-environment-variables-and-secrets"
+      evidence: "Provides the project quickstart and safe .env.example to .env procedure, including git check-ignore verification."
+traceability:
+  - requirement: "RQ07/RQ08"
+    plan_item: "0.3"
+    task: "T004"
+    files:
+      - "docs/validation/environment-readiness.md"
+      - "docs/development/environment-setup.md"
+      - "README.md"
+      - "plan.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "No repository application test suite exists. The readiness gate was the executable acceptance check for this task."
+  - "The .env ignore rule, example file, and application configuration validation remain Phase 2 task T016; docs explicitly prohibit creating infra/.env before the ignore rule is present."
+test_results:
+  T004:
+    command: "./scripts/check-environment.sh; verify no eventhub-readiness diagnostic resources remain"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
