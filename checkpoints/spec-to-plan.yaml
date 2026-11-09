@@ -16,17 +16,17 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-3"
-      phase_name: "US1: Identidade e catálogo"
+      phase_name: "US1: Identidade simulada e catálogo"
       items:
         - item_id: "3.1"
-          description: "Implementar identidade e controle de acesso."
-    notes: "Protótipo executável."
+          description: "Especificar e simular identidade e controle de acesso."
+    notes: "Contrato e mock/fake executáveis; sem serviço Identity de domínio."
   - req_id: "RF02"
     req_description: "Criar, editar, publicar e cancelar eventos."
     priority: "P1"
     plan_mapping:
       phase: "Phase-3"
-      phase_name: "US1: Identidade e catálogo"
+      phase_name: "US1: Identidade simulada e catálogo"
       items:
         - item_id: "3.2"
           description: "Implementar eventos, atividades e consulta."
@@ -36,7 +36,7 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-3"
-      phase_name: "US1: Identidade e catálogo"
+      phase_name: "US1: Identidade simulada e catálogo"
       items:
         - item_id: "3.2"
           description: "Implementar eventos, atividades e consulta."
@@ -46,7 +46,7 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-3"
-      phase_name: "US1: Identidade e catálogo"
+      phase_name: "US1: Identidade simulada e catálogo"
       items:
         - item_id: "3.2"
           description: "Implementar eventos, atividades e consulta."
@@ -56,7 +56,7 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.1"
           description: "Implementar reserva e inscrição."
@@ -66,7 +66,7 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.1"
           description: "Implementar reserva e inscrição."
@@ -80,59 +80,59 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.3"
-          description: "Implementar pagamento simulado assíncrono."
-    notes: "Protótipo executável via RabbitMQ."
+          description: "Especificar Billing e implementar mock de pagamento."
+    notes: "Billing é contrato + fake configurável via RabbitMQ; não há serviço de domínio Billing."
   - req_id: "RF08"
     req_description: "Notificar eventos sem bloquear operações essenciais."
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.4"
-          description: "Implementar notificações desacopladas."
+          description: "Especificar Notification e implementar mock desacoplado."
         - item_id: "6.1"
           description: "Demonstrar o fluxo integrado e os critérios de qualidade."
-    notes: "Protótipo executável; canais externos simulados."
+    notes: "Notification é contrato + fake desacoplado; não há serviço de domínio Notification."
   - req_id: "RF09"
     req_description: "Registrar check-in sem duplicidade."
     priority: "P2"
     plan_mapping:
       phase: "Phase-5"
-      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      phase_name: "US3/US4: Presença, certificados e relatórios executáveis"
       items:
         - item_id: "5.1"
-          description: "Definir contratos de check-in e certificação."
-    notes: "Somente modelado, limitação explicitamente informada."
+          description: "Implementar Attendance & Certification."
+    notes: "Executável em Python/FastAPI com persistência e testes."
   - req_id: "RF10"
     req_description: "Emitir certificados para participantes elegíveis."
     priority: "P2"
     plan_mapping:
       phase: "Phase-5"
-      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      phase_name: "US3/US4: Presença, certificados e relatórios executáveis"
       items:
         - item_id: "5.1"
-          description: "Definir contratos de check-in e certificação."
-    notes: "Somente modelado; elegibilidade confirmada por check-in."
+          description: "Implementar Attendance & Certification."
+    notes: "Executável; elegibilidade confirmada por check-in e atividade encerrada."
   - req_id: "RF11"
     req_description: "Disponibilizar indicadores operacionais aos organizadores."
     priority: "P2"
     plan_mapping:
       phase: "Phase-5"
-      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      phase_name: "US3/US4: Presença, certificados e relatórios executáveis"
       items:
         - item_id: "5.2"
-          description: "Definir relatórios operacionais."
-    notes: "Somente modelado, limitação explicitamente informada."
+          description: "Implementar Reporting."
+    notes: "Executável com projeção própria alimentada por eventos."
   - req_id: "RN01"
     req_description: "Impedir overbooking sob concorrência."
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.1"
           description: "Implementar reserva e inscrição."
@@ -146,7 +146,7 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.3"
           description: "Implementar pagamento simulado assíncrono."
@@ -156,7 +156,7 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.2"
           description: "Implementar lista de espera e liberação de vagas."
@@ -170,7 +170,7 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.2"
           description: "Implementar lista de espera e liberação de vagas."
@@ -180,10 +180,10 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.4"
-          description: "Implementar notificações desacopladas."
+          description: "Especificar Notification e implementar mock desacoplado."
         - item_id: "6.1"
           description: "Demonstrar o fluxo integrado e os critérios de qualidade."
     notes: "Cobrir indisponibilidade e reprocessamento."
@@ -192,21 +192,21 @@ requirements:
     priority: "P2"
     plan_mapping:
       phase: "Phase-5"
-      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      phase_name: "US3/US4: Presença, certificados e relatórios executáveis"
       items:
         - item_id: "5.1"
-          description: "Definir contratos de check-in e certificação."
-    notes: "Somente modelado; critério adotado é check-in registrado."
+          description: "Implementar Attendance & Certification."
+    notes: "Serviço executável; certificado exige check-in e atividade encerrada."
   - req_id: "RN07"
     req_description: "Restringir dados por participante e organização responsável."
     priority: "P1"
     plan_mapping:
       phase: "Phase-3"
-      phase_name: "US1: Identidade e catálogo"
+      phase_name: "US1: Identidade simulada e catálogo"
       items:
         - item_id: "3.1"
-          description: "Implementar identidade e controle de acesso."
-    notes: "Validar com testes de autorização negativos."
+          description: "Especificar e simular identidade e controle de acesso."
+    notes: "Mock fornece identidades sintéticas; serviços reais aplicam autorização."
   - req_id: "RQ01"
     req_description: "Permitir evolução/implantação independente de capacidades."
     priority: "P2"
@@ -217,18 +217,18 @@ requirements:
         - item_id: "1.2"
           description: "Delimitar contextos, serviços e fluxos."
         - item_id: "5.1"
-          description: "Definir contratos de check-in e certificação."
+          description: "Implementar Attendance & Certification."
         - item_id: "5.2"
-          description: "Definir relatórios operacionais."
+          description: "Implementar Reporting."
         - item_id: "2.2"
           description: "Criar fundação executável local."
-    notes: "Limites e deploys isolados serão documentados; dois serviços ficam modelados."
+    notes: "Quatro serviços são executáveis; Identity & Access, Billing e Notification são contratos e mocks."
   - req_id: "RQ02"
     req_description: "Escalar consultas e inscrições seletivamente até 20×."
     priority: "P1"
     plan_mapping:
       phase: "Phase-3"
-      phase_name: "US1: Identidade e catálogo"
+      phase_name: "US1: Identidade simulada e catálogo"
       items:
         - item_id: "3.2"
           description: "Implementar eventos, atividades e consulta."
@@ -242,17 +242,17 @@ requirements:
     priority: "P1"
     plan_mapping:
       phase: "Phase-4"
-      phase_name: "US2: Inscrição, capacidade, pagamento e notificações"
+      phase_name: "US2: Inscrição, capacidade e dependências simuladas"
       items:
         - item_id: "4.3"
           description: "Implementar pagamento simulado assíncrono."
         - item_id: "4.4"
-          description: "Implementar notificações desacopladas."
+          description: "Especificar Notification e implementar mock desacoplado."
         - item_id: "5.2"
-          description: "Definir relatórios operacionais."
+          description: "Implementar Reporting."
         - item_id: "6.1"
           description: "Demonstrar o fluxo integrado e os critérios de qualidade."
-    notes: "Falha de Notification é testada; Reporting permanece isolado no desenho."
+    notes: "Notification é fake; Reporting real consome eventos em projeção isolada."
   - req_id: "RQ04"
     req_description: "Controlar e recuperar transições de reserva, pagamento e confirmação."
     priority: "P1"
@@ -283,23 +283,23 @@ requirements:
         - item_id: "3.2"
           description: "Implementar eventos, atividades e consulta."
         - item_id: "4.3"
-          description: "Implementar pagamento simulado assíncrono."
+          description: "Especificar Billing e implementar mock de pagamento."
         - item_id: "4.4"
-          description: "Implementar notificações desacopladas."
+          description: "Especificar Notification e implementar mock desacoplado."
         - item_id: "5.1"
-          description: "Definir contratos de check-in e certificação."
+          description: "Implementar Attendance & Certification."
         - item_id: "5.2"
-          description: "Definir relatórios operacionais."
+          description: "Implementar Reporting."
     notes: "Validar OpenAPI/AsyncAPI e integração Java/Python."
   - req_id: "RQ06"
     req_description: "Rastrear inscrição e diagnosticar falhas entre componentes."
     priority: "P2"
     plan_mapping:
       phase: "Phase-5"
-      phase_name: "US3/US4: Capacidades modeladas fora do protótipo"
+      phase_name: "US3/US4: Presença, certificados e relatórios executáveis"
       items:
         - item_id: "5.2"
-          description: "Definir relatórios operacionais."
+          description: "Implementar Reporting."
         - item_id: "6.2"
           description: "Finalizar segurança, observabilidade e documentação."
     notes: "Correlation/trace ID será propagado em HTTP, mensagens e logs."
@@ -315,7 +315,7 @@ requirements:
         - item_id: "2.2"
           description: "Criar fundação executável local."
         - item_id: "3.1"
-          description: "Implementar identidade e controle de acesso."
+          description: "Especificar e simular identidade e controle de acesso."
         - item_id: "6.2"
           description: "Finalizar segurança, observabilidade e documentação."
     notes: "Segredos fornecidos externamente; permissões testadas."
@@ -338,5 +338,5 @@ validation:
   passed: true
   errors: []
   warnings:
-    - "RF09, RF10 e RF11 estão cobertos por desenho/contratos, não por código executável, conforme o recorte de protótipo."
+    - "Identity & Access, Billing e Notification são especificados e mockados; os outros quatro serviços são executáveis."
     - "A especificação não informa latência-alvo absoluta para RQ02; registrar baseline e critério comparativo antes do teste de carga."
