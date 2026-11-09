@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 1
+  completed_tasks: 2
   in_progress_tasks: 0
-  pending_tasks: 43
-  completion_percentage: 2.27
+  pending_tasks: 42
+  completion_percentage: 4.55
 
 tasks:
   - task_id: "T001"
@@ -38,8 +38,34 @@ tasks:
       requirements: ["RQ07", "RQ08"]
       full_trace: "RQ07/RQ08 -> Phase-0.1 -> T001 -> docs/development/environment-setup.md"
 
-pending_tasks:
   - task_id: "T002"
+    description: "Documentar rota containerizada e ferramentas Java/Python opcionais."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/development/environment-setup.md"
+          changes:
+            - change_type: "modified"
+              description: "Documented the planned Compose-first build/run/test workflow and optional local Java/Python IDE setups."
+        - file: "plan.md"
+          changes:
+            - change_type: "modified"
+              description: "Marked T002 complete."
+    verification:
+      build_passed: null
+      test_results:
+        command: "No project test suite exists; git diff --check and YAML validation"
+        passed: 0
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Documentation-only task. Local JDK/Python and databases/broker are explicitly optional; Compose scaffolding and container test commands are planned for Phase 2."
+    upstream_trace:
+      plan_item: "0.2"
+      requirements: ["RQ05", "RQ08"]
+      full_trace: "RQ05/RQ08 -> Phase-0.2 -> T002 -> docs/development/environment-setup.md"
+
+pending_tasks:
   - task_id: "T003"
   - task_id: "T004"
   - task_id: "T005"
@@ -94,10 +120,18 @@ traceability_chain:
     files:
       - "docs/development/environment-setup.md"
     status: "complete"
+  - chain_id: "TRACE-T002"
+    requirement: "RQ05/RQ08"
+    plan_phase: "Phase-0"
+    plan_item: "0.2"
+    tasks: ["T002"]
+    files:
+      - "docs/development/environment-setup.md"
+    status: "complete"
 
 validation:
   passed: true
   errors: []
   warnings:
-    - "No repository test suite exists yet; T001 is documentation-only."
+    - "No repository test suite exists yet; T001 and T002 are documentation-only."
   blocking_issues: []

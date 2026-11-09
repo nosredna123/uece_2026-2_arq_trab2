@@ -1,0 +1,47 @@
+batch_id: "T002"
+completed_tasks: ["T002"]
+blocked_tasks: []
+files_changed:
+  T002:
+    - file: "docs/development/environment-setup.md"
+      change_type: "modified"
+      description: "Documented the container-first build/run/test path and optional JDK, Maven Wrapper, Python virtual environment, and IDE setup."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T002 complete."
+upstream_artifacts_consumed:
+  T002:
+    - artifact: "plan.md"
+      used_for: "Phase 0.2 scope, Java/Python stack, Compose application path, and optional host tools."
+    - artifact: "constitution.md"
+      used_for: "Reproducible containerized execution and isolated Python dependencies."
+    - artifact: "especificação-preliminar-sistema.md"
+      used_for: "RQ05 interoperability and RQ08 local operability."
+evidence_mapping:
+  T002:
+    - upstream: "plan.md#tarefas-T002"
+      output: "docs/development/environment-setup.md#official-workflow-build-run-and-test-in-containers"
+      evidence: "Documents Compose build/run/stop commands and clarifies containerized acceptance test policy."
+    - upstream: "plan.md#tarefas-T002"
+      output: "docs/development/environment-setup.md#optional-local-development-tools"
+      evidence: "Documents optional JDK 21, project Maven Wrapper, Python virtual environment, and IDE interpreter configuration."
+traceability:
+  - requirement: "RQ05/RQ08"
+    plan_item: "0.2"
+    task: "T002"
+    files:
+      - "docs/development/environment-setup.md"
+      - "plan.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "No repository test suite exists; this documentation-only task was validated with diff and YAML checks."
+  - "Compose configuration and service test-runner commands are future Phase 2 deliverables and are identified as not yet available."
+test_results:
+  T002:
+    command: "No project test suite exists; git diff --check and YAML validation"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []

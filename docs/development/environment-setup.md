@@ -138,6 +138,91 @@ Docker Desktop requer uma versão de Windows ainda suportada e recursos de
 virtualização/WSL compatíveis. Consulte a matriz oficial antes de instalar; o
 Docker Desktop não é suportado em Windows Server.
 
+## Official workflow: build, run, and test in containers
+
+The supported team and presentation workflow runs the four application
+services, the three dependency mocks, PostgreSQL, and RabbitMQ in containers.
+Install Git and a working Docker Engine/Desktop with Compose v2; a host JDK,
+Maven installation, Python installation, PostgreSQL, and RabbitMQ are not
+required for application builds or acceptance tests.
+
+The planned Compose application is `infra/docker-compose.yml`. Once it is
+provided by Phase 2, the container workflow is:
+
+```sh
+# Build the service and mock images using their container build stages.
+docker compose -f infra/docker-compose.yml build
+
+# Start the full local system, including PostgreSQL, RabbitMQ, and mocks.
+docker compose -f infra/docker-compose.yml up
+```
+
+Run the project acceptance/test command through the Compose configuration or
+its documented containerized test runner; exact service names and test commands
+will be recorded with that configuration and in the project README. Do not
+replace a failing containerized build or test with a host-only run and report it
+as acceptance evidence. To stop the stack without deleting persistent data:
+
+```sh
+docker compose -f infra/docker-compose.yml down
+```
+
+The Compose file and service images are planned deliverables, not available in
+this initial setup guide. Their healthchecks, build/test stages, environment
+configuration, and executable test commands are added in Phase 2. Run these
+commands after those files exist.
+
+## Optional local development tools
+
+Local runtimes are optional conveniences for IDE navigation, debugging, and
+short feedback loops. They are not prerequisites for acceptance, and they do
+not replace the containerized PostgreSQL or RabbitMQ dependencies.
+
+### Java services
+
+- Install a JDK 21 distribution only if you want to compile or debug the Java
+  services directly on the host. Select JDK 21 as the project SDK/JDK in the
+  IDE.
+- Use the Maven Wrapper (`./mvnw` on Linux/macOS or `mvnw.cmd` in PowerShell)
+  shipped with the Java service scaffold; do not install Maven globally just
+  for this project. The wrapper and service directories are introduced by
+  Phase 2, so these commands apply after that scaffold exists.
+- For a local unit-test feedback loop, run the wrapper from the relevant
+  service directory, for example:
+
+  ```sh
+  cd services/event-management-java
+  ./mvnw test
+  ```
+
+  This optional host command is not the containerized integration/acceptance
+  test path.
+
+### Python services
+
+- Install the Python version used by the service image (the plan targets Python
+  3.12 or newer) only if you want to run or debug a Python service locally.
+- Create an isolated virtual environment in the service directory; never
+  install project libraries into the system Python:
+
+  ```sh
+  cd services/attendance-certification-python
+  python3 -m venv .venv
+  . .venv/bin/activate
+  ```
+
+  In PowerShell, activate it with
+  `.\.venv\Scripts\Activate.ps1`. Install only dependencies declared by that
+  service's project manifest/lock file once the scaffold is available.
+- Configure the IDE to use the service's `.venv` interpreter. For example, in
+  VS Code choose that interpreter for Pylance/debugging; in an IDE such as
+  PyCharm, set the project interpreter to that environment. Keep each service's
+  dependencies isolated.
+
+Neither local workflow requires installing PostgreSQL or RabbitMQ on the host;
+use the Compose dependencies for integration work. The exact Python manifest,
+IDE instructions, and commands follow the service scaffolds created in Phase 2.
+
 ## Validação após a instalação
 
 Repita os comandos de inventário. A configuração está pronta para a próxima
