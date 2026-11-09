@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 12
+  completed_tasks: 13
   in_progress_tasks: 0
-  pending_tasks: 32
-  completion_percentage: 27.27
+  pending_tasks: 31
+  completion_percentage: 29.55
 
 tasks:
   - task_id: "T001"
@@ -376,9 +376,26 @@ tasks:
       requirements: ["RF01-RF11", "RN01-RN07", "RQ04-RQ07"]
       full_trace: "RF/RN/RQ -> Phase-2.1 -> T012 -> docs/architecture/data-ownership.md"
 
+  - task_id: "T014"
+    description: "Inicializar serviços Java 21/Spring Boot com testes, Flyway e imagens."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/event-management-java"
+        - file: "services/registration-java"
+        - file: "services/README.md"
+        - file: ".gitignore"
+    verification:
+      build_passed: true
+      test_results: {command: "python -m pytest -x --import-mode=importlib; docker build Java runtimes", passed: 29, failed: 0, skipped: 0}
+      notes: "27 Python tests plus one Java test per service; real PostgreSQL/RabbitMQ health, Flyway and non-root JRE-only runtime verified. User approved dependency-first order while T013 awaits runtime inputs."
+    upstream_trace:
+      plan_item: "2.2"
+      requirements: ["RQ01", "RQ05-RQ08"]
+      full_trace: "RQ -> Phase-2.2 -> T014 -> independent Java scaffolds and Flyway V1"
+
 pending_tasks:
   - task_id: "T013"
-  - task_id: "T014"
   - task_id: "T015"
   - task_id: "T016"
   - task_id: "T017"
@@ -529,6 +546,14 @@ traceability_chain:
     plan_item: "2.1"
     tasks: ["T012"]
     files: ["docs/architecture/data-ownership.md"]
+    status: "complete"
+
+  - chain_id: "TRACE-T014"
+    requirement: "RQ01/RQ05-RQ08"
+    plan_phase: "Phase-2"
+    plan_item: "2.2"
+    tasks: ["T014"]
+    files: ["services/event-management-java", "services/registration-java"]
     status: "complete"
 
 validation:

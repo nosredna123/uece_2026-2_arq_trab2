@@ -1,0 +1,39 @@
+batch_id: "T014"
+completed_tasks: ["T014"]
+blocked_tasks: []
+files_changed:
+  T014:
+    - {file: "services/event-management-java", change_type: "created", description: "Java 21/Spring Boot scaffold, health test, Flyway V1 and multistage image."}
+    - {file: "services/registration-java", change_type: "created", description: "Independent Java scaffold, ledger/enrollment migration and fail-fast tests."}
+    - {file: "services/README.md", change_type: "created", description: "Containerized build/test instructions and scaffold limits."}
+    - {file: ".gitignore", change_type: "created", description: "Protect generated artifacts and real environment files before later configuration work."}
+upstream_artifacts_consumed:
+  T014:
+    - {artifact: "docs/architecture/data-ownership.md", used_for: "Owner-local tables and constraints."}
+    - {artifact: "plan.md", used_for: "Java 21, Spring Boot, Flyway and multistage test/runtime foundation."}
+evidence_mapping:
+  T014:
+    - upstream: "plan.md T014"
+      output: "services/event-management-java and services/registration-java"
+      evidence: "Both runtime images build; two Java tests pass; both applications run with real PostgreSQL/RabbitMQ, apply Flyway V1 and return UP."
+execution_order:
+  approval: "User approved dependency-first execution after T012; preserve IDs and separate commits."
+  reason: "T013 full-stack runtime verification depends on later scaffold and mock Dockerfiles."
+traceability:
+  - {requirement: "RQ01, RQ05-RQ08", plan_item: "2.2", task: "T014", files: ["services/event-management-java", "services/registration-java"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "Scaffold domain routes deliberately return 404 until domain implementation tasks; no fake domain success."
+  - "First runtime attempt failed RabbitMQ DNS/readiness; retried with explicit readiness checks and both real dependency checks passed."
+  - "Runtime probe used isolated synthetic test databases; production role isolation is T013 provisioning."
+test_results:
+  T014:
+    command: "python -m pytest -x --import-mode=importlib; Maven -ff with Surefire skipAfterFailureCount=1 via Docker; runtime integration probe"
+    passed: 29
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - {method: GET, path: "/actuator/health (Event Management)", status: 200, result: PASS}
+  - {method: GET, path: "/actuator/health (Registration)", status: 200, result: PASS}
