@@ -1,0 +1,74 @@
+@startuml
+title EventHub - Local container architecture
+left to right direction
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor Participant
+actor Organizer
+actor "Global administrator" as GlobalAdmin
+
+rectangle "EventHub local Docker Compose runtime" {
+  component "Identity & Access\nmock" as Identity <<mock>>
+  component "Event Management\nJava 21 / Spring Boot" as Events <<executable>>
+  component "Registration\nJava 21 / Spring Boot" as Registration <<executable>>
+  component "Billing\nmock" as Billing <<mock>>
+  component "Notification\nmock" as Notification <<mock>>
+  component "Attendance & Certification\nPython / FastAPI" as Attendance <<executable>>
+  component "Reporting\nPython / FastAPI" as Reporting <<executable>>
+
+  queue "RabbitMQ" as RabbitMQ
+
+  node "PostgreSQL cluster\nseparate service credentials" as PostgreSQL {
+    database "Event Management\nlogical database/schema" as EventData
+    database "Registration\nlogical database/schema" as RegistrationData
+    database "Attendance & Certification\nlogical database/schema" as AttendanceData
+    database "Reporting projection\nlogical database/schema" as ReportingData
+  }
+}
+
+Participant --> Events : public catalog
+Participant --> Registration : own registration commands/queries
+Participant --> Attendance : eligible check-in / certificate
+Organizer --> Events : manage own events and activities
+Organizer --> Reporting : own-organization reports
+GlobalAdmin --> Events : cross-organization event operations
+GlobalAdmin --> Reporting : cross-organization reports
+
+Events --> Identity : validate identity/scope
+Registration --> Identity : validate identity/scope
+Attendance --> Identity : validate identity/scope
+Reporting --> Identity : validate identity/scope
+
+Events --> EventData : own event/activity data
+Registration --> RegistrationData : own registration/outbox data
+Attendance --> AttendanceData : own attendance/certificate data
+Reporting --> ReportingData : own projection data
+
+Registration --> Events : activity/capacity API\n(contract details TBD)
+Registration --> RabbitMQ : publish from outbox
+RabbitMQ --> Billing : payment/refund request
+Billing --> RabbitMQ : configured result
+RabbitMQ --> Registration : payment/refund result
+RabbitMQ --> Notification : delivery events
+RabbitMQ --> Attendance : registration/activity facts
+Attendance --> RabbitMQ : attendance/certificate facts
+RabbitMQ --> Reporting : registration/payment/attendance facts
+
+note bottom of PostgreSQL
+One local cluster may host these isolated logical databases/schemas.
+No service may read another service's tables or credentials.
+end note
+
+note bottom of RabbitMQ
+Exact exchanges, routing keys, schemas, retry and dead-letter policy
+are specified in the contract/ADR tasks; not implied by this diagram.
+end note
+
+legend right
+|= Stereotype |= Prototype status |
+| <<executable>> | Implemented domain service |
+| <<mock>> | Contract-backed integration fake; not a domain service |
+endlegend
+@enduml

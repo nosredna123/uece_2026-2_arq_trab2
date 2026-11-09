@@ -1,0 +1,60 @@
+batch_id: "T006"
+completed_tasks: ["T006"]
+blocked_tasks: []
+files_changed:
+  T006:
+    - file: "docs/architecture/context-map.md"
+      change_type: "created"
+      description: "Documented the seven-candidate dependency graph, interaction map, implementation scope, and contract decisions deferred to later tasks."
+    - file: "docs/architecture/service-boundaries.md"
+      change_type: "created"
+      description: "Defined each candidate's responsibilities, exclusions, data ownership, dependency policy, and prototype exclusions."
+    - file: "docs/architecture/containers.puml"
+      change_type: "created"
+      description: "Added a PlantUML container diagram for local Compose services, mocks, PostgreSQL logical databases, RabbitMQ, and actors."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T006 complete."
+upstream_artifacts_consumed:
+  T006:
+    - artifact: "plan.md"
+      used_for: "Seven-service candidate model, four executable services, three mocks, runtime stack, and Phase 1.2 scope."
+    - artifact: "docs/architecture/domain-scenarios.md"
+      used_for: "Approved authorization roles, waitlist/payment/refund behavior, reporting isolation, and certificate eligibility."
+    - artifact: "constitution.md"
+      used_for: "KISS service granularity, per-service data ownership, and no direct cross-service database access."
+    - artifact: "especificação-preliminar-sistema.md"
+      used_for: "RF01-RF11 and RQ01-RQ03/RQ05 capability and quality traceability."
+evidence_mapping:
+  T006:
+    - upstream: "plan.md#tarefas-T006"
+      output: "docs/architecture/context-map.md#context-and-dependency-graph"
+      evidence: "Mermaid graph and interaction summary cover all seven candidates and their key synchronous/asynchronous dependencies."
+    - upstream: "plan.md#tarefas-T006"
+      output: "docs/architecture/service-boundaries.md#seven-candidate-boundaries"
+      evidence: "Boundary table distinguishes the four executable domain services from three contract-backed mocks and documents non-responsibilities."
+    - upstream: "plan.md#tarefas-T006"
+      output: "docs/architecture/containers.puml"
+      evidence: "Structural validation confirms PlantUML markers, seven candidate components, four owned logical databases, PostgreSQL, RabbitMQ, and actor/service links."
+traceability:
+  - requirement: "RF01-RF11, RQ01-RQ03, RQ05"
+    plan_item: "1.2"
+    task: "T006"
+    files:
+      - "docs/architecture/context-map.md"
+      - "docs/architecture/service-boundaries.md"
+      - "docs/architecture/containers.puml"
+      - "plan.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "No repository test suite or PlantUML renderer is configured; architecture and diagram contents were checked structurally."
+  - "Exact activity/capacity API, identity transport, event schemas, retry policy, and reservation concurrency mechanism remain assigned to ADR/contract tasks and are explicitly unresolved here."
+test_results:
+  T006:
+    command: "Structural architecture/diagram checks and git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []

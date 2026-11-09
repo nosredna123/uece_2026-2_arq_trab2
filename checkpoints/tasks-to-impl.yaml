@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 5
+  completed_tasks: 6
   in_progress_tasks: 0
-  pending_tasks: 39
-  completion_percentage: 11.36
+  pending_tasks: 38
+  completion_percentage: 13.64
 
 tasks:
   - task_id: "T001"
@@ -158,8 +158,42 @@ tasks:
       requirements: ["RF01-RF11", "RN01-RN07", "RQ01-RQ08"]
       full_trace: "RF/RN/RQ -> Phase-1.1 -> T005 -> docs/architecture/domain-scenarios.md"
 
-pending_tasks:
   - task_id: "T006"
+    description: "Desenhar dependências, limites dos sete candidatos e quatro executáveis."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/architecture/context-map.md"
+          changes:
+            - change_type: "added"
+              description: "Added dependency graph, interaction summary, prototype implementation scope, and unresolved contract boundaries."
+        - file: "docs/architecture/service-boundaries.md"
+          changes:
+            - change_type: "added"
+              description: "Defined responsibilities, exclusions, logical data ownership, dependency rules, and out-of-scope capabilities for all seven candidates."
+        - file: "docs/architecture/containers.puml"
+          changes:
+            - change_type: "added"
+              description: "Added PlantUML deployment/container diagram with four executable services, three mocks, PostgreSQL, RabbitMQ, and actor interactions."
+        - file: "plan.md"
+          changes:
+            - change_type: "modified"
+              description: "Marked T006 complete."
+    verification:
+      build_passed: null
+      test_results:
+        command: "Structural architecture/diagram checks and git diff --check"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Verified all seven candidates, four executable services, three mocks, required interfaces, data ownership separation, diagram start/end markers, and no direct cross-service database relationships. PlantUML renderer is not installed."
+    upstream_trace:
+      plan_item: "1.2"
+      requirements: ["RF01-RF11", "RQ01", "RQ02", "RQ03", "RQ05"]
+      full_trace: "RF/RQ -> Phase-1.2 -> T006 -> context-map.md/service-boundaries.md/containers.puml"
+
+pending_tasks:
   - task_id: "T007"
   - task_id: "T008"
   - task_id: "T009"
@@ -244,6 +278,16 @@ traceability_chain:
     tasks: ["T005"]
     files:
       - "docs/architecture/domain-scenarios.md"
+    status: "complete"
+  - chain_id: "TRACE-T006"
+    requirement: "RF01-RF11/RQ01-RQ03/RQ05"
+    plan_phase: "Phase-1"
+    plan_item: "1.2"
+    tasks: ["T006"]
+    files:
+      - "docs/architecture/context-map.md"
+      - "docs/architecture/service-boundaries.md"
+      - "docs/architecture/containers.puml"
     status: "complete"
 
 validation:
