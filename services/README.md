@@ -29,3 +29,29 @@ Flyway V1 creates owner-local event/activity or capacity/enrollment tables.
 Later migrations must be new versions, never edits to already applied SQL.
 Runtime credentials differ from migration credentials; provisioning/grants are
 the responsibility of the Compose foundation.
+
+## Python scaffolds (T015)
+
+The same Docker build/test commands apply to `attendance-certification-python`
+and `reporting-python`. The test stage runs `python -m pytest -x`; the runtime
+image contains only runtime wheels and migrations, not pytest/Hypothesis/httpx.
+Python 3.12.9 and direct/transitive runtime versions in `constraints.txt` are fixed.
+Each service has its own package and migration directory.
+
+Runtime requires `DATABASE_URL` and `MIGRATION_DATABASE_URL` (SQLAlchemy
+`postgresql+psycopg://` URLs with separate runtime/migration credentials).
+Startup first applies `alembic upgrade head`, then starts Uvicorn on port 8080.
+`/health` queries the configured database and reports 503 on failure; missing
+configuration fails startup. Domain routes and event consumers are later tasks.
+Unit tests explicitly use isolated SQLite files only for scaffold health checks;
+actual Alembic DDL targets PostgreSQL and is validated separately against it.
+
+For host-side full Python tests, install validation requirements and both
+services' `[test]` extras into an isolated environment, then run:
+
+```sh
+python -m pytest -x --import-mode=importlib
+```
+
+Importlib mode keeps independent services' identically named test modules
+isolated without manipulating `sys.path` or sharing domain packages.

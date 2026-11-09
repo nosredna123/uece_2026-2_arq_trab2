@@ -1,0 +1,1 @@
+"""Attendance and Certification service."""

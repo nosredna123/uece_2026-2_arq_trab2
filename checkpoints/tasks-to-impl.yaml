@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 13
+  completed_tasks: 14
   in_progress_tasks: 0
-  pending_tasks: 31
-  completion_percentage: 29.55
+  pending_tasks: 30
+  completion_percentage: 31.82
 
 tasks:
   - task_id: "T001"
@@ -394,9 +394,25 @@ tasks:
       requirements: ["RQ01", "RQ05-RQ08"]
       full_trace: "RQ -> Phase-2.2 -> T014 -> independent Java scaffolds and Flyway V1"
 
+  - task_id: "T015"
+    description: "Inicializar serviços Python/FastAPI com testes, Alembic e imagens."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/attendance-certification-python"
+        - file: "services/reporting-python"
+        - file: "services/README.md"
+    verification:
+      build_passed: true
+      test_results: {command: "python -m pytest -x --import-mode=importlib; Docker test stages", passed: 29, failed: 0, skipped: 0}
+      notes: "27 Python tests plus two existing Java tests pass. Both Python runtimes apply Alembic 0001 on real PostgreSQL, answer health, run non-root and exclude test-only dependencies."
+    upstream_trace:
+      plan_item: "2.2"
+      requirements: ["RQ01", "RQ05-RQ08"]
+      full_trace: "RQ -> Phase-2.2 -> T015 -> independent FastAPI scaffolds and Alembic 0001"
+
 pending_tasks:
   - task_id: "T013"
-  - task_id: "T015"
   - task_id: "T016"
   - task_id: "T017"
   - task_id: "T018"
@@ -554,6 +570,14 @@ traceability_chain:
     plan_item: "2.2"
     tasks: ["T014"]
     files: ["services/event-management-java", "services/registration-java"]
+    status: "complete"
+
+  - chain_id: "TRACE-T015"
+    requirement: "RQ01/RQ05-RQ08"
+    plan_phase: "Phase-2"
+    plan_item: "2.2"
+    tasks: ["T015"]
+    files: ["services/attendance-certification-python", "services/reporting-python"]
     status: "complete"
 
 validation:
