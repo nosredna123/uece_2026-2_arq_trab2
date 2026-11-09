@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Certificate issued v1",
+  "allOf": [
+    {"$ref": "envelope.json"},
+    {
+      "properties": {
+        "eventType": {"const": "certificate.issued"},
+        "producer": {"const": "attendance-certification"},
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["certificateId", "registrationId", "activityId", "organizationId", "participantId", "issuedAt"],
+          "properties": {
+            "certificateId": {"type": "string", "format": "uuid"},
+            "registrationId": {"type": "string", "format": "uuid"},
+            "activityId": {"type": "string", "format": "uuid"},
+            "organizationId": {"type": "string", "format": "uuid"},
+            "participantId": {"type": "string", "format": "uuid"},
+            "issuedAt": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    }
+  ]
+}

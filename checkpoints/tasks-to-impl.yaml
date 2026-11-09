@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 10
+  completed_tasks: 11
   in_progress_tasks: 0
-  pending_tasks: 34
-  completion_percentage: 22.73
+  pending_tasks: 33
+  completion_percentage: 25.0
 
 tasks:
   - task_id: "T001"
@@ -334,8 +334,31 @@ tasks:
       requirements: ["RF01-RF11", "RN01-RN07", "RQ04-RQ07"]
       full_trace: "RF/RN/RQ -> Phase-2.1 -> T010 -> docs/contracts/openapi"
 
-pending_tasks:
   - task_id: "T011"
+    description: "Definir AsyncAPI, schemas e comportamento dos mocks de mensageria."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/contracts/asyncapi/eventhub.yaml"
+        - file: "docs/contracts/asyncapi/README.md"
+        - file: "docs/contracts/schemas/envelope.json"
+        - file: "docs/contracts/schemas/billing-request.json"
+        - file: "docs/contracts/schemas/billing-result.json"
+        - file: "docs/contracts/schemas/registration-changed.json"
+        - file: "docs/contracts/schemas/activity-changed.json"
+        - file: "docs/contracts/schemas/attendance-recorded.json"
+        - file: "docs/contracts/schemas/certificate-issued.json"
+        - file: "tests/contracts/test_events.py"
+    verification:
+      build_passed: null
+      test_results: {command: "python -m pytest -x; @asyncapi/parser 3.4.0", passed: 21, failed: 0, skipped: 0}
+      notes: "Official AsyncAPI parser reported zero errors; payload tests include invalid envelopes, refund and expiry requirements. No runtime claims."
+    upstream_trace:
+      plan_item: "2.1"
+      requirements: ["RF07-RF11", "RN01-RN06", "RQ03-RQ06"]
+      full_trace: "RF/RN/RQ -> Phase-2.1 -> T011 -> docs/contracts/asyncapi and schemas"
+
+pending_tasks:
   - task_id: "T012"
   - task_id: "T013"
   - task_id: "T014"
@@ -473,6 +496,14 @@ traceability_chain:
       - "docs/contracts/openapi/attendance-certification.yaml"
       - "docs/contracts/openapi/reporting.yaml"
       - "docs/contracts/openapi/identity-mock.yaml"
+    status: "complete"
+
+  - chain_id: "TRACE-T011"
+    requirement: "RF07-RF11/RN01-RN06/RQ03-RQ06"
+    plan_phase: "Phase-2"
+    plan_item: "2.1"
+    tasks: ["T011"]
+    files: ["docs/contracts/asyncapi/eventhub.yaml", "docs/contracts/schemas"]
     status: "complete"
 
 validation:

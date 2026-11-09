@@ -1,0 +1,40 @@
+batch_id: "T011"
+completed_tasks: ["T011"]
+blocked_tasks: []
+files_changed:
+  T011:
+    - {file: "docs/contracts/asyncapi/eventhub.yaml", change_type: "created", description: "Six routed message contracts and broker authentication."}
+    - {file: "docs/contracts/asyncapi/README.md", change_type: "created", description: "Queue isolation, mock scenarios, ordering, refund retries and replay."}
+    - {file: "docs/contracts/schemas/envelope.json", change_type: "created", description: "Versioned correlation/identity envelope."}
+    - {file: "docs/contracts/schemas/billing-request.json", change_type: "created", description: "Payment and refund operation/attempt request."}
+    - {file: "docs/contracts/schemas/billing-result.json", change_type: "created", description: "Correlated approval/refusal result."}
+    - {file: "docs/contracts/schemas/registration-changed.json", change_type: "created", description: "Authoritative registration projection snapshot."}
+    - {file: "docs/contracts/schemas/activity-changed.json", change_type: "created", description: "Activity lifecycle projection snapshot."}
+    - {file: "docs/contracts/schemas/attendance-recorded.json", change_type: "created", description: "Immutable check-in fact."}
+    - {file: "docs/contracts/schemas/certificate-issued.json", change_type: "created", description: "Immutable certificate fact."}
+    - {file: "tests/contracts/test_events.py", change_type: "created", description: "Payload validity, invalid shapes and conditional requirements."}
+    - {file: "docs/contracts/README.md", change_type: "modified", description: "Links messaging contracts."}
+upstream_artifacts_consumed:
+  T011:
+    - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "Durability, isolation, replay and quarantine."}
+    - {artifact: "docs/contracts/openapi/registration.yaml", used_for: "Consistent enrollment statuses and identities."}
+    - {artifact: "docs/architecture/domain-scenarios.md", used_for: "Payment/refund, expiry, FIFO and eligibility invariants."}
+evidence_mapping:
+  T011:
+    - upstream: "plan.md T011"
+      output: "docs/contracts/asyncapi/eventhub.yaml and referenced schemas"
+      evidence: "Official @asyncapi/parser@3.4.0 parsed full document with zero severity-0 diagnostics; nine payload/structure tests pass."
+traceability:
+  - {requirement: "RF07-RF11, RN01-RN06, RQ03-RQ06", plan_item: "2.1", task: "T011", files: ["docs/contracts/asyncapi/eventhub.yaml", "docs/contracts/schemas"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "No running messaging integration exists yet; parser and payload checks are not broker recovery evidence."
+  - "AsyncAPI parser installed in isolated session tooling after missing-module failure; npm reported a transitive jsep engine warning on host Node 18, but parsing succeeded."
+test_results:
+  T011:
+    command: "python -m pytest -x; @asyncapi/parser@3.4.0 parse; git diff --check"
+    passed: 21
+    failed: 0
+    skipped: 0
+    failures: []

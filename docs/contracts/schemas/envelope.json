@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EventHub message envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "schemaVersion", "aggregateId", "aggregateVersion", "correlationId", "occurredAt", "producer", "data"],
+  "properties": {
+    "eventId": {"type": "string", "format": "uuid"},
+    "eventType": {"type": "string", "minLength": 1},
+    "schemaVersion": {"const": "1.0.0"},
+    "aggregateId": {"type": "string", "format": "uuid"},
+    "aggregateVersion": {"type": "integer", "minimum": 1},
+    "correlationId": {"type": "string", "format": "uuid"},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "producer": {"enum": ["event-management", "registration", "billing-mock", "attendance-certification"]},
+    "data": {"type": "object"}
+  }
+}

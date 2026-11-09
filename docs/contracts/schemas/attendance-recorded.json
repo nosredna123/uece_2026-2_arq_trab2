@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Attendance recorded v1",
+  "allOf": [
+    {"$ref": "envelope.json"},
+    {
+      "properties": {
+        "eventType": {"const": "attendance.recorded"},
+        "producer": {"const": "attendance-certification"},
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["registrationId", "activityId", "organizationId", "participantId", "checkedInAt"],
+          "properties": {
+            "registrationId": {"type": "string", "format": "uuid"},
+            "activityId": {"type": "string", "format": "uuid"},
+            "organizationId": {"type": "string", "format": "uuid"},
+            "participantId": {"type": "string", "format": "uuid"},
+            "checkedInAt": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Activity lifecycle snapshot v1",
+  "allOf": [
+    {"$ref": "envelope.json"},
+    {
+      "properties": {
+        "eventType": {"const": "activity.changed"},
+        "producer": {"const": "event-management"},
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["activityId", "eventId", "organizationId", "status", "startsAt", "endsAt"],
+          "properties": {
+            "activityId": {"type": "string", "format": "uuid"},
+            "eventId": {"type": "string", "format": "uuid"},
+            "organizationId": {"type": "string", "format": "uuid"},
+            "status": {"enum": ["DRAFT", "PUBLISHED", "CANCELLED"]},
+            "startsAt": {"type": "string", "format": "date-time"},
+            "endsAt": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    }
+  ]
+}

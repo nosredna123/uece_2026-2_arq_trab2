@@ -1,0 +1,113 @@
+asyncapi: 2.6.0
+info:
+  title: EventHub domain and MOCK integration messages
+  version: 1.0.0
+  description: >-
+    Application-centric operations: publish means send, subscribe means receive.
+    Persistent messages, publisher confirms, mandatory routing and transactional
+    deduplication are required. No exactly-once transport guarantee.
+defaultContentType: application/json
+servers:
+  local:
+    url: '{host}:{port}'
+    protocol: amqp
+    protocolVersion: 0.9.1
+    variables:
+      host: {default: rabbitmq}
+      port: {default: '5672'}
+    security: [{brokerCredentials: []}]
+channels:
+  billing.requested:
+    description: Registration sends requests; Billing MOCK consumes.
+    publish:
+      operationId: requestBilling
+      message: {$ref: '#/components/messages/BillingRequest'}
+    subscribe:
+      operationId: consumeBillingRequest
+      message: {$ref: '#/components/messages/BillingRequest'}
+    bindings:
+      amqp: {is: routingKey, exchange: {name: eventhub.v1, type: topic, durable: true, autoDelete: false}, bindingVersion: 0.3.0}
+  billing.result:
+    description: Billing MOCK sends outcomes; Registration applies; Reporting observes deduplicated operation outcomes.
+    publish:
+      operationId: publishBillingResult
+      message: {$ref: '#/components/messages/BillingResult'}
+    subscribe:
+      operationId: consumeBillingResult
+      message: {$ref: '#/components/messages/BillingResult'}
+    bindings:
+      amqp: {is: routingKey, exchange: {name: eventhub.v1, type: topic, durable: true, autoDelete: false}, bindingVersion: 0.3.0}
+  registration.changed:
+    description: Registration snapshots feed Attendance, Reporting and Notification MOCK independently.
+    publish:
+      operationId: publishRegistrationSnapshot
+      message: {$ref: '#/components/messages/RegistrationChanged'}
+    subscribe:
+      operationId: projectRegistrationSnapshot
+      message: {$ref: '#/components/messages/RegistrationChanged'}
+    bindings:
+      amqp: {is: routingKey, exchange: {name: eventhub.v1, type: topic, durable: true, autoDelete: false}, bindingVersion: 0.3.0}
+  activity.changed:
+    description: Event Management lifecycle snapshots feed Attendance, Reporting and Notification MOCK.
+    publish:
+      operationId: publishActivitySnapshot
+      message: {$ref: '#/components/messages/ActivityChanged'}
+    subscribe:
+      operationId: projectActivitySnapshot
+      message: {$ref: '#/components/messages/ActivityChanged'}
+    bindings:
+      amqp: {is: routingKey, exchange: {name: eventhub.v1, type: topic, durable: true, autoDelete: false}, bindingVersion: 0.3.0}
+  attendance.recorded:
+    description: Attendance facts feed Reporting and Notification MOCK.
+    publish:
+      operationId: publishAttendance
+      message: {$ref: '#/components/messages/AttendanceRecorded'}
+    subscribe:
+      operationId: projectAttendance
+      message: {$ref: '#/components/messages/AttendanceRecorded'}
+    bindings:
+      amqp: {is: routingKey, exchange: {name: eventhub.v1, type: topic, durable: true, autoDelete: false}, bindingVersion: 0.3.0}
+  certificate.issued:
+    description: Certificate facts feed Reporting and Notification MOCK.
+    publish:
+      operationId: publishCertificate
+      message: {$ref: '#/components/messages/CertificateIssued'}
+    subscribe:
+      operationId: projectCertificate
+      message: {$ref: '#/components/messages/CertificateIssued'}
+    bindings:
+      amqp: {is: routingKey, exchange: {name: eventhub.v1, type: topic, durable: true, autoDelete: false}, bindingVersion: 0.3.0}
+components:
+  securitySchemes:
+    brokerCredentials: {type: userPassword}
+  messages:
+    BillingRequest:
+      name: BillingRequest
+      schemaFormat: application/schema+json;version=draft-07
+      correlationId: {location: '$message.payload#/correlationId'}
+      payload: {$ref: '../schemas/billing-request.json'}
+    BillingResult:
+      name: BillingResult
+      schemaFormat: application/schema+json;version=draft-07
+      correlationId: {location: '$message.payload#/correlationId'}
+      payload: {$ref: '../schemas/billing-result.json'}
+    RegistrationChanged:
+      name: RegistrationChanged
+      schemaFormat: application/schema+json;version=draft-07
+      correlationId: {location: '$message.payload#/correlationId'}
+      payload: {$ref: '../schemas/registration-changed.json'}
+    ActivityChanged:
+      name: ActivityChanged
+      schemaFormat: application/schema+json;version=draft-07
+      correlationId: {location: '$message.payload#/correlationId'}
+      payload: {$ref: '../schemas/activity-changed.json'}
+    AttendanceRecorded:
+      name: AttendanceRecorded
+      schemaFormat: application/schema+json;version=draft-07
+      correlationId: {location: '$message.payload#/correlationId'}
+      payload: {$ref: '../schemas/attendance-recorded.json'}
+    CertificateIssued:
+      name: CertificateIssued
+      schemaFormat: application/schema+json;version=draft-07
+      correlationId: {location: '$message.payload#/correlationId'}
+      payload: {$ref: '../schemas/certificate-issued.json'}

@@ -272,7 +272,7 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 ### Fase 2 — Contratos e fundação técnica
 
 - [x] T010 [P] [Plan:2.1] Definir contratos OpenAPI dos quatro serviços executáveis e da API simulada Identity & Access em `docs/contracts/openapi/event-management.yaml`, `registration.yaml`, `attendance-certification.yaml`, `reporting.yaml` e `identity-mock.yaml`.
-- [ ] T011 [P] [Plan:2.1] Definir contratos e schemas de Billing/Notification mockados e eventos de inscrição, pagamento, presença, certificado e projeções em `docs/contracts/asyncapi/eventhub.yaml` e `docs/contracts/schemas/`.
+- [x] T011 [P] [Plan:2.1] Definir contratos e schemas de Billing/Notification mockados e eventos de inscrição, pagamento, presença, certificado e projeções em `docs/contracts/asyncapi/eventhub.yaml` e `docs/contracts/schemas/`.
 - [ ] T012 [Plan:2.1] Documentar estados, chaves idempotentes, propriedade de dados, migrações e acesso permitido por serviço em `docs/architecture/data-ownership.md`.
 - [ ] T013 [Plan:2.2] Criar `infra/docker-compose.yml` para PostgreSQL, RabbitMQ, quatro serviços executáveis e mocks de Identity/Billing/Notification; adicionar healthchecks, volumes, configuração externa e comandos containerizados de build/testes de aceitação, sem exigir JDK/Maven/Python no host.
 - [ ] T014 [P] [Plan:2.2] Inicializar scaffolds Java 21/Spring Boot para Event Management e Registration em `services/event-management-java/` e `services/registration-java/`, com testes e migrações Flyway.

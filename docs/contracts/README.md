@@ -3,7 +3,9 @@
 The five OpenAPI 3.0.3 documents in [openapi](openapi) describe the four real
 services and Identity mock. [common.yaml](openapi/common.yaml) is a reusable
 component document, not a standalone service. Base URLs come from deployment
-configuration; no gateway is assumed. Billing/Notification messaging is T011.
+configuration; no gateway is assumed. Billing/Notification messaging is defined
+in [asyncapi/eventhub.yaml](asyncapi/eventhub.yaml) and its
+[behavior contract](asyncapi/README.md).
 
 ## HTTP conventions
 

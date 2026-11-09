@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Registration authoritative snapshot v1",
+  "allOf": [
+    {"$ref": "envelope.json"},
+    {
+      "properties": {
+        "eventType": {"const": "registration.changed"},
+        "producer": {"const": "registration"},
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["registrationId", "activityId", "organizationId", "participantId", "status", "refundStatus", "amountMinor", "currency", "activityStartsAt", "activityEndsAt"],
+          "properties": {
+            "registrationId": {"type": "string", "format": "uuid"},
+            "activityId": {"type": "string", "format": "uuid"},
+            "organizationId": {"type": "string", "format": "uuid"},
+            "participantId": {"type": "string", "format": "uuid"},
+            "status": {"enum": ["WAITLISTED", "OFFERED", "PENDING_PAYMENT", "CONFIRMED", "REFUSED", "EXPIRED", "CANCELLED"]},
+            "refundStatus": {"enum": ["NONE", "PENDING", "APPROVED"]},
+            "amountMinor": {"type": "integer", "minimum": 0},
+            "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+            "activityStartsAt": {"type": "string", "format": "date-time"},
+            "activityEndsAt": {"type": "string", "format": "date-time"},
+            "expiresAt": {"type": "string", "format": "date-time"},
+            "offerExpiresAt": {"type": "string", "format": "date-time"}
+          },
+          "allOf": [
+            {"if": {"properties": {"status": {"const": "PENDING_PAYMENT"}}}, "then": {"required": ["expiresAt"]}},
+            {"if": {"properties": {"status": {"const": "OFFERED"}}}, "then": {"required": ["offerExpiresAt"]}}
+          ]
+        }
+      }
+    }
+  ]
+}

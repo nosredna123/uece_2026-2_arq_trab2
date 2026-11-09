@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Billing request v1",
+  "allOf": [
+    {"$ref": "envelope.json"},
+    {
+      "properties": {
+        "eventType": {"const": "billing.requested"},
+        "producer": {"const": "registration"},
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["operationId", "attemptId", "kind", "registrationId", "activityId", "organizationId", "participantId", "amountMinor", "currency"],
+          "properties": {
+            "operationId": {"type": "string", "format": "uuid"},
+            "attemptId": {"type": "string", "format": "uuid"},
+            "kind": {"enum": ["PAYMENT", "REFUND"]},
+            "registrationId": {"type": "string", "format": "uuid"},
+            "activityId": {"type": "string", "format": "uuid"},
+            "organizationId": {"type": "string", "format": "uuid"},
+            "participantId": {"type": "string", "format": "uuid"},
+            "amountMinor": {"type": "integer", "minimum": 0},
+            "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+            "expiresAt": {"type": "string", "format": "date-time"},
+            "originalPaymentId": {"type": "string", "format": "uuid"}
+          },
+          "allOf": [
+            {"if": {"properties": {"kind": {"const": "PAYMENT"}}}, "then": {"required": ["expiresAt"], "properties": {"amountMinor": {"minimum": 1}}}},
+            {"if": {"properties": {"kind": {"const": "REFUND"}}}, "then": {"required": ["originalPaymentId"]}}
+          ]
+        }
+      }
+    }
+  ]
+}
