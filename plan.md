@@ -33,6 +33,7 @@ As escolhas confirmadas para este plano são Java/Spring Boot e Python/FastAPI, 
 - **Contratos**: OpenAPI 3.0 para HTTP e AsyncAPI/JSON Schema para eventos.
 - **Testes**: JUnit/jqwik, pytest/Hypothesis, testes de contrato, integração em containers, concorrência, falhas e mutation testing, conforme [constitution.md](./constitution.md).
 - **Plataforma-alvo**: execução local reproduzível com Docker Compose, sem dependência de nuvem paga ou Kubernetes.
+- **Preparação da máquina**: Git, Docker Engine ou Docker Desktop e plugin Docker Compose v2 são os pré-requisitos obrigatórios. Os quatro serviços, os três mocks, PostgreSQL e RabbitMQ executam em containers; builds e testes de aceitação também devem ter comandos containerizados. JDK, Maven e Python locais são opcionais para desenvolvimento/depuração na IDE, não requisitos para executar o protótipo.
 - **Metas de desempenho e consistência**: validar capacidade sem overbooking sob solicitações simultâneas e comparar o comportamento de consultas/inscrições sob perfil de carga de até 20× a carga normal. A especificação não define latência-alvo; o limite de latência será registrado como decisão de arquitetura antes do teste de carga.
 - **Configuração de negócio**: todo parâmetro que afeta políticas de domínio é carregado e validado a partir de variáveis de ambiente definidas no `.env` local ou equivalente; `.env` é ignorado pelo Git e `.env.example` contém apenas valores fictícios.
 - **Restrições**: não armazenar credenciais reais no repositório; confirmar pagamentos somente após aprovação do Billing mock; liberar reservas recusadas ou expiradas; falhas do Notification mock não revertem inscrições.
@@ -68,6 +69,25 @@ O projeto possui [constitution.md](./constitution.md), que formaliza o processo 
 
 ## Etapas de implementação
 
+### Fase 0 — Preparação e verificação do ambiente
+
+Esta fase prepara a máquina; não substitui nem renumera a **Etapa 0 de saneamento do domínio** de `processo.md`, contemplada na Fase 1 deste plano. Não depende de contratos ou código de domínio. A Fase 2 continua responsável por criar as imagens, os scaffolds e a composição da aplicação.
+
+#### 0.1 Verificar e preparar os pré-requisitos obrigatórios
+- **Requisitos**: RQ07, RQ08
+- **Insumos de desenho**: stack e rota containerizada definidas neste plano; constituição do projeto.
+- **Descrição**: inventariar sistema operacional, arquitetura, ferramentas e versões existentes. Documentar instalação/configuração de Git, Docker Engine ou Docker Desktop e plugin Compose v2 conforme o sistema operacional, consultando as instruções oficiais. Instalar somente componentes ausentes ou incompatíveis, com autorização para alterações de sistema, sem substituir instalações existentes indiscriminadamente. Validar `git --version`, `docker version`, `docker info` e `docker compose version`; verificar o contexto Docker e acesso ao daemon sem conceder permissões excessivas ou alterar portas/serviços de terceiros.
+
+#### 0.2 Documentar execução em containers e desenvolvimento local opcional
+- **Requisitos**: RQ05, RQ08
+- **Insumos de desenho**: distribuição Java/Python dos quatro serviços reais.
+- **Descrição**: definir a execução integral em containers como caminho oficial da equipe e da apresentação. Prever builds multi-stage, dependências e versões fixadas nas imagens; bibliotecas Python instaladas em imagem ou ambiente virtual, nunca globalmente no sistema. Documentar como alternativa opcional JDK 21, Maven Wrapper do projeto e Python em versão compatível com a imagem, com ambiente virtual isolado e seleção de interpretador/JDK na IDE. Essa alternativa não deve se tornar pré-requisito de aceitação nem exigir instalar PostgreSQL/RabbitMQ no host.
+
+#### 0.3 Estabelecer o gate de prontidão da máquina
+- **Requisitos**: RQ07, RQ08
+- **Insumos de desenho**: pré-requisitos de 0.1 e política FailFast.
+- **Descrição**: criar verificação reproduzível que execute um container de diagnóstico descartável e valide execução, rede e volume temporários, recursos disponíveis (CPU, memória e disco) e conflitos nas portas previstas, com mínimos e portas esperadas documentados no guia. Limpar apenas os recursos criados pela verificação. Registrar versões, comandos e resultados sem segredos. Docker/daemon inacessível, teste funcional malsucedido, conflito de porta ou recurso insuficiente bloqueia a prontidão com mensagem acionável e código de saída não zero; não trocar silenciosamente a infraestrutura. Documentar desde já a localização do `.env` local, a proteção de segredos e o futuro `.env.example`; o preenchimento e a validação das variáveis de negócio dependem da Fase 2. A aprovação deste gate comprova prontidão da máquina, não funcionamento de serviços ainda inexistentes.
+
 ### Fase 1 — Saneamento do domínio e arquitetura
 
 #### 1.1 Consolidar glossário, invariantes e cenários BDD
@@ -94,8 +114,8 @@ O projeto possui [constitution.md](./constitution.md), que formaliza o processo 
 
 #### 2.2 Criar fundação executável local
 - **Requisitos**: RQ01, RQ05–RQ08
-- **Insumos de desenho**: stack Java/Python confirmada e contratos da fase 2.1.
-- **Descrição**: criar scaffolds independentes para os quatro serviços, configurações externas e migrações; criar Docker Compose para os serviços, PostgreSQL, RabbitMQ e mocks; adicionar dados sintéticos e verificações de saúde. Usar `infra/.env.example` como modelo para o `.env` local ignorado pelo Git, sem credenciais reais; validar as configurações necessárias no startup e falhar explicitamente se estiverem ausentes ou inválidas.
+- **Insumos de desenho**: stack Java/Python confirmada, gate de prontidão da Fase 0 aprovado e contratos da fase 2.1.
+- **Descrição**: criar scaffolds independentes para os quatro serviços, imagens com build multi-stage, configurações externas e migrações; criar Docker Compose para os serviços, PostgreSQL, RabbitMQ e mocks, com comandos containerizados de build e testes de aceitação; adicionar dados sintéticos e verificações de saúde. Fixar versões de runtimes e dependências e fornecer runtime Java sem ferramentas de build e imagem Python sem dependências exclusivas de teste no estágio de execução. Usar `infra/.env.example` como modelo para o `.env` local ignorado pelo Git, sem credenciais reais; validar as configurações necessárias no startup e falhar explicitamente se estiverem ausentes ou inválidas.
 
 #### 2.3 Estabelecer qualidade contínua
 - **Requisitos**: RQ04–RQ08
@@ -164,6 +184,8 @@ O projeto possui [constitution.md](./constitution.md), que formaliza o processo 
 
 ```text
 docs/
+  development/
+    environment-setup.md
   architecture/
     context-map.md
     containers.puml
@@ -186,6 +208,7 @@ docs/
     asyncapi/
     schemas/
   validation/
+    environment-readiness.md
     evidence.md
     trade-offs.md
 services/
@@ -200,6 +223,8 @@ services/
 infra/
   docker-compose.yml
   .env.example
+scripts/
+  check-environment.sh
 tests/
   contracts/
   integration/
@@ -217,7 +242,7 @@ tests/
   4. Cancelamento/expiração promove automaticamente a fila; eventos de inscrição alimentam check-in e certificado após encerramento da atividade.
   5. Reporting atualiza sua projeção por eventos e produz indicadores; indisponibilidade de Reporting/Notification fake não bloqueia a inscrição.
 - **Stack de validação primária**: JUnit/jqwik e pytest/Hypothesis; PostgreSQL/RabbitMQ com Docker Compose/Testcontainers; validação OpenAPI/AsyncAPI; ArchUnit/import-linter; PIT e ferramenta Python de mutation testing. Alvo de mutation score ≥95% no núcleo de domínio, alinhado a `processo.md`, com exclusões justificadas e explícitas.
-- **Infraestrutura/fallback**: integração primária com PostgreSQL e RabbitMQ reais em containers; testes unitários com doubles determinísticos são fallback rápido, mas não substituem o teste ponta a ponta de aceitação. Pré-requisito da validação completa: Docker funcional.
+- **Infraestrutura e prontidão**: Docker funcional, validado pelo gate da Fase 0; integração com PostgreSQL e RabbitMQ reais em containers. Builds e testes de aceitação têm comandos containerizados e não dependem de JDK/Maven/Python no host. Testes unitários com doubles determinísticos são uma camada de teste isolada, não fallback para aprovar integração quando Docker ou dependências falham.
 - **Navegador**: não aplicável, pois não há UI no escopo. Validar APIs por clientes automatizados e OpenAPI.
 - **Dados de teste**: fixtures sintéticas e isoladas por execução; identificadores de inscrição/evento determinísticos para cenários idempotentes; limpeza/reset de banco entre execuções; sem dados pessoais reais.
 - **Configuração de regras de negócio**: `.env.example` deve declarar `RESERVATION_EXPIRY_MINUTES=30`, `WAITLIST_ENABLED=true`, `WAITLIST_OFFER_EXPIRY_MINUTES=30` (valor demonstrativo a validar no saneamento do domínio), `CERTIFICATE_ELIGIBILITY_POLICY=CHECK_IN`, `CERTIFICATE_ISSUANCE_AFTER_EVENT=true`, `BILLING_MOCK_SCENARIO=APPROVED` e `NOTIFICATION_MOCK_AVAILABLE=true`. Valores efetivos serão lidos do `.env` local ou ambiente e validados; o código não define fallback silencioso. Conteúdo específico de evento (datas, capacidade, preço) é dado persistido, não configuração global. Variáveis operacionais (URLs, portas, banco e broker) também são externas; segredos reais não constam do exemplo.
@@ -227,63 +252,73 @@ tests/
 
 ## Tarefas
 
+### Fase 0 — Preparação e verificação do ambiente
+
+As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das fases 0 a 6. Os marcadores de paralelismo não dispensam o cumprimento das dependências.
+
+- [ ] T001 [Plan:0.1] Documentar inventário, requisitos de versão, instalação/configuração de Git, Docker e Compose v2 por sistema operacional em `docs/development/environment-setup.md`; verificar instalações existentes antes de propor mudanças e exigir autorização para alterações de sistema.
+- [ ] T002 [Plan:0.2] Documentar em `docs/development/environment-setup.md` a rota oficial containerizada e a alternativa opcional de JDK 21, Maven Wrapper, Python/venv e IDE; esclarecer que bancos, broker, builds e testes de aceitação não requerem runtimes locais.
+- [ ] T003 [Plan:0.3] Criar `scripts/check-environment.sh` para verificar versões, daemon/contexto Docker, execução de container, rede, volume, recursos e portas conforme limites documentados; usar recursos temporários próprios, limpá-los e retornar erro explícito em falha, sem fallback silencioso.
+- [ ] T004 [Plan:0.3] Executar o gate de prontidão e registrar versões, recursos e resultados sem segredos em `docs/validation/environment-readiness.md`; documentar localização/proteção do `.env` e vínculo com a configuração entregue na Fase 2 em `docs/development/environment-setup.md` e `README.md`.
+
 ### Fase 1 — Domínio e arquitetura
 
-- [ ] T001 [Plan:1.1] Consolidar glossário, invariantes e cenários Gherkin para inscrição gratuita/paga, recusa, timeout, cancelamento, lista de espera, concorrência, notificações e autorização em `docs/architecture/domain-scenarios.md`; registrar validação do responsável de negócio.
-- [ ] T002 [Plan:1.2] Desenhar grafo de dependências, limites dos sete serviços candidatos, recorte dos quatro implementados e diagrama de containers em `docs/architecture/context-map.md`, `docs/architecture/service-boundaries.md` e `docs/architecture/containers.puml`.
-- [ ] T003 [Plan:1.2] Documentar fluxo de inscrição paga, incluindo recusa, timeout e indisponibilidade de dependências, em `docs/architecture/paid-registration-flow.puml` e `docs/architecture/paid-registration-flow.md`.
-- [ ] T004 [P] [Plan:1.3] Registrar ADRs 001–005 com alternativas, decisão, evidências e consequências em `docs/adr/ADR-001-service-boundaries.md` a `docs/adr/ADR-005-prototype-scope.md`.
-- [ ] T005 [Plan:1.3] Criar os rationales JSON versionados correspondentes aos ADRs em `docs/rationales/ADR-001.json` a `docs/rationales/ADR-005.json`, incluindo `artifact`, `rationale`, `invariants` e `version`.
+- [ ] T005 [Plan:1.1] Consolidar glossário, invariantes e cenários Gherkin para inscrição gratuita/paga, recusa, timeout, cancelamento, lista de espera, concorrência, notificações e autorização em `docs/architecture/domain-scenarios.md`; registrar validação do responsável de negócio.
+- [ ] T006 [Plan:1.2] Desenhar grafo de dependências, limites dos sete serviços candidatos, recorte dos quatro implementados e diagrama de containers em `docs/architecture/context-map.md`, `docs/architecture/service-boundaries.md` e `docs/architecture/containers.puml`.
+- [ ] T007 [Plan:1.2] Documentar fluxo de inscrição paga, incluindo recusa, timeout e indisponibilidade de dependências, em `docs/architecture/paid-registration-flow.puml` e `docs/architecture/paid-registration-flow.md`.
+- [ ] T008 [P] [Plan:1.3] Registrar ADRs 001–005 com alternativas, decisão, evidências e consequências em `docs/adr/ADR-001-service-boundaries.md` a `docs/adr/ADR-005-prototype-scope.md`.
+- [ ] T009 [Plan:1.3] Criar os rationales JSON versionados correspondentes aos ADRs em `docs/rationales/ADR-001.json` a `docs/rationales/ADR-005.json`, incluindo `artifact`, `rationale`, `invariants` e `version`.
 
 ### Fase 2 — Contratos e fundação técnica
 
-- [ ] T006 [P] [Plan:2.1] Definir contratos OpenAPI dos quatro serviços executáveis e da API simulada Identity & Access em `docs/contracts/openapi/event-management.yaml`, `registration.yaml`, `attendance-certification.yaml`, `reporting.yaml` e `identity-mock.yaml`.
-- [ ] T007 [P] [Plan:2.1] Definir contratos e schemas de Billing/Notification mockados e eventos de inscrição, pagamento, presença, certificado e projeções em `docs/contracts/asyncapi/eventhub.yaml` e `docs/contracts/schemas/`.
-- [ ] T008 [Plan:2.1] Documentar estados, chaves idempotentes, propriedade de dados, migrações e acesso permitido por serviço em `docs/architecture/data-ownership.md`.
-- [ ] T009 [Plan:2.2] Criar `infra/docker-compose.yml` para PostgreSQL, RabbitMQ, quatro serviços executáveis e mocks de Identity/Billing/Notification; adicionar healthchecks, volumes e configuração externa.
-- [ ] T010 [P] [Plan:2.2] Inicializar scaffolds Java 21/Spring Boot para Event Management e Registration em `services/event-management-java/` e `services/registration-java/`, com testes e migrações Flyway.
-- [ ] T011 [P] [Plan:2.2] Inicializar scaffolds Python/FastAPI para Attendance & Certification e Reporting em `services/attendance-certification-python/` e `services/reporting-python/`, com testes e migrações Alembic.
-- [ ] T012 [Plan:2.2] Ignorar `.env` real no `.gitignore`, criar `infra/.env.example` com valores de demonstração para todas as variáveis de negócio, infraestrutura e mocks, validar variáveis requeridas/valores no startup, e documentar a cópia do modelo para `.env`, dados sintéticos e comandos em `README.md`; não incluir segredos reais.
-- [ ] T013 [Plan:2.3] Configurar CI em `.github/workflows/ci.yml` para build, testes, linters, contratos, rationales e auditoria semântica do PR contra os rationales; usar credencial protegida, bloquear aprovação em caso de falha/indisponibilidade e permitir merge automático somente após todos os gates aprovados, escalonando alterações de invariantes para validação humana.
-- [ ] T014 [Plan:2.3] Adicionar testes de fronteira arquitetural com ArchUnit nos serviços Java e import-linter nos serviços/mocks Python; falhar o CI em dependências entre domínios/serviços não autorizadas.
+- [ ] T010 [P] [Plan:2.1] Definir contratos OpenAPI dos quatro serviços executáveis e da API simulada Identity & Access em `docs/contracts/openapi/event-management.yaml`, `registration.yaml`, `attendance-certification.yaml`, `reporting.yaml` e `identity-mock.yaml`.
+- [ ] T011 [P] [Plan:2.1] Definir contratos e schemas de Billing/Notification mockados e eventos de inscrição, pagamento, presença, certificado e projeções em `docs/contracts/asyncapi/eventhub.yaml` e `docs/contracts/schemas/`.
+- [ ] T012 [Plan:2.1] Documentar estados, chaves idempotentes, propriedade de dados, migrações e acesso permitido por serviço em `docs/architecture/data-ownership.md`.
+- [ ] T013 [Plan:2.2] Criar `infra/docker-compose.yml` para PostgreSQL, RabbitMQ, quatro serviços executáveis e mocks de Identity/Billing/Notification; adicionar healthchecks, volumes, configuração externa e comandos containerizados de build/testes de aceitação, sem exigir JDK/Maven/Python no host.
+- [ ] T014 [P] [Plan:2.2] Inicializar scaffolds Java 21/Spring Boot para Event Management e Registration em `services/event-management-java/` e `services/registration-java/`, com testes e migrações Flyway.
+- [ ] T015 [P] [Plan:2.2] Inicializar scaffolds Python/FastAPI para Attendance & Certification e Reporting em `services/attendance-certification-python/` e `services/reporting-python/`, com testes e migrações Alembic.
+- Criar os `Dockerfile` de cada serviço e mock como parte de T014/T015 e das tarefas dos respectivos mocks, com estágios de build/teste/execução, versões fixadas e sem ferramentas/dependências exclusivas de build/teste na imagem final.
+- [ ] T016 [Plan:2.2] Ignorar `.env` real no `.gitignore`, criar `infra/.env.example` com valores de demonstração para todas as variáveis de negócio, infraestrutura e mocks, validar variáveis requeridas/valores no startup, e documentar a cópia do modelo para `.env`, dados sintéticos e comandos em `README.md`; não incluir segredos reais.
+- [ ] T017 [Plan:2.3] Configurar CI em `.github/workflows/ci.yml` para build, testes, linters, contratos, rationales e auditoria semântica do PR contra os rationales; usar credencial protegida, bloquear aprovação em caso de falha/indisponibilidade e permitir merge automático somente após todos os gates aprovados, escalonando alterações de invariantes para validação humana.
+- [ ] T018 [Plan:2.3] Adicionar testes de fronteira arquitetural com ArchUnit nos serviços Java e import-linter nos serviços/mocks Python; falhar o CI em dependências entre domínios/serviços não autorizadas.
 
 ### Fase 3 — US1: Identidade simulada e catálogo
 
-- [ ] T015 [US1] [Plan:3.1] Especificar contrato e regras de Identity & Access e escrever testes para token, papéis, organização e acesso por participante em `mocks/identity-access/tests/` e `tests/contracts/identity-mock/`.
-- [ ] T016 [US1] [Plan:3.1] Implementar fake determinístico de identidade/autorização com perfis e organizações sintéticos em `mocks/identity-access/`; rejeitar token inválido e não substituir falha de autenticação por acesso anônimo.
-- [ ] T017 [US1] [Plan:3.2] Escrever testes de contrato e domínio para ciclo de vida de eventos/atividades e consulta pública em `services/event-management-java/src/test/`.
-- [ ] T018 [US1] [Plan:3.2] Implementar persistência, migrações e endpoints de evento/atividade conforme os testes em `services/event-management-java/src/`.
+- [ ] T019 [US1] [Plan:3.1] Especificar contrato e regras de Identity & Access e escrever testes para token, papéis, organização e acesso por participante em `mocks/identity-access/tests/` e `tests/contracts/identity-mock/`.
+- [ ] T020 [US1] [Plan:3.1] Implementar fake determinístico de identidade/autorização com perfis e organizações sintéticos em `mocks/identity-access/`; rejeitar token inválido e não substituir falha de autenticação por acesso anônimo.
+- [ ] T021 [US1] [Plan:3.2] Escrever testes de contrato e domínio para ciclo de vida de eventos/atividades e consulta pública em `services/event-management-java/src/test/`.
+- [ ] T022 [US1] [Plan:3.2] Implementar persistência, migrações e endpoints de evento/atividade conforme os testes em `services/event-management-java/src/`.
 
 ### Fase 4 — US2: Inscrições, capacidade e dependências simuladas
 
-- [ ] T019 [US2] [Plan:4.1] Escrever testes JUnit/jqwik para reserva, cancelamento, inscrição gratuita, idempotência e invariantes de capacidade em `services/registration-java/src/test/`.
-- [ ] T020 [US2] [Plan:4.1] Implementar reserva atômica/idempotente, consulta de estado, cancelamento e atividade gratuita conforme os testes em `services/registration-java/src/`, aplicando o mecanismo decidido no ADR-003.
-- [ ] T021 [US2] [Plan:4.2] Escrever testes property-based e concorrentes para ordenação da fila, cancelamento, expiração e oferta de vaga em `services/registration-java/src/test/`.
-- [ ] T022 [US2] [Plan:4.2] Implementar lista de espera ordenada, promoção automática e prazo configurável para aceitar oferta em `services/registration-java/src/`, conforme os testes.
-- [ ] T023 [US2] [Plan:4.3] Escrever testes para outbox, Billing fake, resultados aprovados/recusados/timeout, duplicidade, expiração e transições em `services/registration-java/src/test/` e `mocks/billing/tests/`.
-- [ ] T024 [Plan:4.3] Implementar outbox transacional e publicação idempotente de solicitação de pagamento em `services/registration-java/src/`, conforme os testes.
-- [ ] T025 [US2] [Plan:4.3] Implementar Billing fake em `mocks/billing/`, consumindo pedidos e publicando resultados de aprovação/recusa/timeout conforme AsyncAPI e configuração de ambiente.
-- [ ] T026 [US2] [Plan:4.3] Implementar consumo do resultado, confirmação somente após aprovação e expiração com prazo padrão de 30 minutos configurável em `services/registration-java/src/`; liberar reservas recusadas/expiradas uma única vez.
-- [ ] T027 [US2] [Plan:4.4] Escrever testes de idempotência, indisponibilidade e reprocessamento para Notification fake em `mocks/notification/tests/` e `tests/integration/`.
-- [ ] T028 [US2] [Plan:4.4] Implementar fake assíncrono de Notification em `mocks/notification/`, registrando entregas simuladas e permitindo simular indisponibilidade sem bloquear o fluxo de inscrição.
+- [ ] T023 [US2] [Plan:4.1] Escrever testes JUnit/jqwik para reserva, cancelamento, inscrição gratuita, idempotência e invariantes de capacidade em `services/registration-java/src/test/`.
+- [ ] T024 [US2] [Plan:4.1] Implementar reserva atômica/idempotente, consulta de estado, cancelamento e atividade gratuita conforme os testes em `services/registration-java/src/`, aplicando o mecanismo decidido no ADR-003.
+- [ ] T025 [US2] [Plan:4.2] Escrever testes property-based e concorrentes para ordenação da fila, cancelamento, expiração e oferta de vaga em `services/registration-java/src/test/`.
+- [ ] T026 [US2] [Plan:4.2] Implementar lista de espera ordenada, promoção automática e prazo configurável para aceitar oferta em `services/registration-java/src/`, conforme os testes.
+- [ ] T027 [US2] [Plan:4.3] Escrever testes para outbox, Billing fake, resultados aprovados/recusados/timeout, duplicidade, expiração e transições em `services/registration-java/src/test/` e `mocks/billing/tests/`.
+- [ ] T028 [Plan:4.3] Implementar outbox transacional e publicação idempotente de solicitação de pagamento em `services/registration-java/src/`, conforme os testes.
+- [ ] T029 [US2] [Plan:4.3] Implementar Billing fake em `mocks/billing/`, consumindo pedidos e publicando resultados de aprovação/recusa/timeout conforme AsyncAPI e configuração de ambiente.
+- [ ] T030 [US2] [Plan:4.3] Implementar consumo do resultado, confirmação somente após aprovação e expiração com prazo padrão de 30 minutos configurável em `services/registration-java/src/`; liberar reservas recusadas/expiradas uma única vez.
+- [ ] T031 [US2] [Plan:4.4] Escrever testes de idempotência, indisponibilidade e reprocessamento para Notification fake em `mocks/notification/tests/` e `tests/integration/`.
+- [ ] T032 [US2] [Plan:4.4] Implementar fake assíncrono de Notification em `mocks/notification/`, registrando entregas simuladas e permitindo simular indisponibilidade sem bloquear o fluxo de inscrição.
 
 ### Fase 5 — US3/US4: Serviços executáveis
 
-- [ ] T029 [US3] [Plan:5.1] Escrever testes de contrato, elegibilidade, check-in idempotente e emissão após encerramento da atividade em `services/attendance-certification-python/tests/`.
-- [ ] T030 [US3] [Plan:5.1] Implementar Attendance & Certification com persistência própria, consumidor de eventos de inscrição, endpoint de check-in idempotente e emissão de certificado elegível em `services/attendance-certification-python/`.
-- [ ] T031 [US4] [Plan:5.2] Escrever testes de contrato, projeção eventual, autorização de organizador e isolamento de falha para Reporting em `services/reporting-python/tests/`.
-- [ ] T032 [US4] [Plan:5.2] Implementar Reporting com projeção de inscrições, pagamentos, ocupação e comparecimento alimentada por eventos e API de consulta autorizada em `services/reporting-python/`; não acessar bancos alheios.
+- [ ] T033 [US3] [Plan:5.1] Escrever testes de contrato, elegibilidade, check-in idempotente e emissão após encerramento da atividade em `services/attendance-certification-python/tests/`.
+- [ ] T034 [US3] [Plan:5.1] Implementar Attendance & Certification com persistência própria, consumidor de eventos de inscrição, endpoint de check-in idempotente e emissão de certificado elegível em `services/attendance-certification-python/`.
+- [ ] T035 [US4] [Plan:5.2] Escrever testes de contrato, projeção eventual, autorização de organizador e isolamento de falha para Reporting em `services/reporting-python/tests/`.
+- [ ] T036 [US4] [Plan:5.2] Implementar Reporting com projeção de inscrições, pagamentos, ocupação e comparecimento alimentada por eventos e API de consulta autorizada em `services/reporting-python/`; não acessar bancos alheios.
 
 ### Fase 6 — Integração e entrega
 
-- [ ] T033 [Plan:6.1] Criar teste ponta a ponta em `tests/integration/paid-registration-flow/` que inicia os quatro serviços e mocks e valida consulta → reserva → pagamento fake aprovado → confirmação → check-in → certificado → projeção de relatório.
-- [ ] T034 [Plan:6.1] Criar cenários de integração para recusa, expiração, promoção de lista de espera, Notification fake indisponível e Reporting indisponível em `tests/integration/failure-scenarios/`.
-- [ ] T035 [Plan:6.1] Executar teste de concorrência em `tests/concurrency/` com capacidade controlada e concorrência reproduzível; registrar que reservas confirmadas/ofertadas nunca superam a capacidade.
-- [ ] T036 [Plan:6.1] Configurar mutation testing para os quatro serviços executáveis e CI; exigir score ≥95% no núcleo de domínio ou documentar cada exclusão aprovada.
-- [ ] T037 [Plan:6.1] Criar ensaio de carga repetível em `tests/load/` e registrar baseline, perfil de até 20× e resultados comparativos de consultas/inscrições em `docs/validation/evidence.md`.
-- [ ] T038 [Plan:6.2] Propagar correlation/trace ID em APIs, mensagens e logs estruturados nos quatro serviços e mocks, incluindo `registrationId` para diagnóstico ponta a ponta.
-- [ ] T039 [Plan:6.2] Completar `README.md` com requisitos, configuração segura, `.env.example`, comandos de build/teste/execução, dados de demonstração, APIs e limites de serviços reais versus mocks.
-- [ ] T040 [Plan:6.2] Consolidar diagramas, ADRs, rationales, evidências de teste e análise dos trade-offs em `docs/validation/`; incluir declaração de uso de IA e roteiro de demonstração/defesa.
+- [ ] T037 [Plan:6.1] Criar teste ponta a ponta em `tests/integration/paid-registration-flow/` que inicia os quatro serviços e mocks e valida consulta → reserva → pagamento fake aprovado → confirmação → check-in → certificado → projeção de relatório.
+- [ ] T038 [Plan:6.1] Criar cenários de integração para recusa, expiração, promoção de lista de espera, Notification fake indisponível e Reporting indisponível em `tests/integration/failure-scenarios/`.
+- [ ] T039 [Plan:6.1] Executar teste de concorrência em `tests/concurrency/` com capacidade controlada e concorrência reproduzível; registrar que reservas confirmadas/ofertadas nunca superam a capacidade.
+- [ ] T040 [Plan:6.1] Configurar mutation testing para os quatro serviços executáveis e CI; exigir score ≥95% no núcleo de domínio ou documentar cada exclusão aprovada.
+- [ ] T041 [Plan:6.1] Criar ensaio de carga repetível em `tests/load/` e registrar baseline, perfil de até 20× e resultados comparativos de consultas/inscrições em `docs/validation/evidence.md`.
+- [ ] T042 [Plan:6.2] Propagar correlation/trace ID em APIs, mensagens e logs estruturados nos quatro serviços e mocks, incluindo `registrationId` para diagnóstico ponta a ponta.
+- [ ] T043 [Plan:6.2] Completar `README.md` com requisitos, configuração segura, `.env.example`, comandos de build/teste/execução, dados de demonstração, APIs e limites de serviços reais versus mocks.
+- [ ] T044 [Plan:6.2] Consolidar diagramas, ADRs, rationales, evidências de teste e análise dos trade-offs em `docs/validation/`; incluir declaração de uso de IA e roteiro de demonstração/defesa.
 
 ## Mapeamento de requisitos
 
@@ -311,10 +346,10 @@ tests/
 | RQ02 | Escalabilidade seletiva de consultas/inscrições | 1.2, 3.2, 4.1, 6.1 | desenho de escalabilidade e ensaio comparativo até 20× |
 | RQ03 | Resiliência a falhas de notificações/relatórios | 1.2, 4.3, 4.4, 5.2, 6.1 | Notification fake e Reporting executável/projeção; evidência de falha isolada |
 | RQ04 | Consistência e recuperação de reservas/pagamentos | 1.3, 2.1, 4.1–4.3, 6.1 | ADR, outbox, idempotência e testes de estado |
-| RQ05 | Interoperabilidade por contratos explícitos | 1.2, 2.1, 3.2, 4.3–4.4, 5.1–5.2 | OpenAPI, AsyncAPI/JSON Schema e testes de contrato |
+| RQ05 | Interoperabilidade por contratos explícitos | 0.2, 1.2, 2.1, 3.2, 4.3–4.4, 5.1–5.2 | rota de execução Java/Python documentada, OpenAPI, AsyncAPI/JSON Schema e testes de contrato |
 | RQ06 | Rastreabilidade e diagnóstico ponta a ponta | 1.3, 5.2, 6.2 | projeções de Reporting, correlation/trace ID e logs estruturados |
-| RQ07 | Autenticação, autorização e proteção de segredos | 1.3, 2.2, 3.1, 6.2 | identidade, controle multi-organização e verificação de configuração |
-| RQ08 | Execução local reproduzível | 2.2, 6.2 | Docker Compose, `.env.example` e README |
+| RQ07 | Autenticação, autorização e proteção de segredos | 0.1, 0.3, 1.3, 2.2, 3.1, 6.2 | pré-verificação segura do host, identidade, controle multi-organização e verificação de configuração |
+| RQ08 | Execução local reproduzível | 0.1–0.3, 2.2, 6.2 | guia de ambiente, gate de prontidão, imagens, Docker Compose, `.env.example` e README |
 
 ## Complexidade e desvios deliberados
 

@@ -278,6 +278,8 @@ requirements:
       phase: "Phase-2"
       phase_name: "Contratos e fundação técnica"
       items:
+        - item_id: "0.2"
+          description: "Documentar execução em containers e desenvolvimento local opcional."
         - item_id: "2.1"
           description: "Especificar APIs, eventos e dados."
         - item_id: "3.2"
@@ -310,6 +312,10 @@ requirements:
       phase: "Phase-1"
       phase_name: "Saneamento do domínio e arquitetura"
       items:
+        - item_id: "0.1"
+          description: "Verificar e preparar os pré-requisitos obrigatórios."
+        - item_id: "0.3"
+          description: "Estabelecer o gate de prontidão da máquina."
         - item_id: "1.3"
           description: "Registrar decisões e rationales."
         - item_id: "2.2"
@@ -326,11 +332,17 @@ requirements:
       phase: "Phase-2"
       phase_name: "Contratos e fundação técnica"
       items:
+        - item_id: "0.1"
+          description: "Verificar e preparar os pré-requisitos obrigatórios."
+        - item_id: "0.2"
+          description: "Documentar execução em containers e desenvolvimento local opcional."
+        - item_id: "0.3"
+          description: "Estabelecer o gate de prontidão da máquina."
         - item_id: "2.2"
           description: "Criar fundação executável local."
         - item_id: "6.2"
           description: "Finalizar segurança, observabilidade e documentação."
-    notes: "Docker Compose e README."
+    notes: "Fase 0 valida a máquina; Fase 2 fornece imagens e Compose; runtimes Java/Python locais são opcionais."
 
 missing_requirements: []
 orphan_plan_items: []
