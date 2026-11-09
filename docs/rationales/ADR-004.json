@@ -1,0 +1,15 @@
+{
+  "artifact": "docs/adr/ADR-004-messaging-and-resilience.md",
+  "version": "1.0.0",
+  "rationale": "Use transactional outboxes, persistent RabbitMQ messages, durable independent queues, publisher confirms and unroutable-message detection to recover commit/publication gaps. Consumers commit deduplication and business state before manual acknowledgment. At-least-once delivery plus idempotent effects is simpler than distributed transactions or a saga platform. Configurable bounded-delay backoff, observable quarantine and authorized repair/replay preserve failures rather than masking them.",
+  "invariants": [
+    "No producer reports publication complete before routing and publisher confirmation.",
+    "No consumer acknowledges successful processing before durable deduplication and state commit.",
+    "Repeated delivery never duplicates financial or registration effects; stale messages cannot regress projections.",
+    "Expired unsent payment requests are durably suppressed; in-flight late approvals require manual compensation.",
+    "Missing Billing approval never confirms a paid reservation.",
+    "Notification outages and Reporting lag cannot roll back or block registration.",
+    "Transport quarantine never cancels a pending refund obligation; automatic unlimited retries resume after repair.",
+    "Correlation, retry, outbox age and quarantine diagnostics are explicit and exclude secrets."
+  ]
+}

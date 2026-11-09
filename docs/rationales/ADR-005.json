@@ -1,0 +1,15 @@
+{
+  "artifact": "docs/adr/ADR-005-prototype-scope.md",
+  "version": "1.0.0",
+  "rationale": "Implement four persistent domain services and three deterministic contract-backed mocks under local Docker Compose. Retain protected-operation authorization despite simulated identity; derive principals from trusted identity validation, not command fields. Keep production user lifecycle, real settlement/delivery, percentage attendance, gateway, Kubernetes and vector infrastructure outside scope. Git-versioned rationale JSON provides decision memory without premature infrastructure.",
+  "invariants": [
+    "Participants access only their own resources; organizers are restricted to their organization.",
+    "Global administrators manage events/activities and read reports across organizations but do not administer users or organizations.",
+    "Invalid identity or unavailable Identity fails closed; protected requests never downgrade to anonymous access.",
+    "Internal service operations and mock controls are not public authorization bypasses.",
+    "Certificate issuance requires confirmed registration, an idempotent check-in and completed activity.",
+    "Business and operational configuration is external and validated without silent permissive defaults.",
+    "Real credentials and .env files are never committed or logged.",
+    "Mocks and documentation checks cannot substitute for real database/broker integration evidence or the required 95 percent domain mutation gate."
+  ]
+}

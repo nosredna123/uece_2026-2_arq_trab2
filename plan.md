@@ -267,7 +267,7 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 - [x] T006 [Plan:1.2] Desenhar grafo de dependências, limites dos sete serviços candidatos, recorte dos quatro implementados e diagrama de containers em `docs/architecture/context-map.md`, `docs/architecture/service-boundaries.md` e `docs/architecture/containers.puml`.
 - [x] T007 [Plan:1.2] Documentar fluxo de inscrição paga, incluindo recusa, timeout e indisponibilidade de dependências, em `docs/architecture/paid-registration-flow.puml` e `docs/architecture/paid-registration-flow.md`.
 - [x] T008 [P] [Plan:1.3] Registrar ADRs 001–005 com alternativas, decisão, evidências e consequências em `docs/adr/ADR-001-service-boundaries.md` a `docs/adr/ADR-005-prototype-scope.md`.
-- [ ] T009 [Plan:1.3] Criar os rationales JSON versionados correspondentes aos ADRs em `docs/rationales/ADR-001.json` a `docs/rationales/ADR-005.json`, incluindo `artifact`, `rationale`, `invariants` e `version`.
+- [x] T009 [Plan:1.3] Criar os rationales JSON versionados correspondentes aos ADRs em `docs/rationales/ADR-001.json` a `docs/rationales/ADR-005.json`, incluindo `artifact`, `rationale`, `invariants` e `version`.
 
 ### Fase 2 — Contratos e fundação técnica
 

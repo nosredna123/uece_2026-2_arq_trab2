@@ -1,0 +1,13 @@
+{
+  "artifact": "docs/adr/ADR-002-data-ownership.md",
+  "version": "1.0.0",
+  "rationale": "Use four isolated logical PostgreSQL databases with restricted owner credentials in one local cluster. Event Management atomically freezes and returns an idempotent admission-capacity snapshot before Registration initializes its ledger. A failed local initialization retries the same remote snapshot. The user approved immutable capacity after admission activation instead of a distributed live-update protocol. This avoids stale capacity reductions causing overbooking without cross-database transactions.",
+  "invariants": [
+    "No runtime service reads or changes another service's database.",
+    "Admission cannot begin without the frozen activity capacity and stable snapshot/version.",
+    "Capacity changes after activation are explicitly rejected, even when occupancy returns to zero.",
+    "Conflicting snapshots cannot overwrite an existing Registration ledger.",
+    "Missing activity validation or availability dependencies never produce permissive admission or fabricated free counts.",
+    "Remote freeze survives local failure and retries return the same snapshot."
+  ]
+}

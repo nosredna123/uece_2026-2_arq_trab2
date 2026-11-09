@@ -1,0 +1,38 @@
+batch_id: "T009"
+completed_tasks: ["T009"]
+blocked_tasks: []
+files_changed:
+  T009:
+    - {file: "docs/rationales/ADR-001.json", change_type: "created", description: "Capability boundaries rationale."}
+    - {file: "docs/rationales/ADR-002.json", change_type: "created", description: "Data isolation and capacity freeze rationale."}
+    - {file: "docs/rationales/ADR-003.json", change_type: "created", description: "Atomic locking and state transition rationale."}
+    - {file: "docs/rationales/ADR-004.json", change_type: "created", description: "Durable messaging and recovery rationale."}
+    - {file: "docs/rationales/ADR-005.json", change_type: "created", description: "Prototype and security rationale."}
+    - {file: "docs/rationales/README.md", change_type: "created", description: "Versioning and validation instructions."}
+    - {file: "tests/docs/test_rationales.py", change_type: "created", description: "Inventory, shape, reference and version checks."}
+    - {file: "plan.md", change_type: "modified", description: "Marked T009 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Recorded traceability."}
+upstream_artifacts_consumed:
+  T009:
+    - {artifact: "docs/adr/ADR-001-service-boundaries.md", used_for: "Boundary rationale and invariants."}
+    - {artifact: "docs/adr/ADR-002-data-ownership.md", used_for: "Ownership and frozen capacity."}
+    - {artifact: "docs/adr/ADR-003-registration-consistency.md", used_for: "Locking, deadline and refund invariants."}
+    - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "At-least-once recovery."}
+    - {artifact: "docs/adr/ADR-005-prototype-scope.md", used_for: "Scope and authorization."}
+evidence_mapping:
+  T009:
+    - upstream: "plan.md task T009; constitution.md section 1.1"
+      output: "docs/rationales/ADR-001.json through ADR-005.json"
+      evidence: "Six pytest checks validate inventory, required fields, references and semantic versions."
+traceability:
+  - {requirement: "RQ01, RQ04-RQ08", plan_item: "1.3", task: "T009", files: ["docs/rationales/ADR-001.json", "docs/rationales/ADR-002.json", "docs/rationales/ADR-003.json", "docs/rationales/ADR-004.json", "docs/rationales/ADR-005.json"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings: ["Structural rationale checks do not prove semantic audit adherence or application behavior."]
+test_results:
+  T009:
+    command: "python3 -m pytest -x; git diff --check"
+    passed: 6
+    failed: 0
+    skipped: 0
+    failures: []

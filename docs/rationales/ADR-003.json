@@ -1,0 +1,15 @@
+{
+  "artifact": "docs/adr/ADR-003-registration-consistency.md",
+  "version": "1.0.0",
+  "rationale": "Serialize all capacity-affecting transitions with a PostgreSQL SELECT FOR UPDATE lock on the activity ledger at READ COMMITTED isolation. Acquire the activity lock before registration/offer locks; perform no network I/O while holding it. Commit state, idempotency records and outbox atomically. This protects the multi-record FIFO and refund rules with one local authority instead of distributed locking, accepting contention on hot activities pending load evidence.",
+  "invariants": [
+    "Occupied confirmed registrations, pending reservations and active offers never exceed frozen capacity.",
+    "Paid confirmation requires a correlated approval applied before the persisted expiry, checked using the current database wall clock after locking.",
+    "Expiry, refusal, cancellation and repeated results release or promote a slot at most once.",
+    "Released slots are offered to eligible FIFO entries atomically before new admissions can bypass them.",
+    "Paid-offer acceptance transfers one occupied slot to a new payment reservation without double counting.",
+    "Paid cancellation retains confirmed state and occupancy until refund approval; failed refunds retry automatically without limit.",
+    "Late approvals cannot resurrect terminal registrations and require manual compensation.",
+    "Idempotency-key reuse with a different payload is a conflict, not a second mutation."
+  ]
+}

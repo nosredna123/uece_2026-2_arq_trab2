@@ -1,0 +1,11 @@
+{
+  "artifact": "docs/adr/ADR-001-service-boundaries.md",
+  "version": "1.0.0",
+  "rationale": "Group by business capability rather than by individual requirements. Keep Registration, capacity, expiry and FIFO in one transactional authority; deploy Event Management, Registration, Attendance & Certification and Reporting independently across Java and Python. Identity & Access, Billing and Notification remain explicit executable mocks. This demonstrates selective scaling and failure isolation without implementing seven production domains.",
+  "invariants": [
+    "Registration alone controls occupied slots and payment-dependent confirmation.",
+    "Notification and Reporting are independent downstream consumers, never synchronous registration gates.",
+    "Services integrate through explicit contracts, not cross-service SQL or shared domain libraries.",
+    "Four real services and three mocks must remain distinguishable in implementation and evidence."
+  ]
+}
