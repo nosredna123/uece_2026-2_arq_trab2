@@ -1,6 +1,6 @@
 # EventHub service boundaries
 
-This boundary proposal follows the business-approved
+These accepted prototype boundaries follow [ADR-001](../adr/ADR-001-service-boundaries.md) and the business-approved
 [domain scenarios](domain-scenarios.md). It distinguishes service ownership
 from deployment: local containers may share PostgreSQL and RabbitMQ, but no
 service may read another service's tables.
@@ -19,7 +19,7 @@ service may read another service's tables.
 
 ## Executable services and data ownership
 
-The four implemented services each own a separate logical database or schema,
+The four implemented services each own a separate logical database,
 database principal/credentials, migrations, and persistence lifecycle within
 the shared local PostgreSQL cluster:
 
@@ -30,11 +30,12 @@ the shared local PostgreSQL cluster:
 | Attendance & Certification | Consumed registration eligibility facts, check-ins, activity completion/eligibility facts, issued certificates, consumer deduplication state. | Attendance & Certification only |
 | Reporting | Event-fed registration/payment/occupancy/attendance/certificate projection, source-event offsets/deduplication state. | Reporting only |
 
-This table states logical ownership, not a physical table design. The
-consistency mechanism that reconciles Event Management's configured activity
-capacity with Registration's reservation ledger, database/schema provisioning,
-and exact event/API contracts are recorded in the corresponding ADRs and
-contract/data-model tasks before implementation. Cross-service SQL, shared
+This table states logical ownership, not a physical table design.
+[ADR-002](../adr/ADR-002-data-ownership.md) selects separate logical databases and
+a capacity snapshot frozen by Event Management before Registration opens
+admission. [ADR-003](../adr/ADR-003-registration-consistency.md) selects per-activity
+row locking for Registration's ledger and FIFO transitions. Provisioning details
+and exact event/API contracts remain for T010-T012. Cross-service SQL, shared
 domain tables, and shared credentials are prohibited.
 
 Identity, Billing, and Notification mocks may keep only the minimal synthetic
@@ -53,8 +54,9 @@ the four executable services' domain data.
 3. **Registration is the reservation authority:** Event Management owns
    configured activity metadata; Registration owns reservations and occupied
    slots. A request to register must use an explicit, agreed activity/capacity
-   contract; no cross-database read is allowed. ADR-002/003 must settle
-   synchronization and atomic admission details.
+   contract; no cross-database read is allowed. ADR-002/003 settle snapshot
+   initialization, capacity immutability and local atomic admission; schemas
+   and concrete states remain contract work.
 4. **Authentication is not authorization:** the Identity mock supplies
    synthetic identity/role/organization facts; each protected service enforces
    participant ownership, organizer organization scope, or the approved global
@@ -75,4 +77,3 @@ the four executable services' domain data.
   shared cross-service domain library, or shared database schema.
 - Percentage-based certificate attendance measurement; approved eligibility
   requires a confirmed registration, one check-in, and completed activity.
-

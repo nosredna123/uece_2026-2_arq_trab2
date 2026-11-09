@@ -1,7 +1,7 @@
 # EventHub context map
 
-**Status:** candidate architecture for the prototype  
-**Domain baseline:** [approved scenarios](domain-scenarios.md), version 1.0.0  
+**Status:** accepted prototype architecture; see [ADR-001](../adr/ADR-001-service-boundaries.md)\
+**Domain baseline:** [approved scenarios](domain-scenarios.md), version 1.1.0\
 **Traceability:** RF01–RF11, RN01–RN07, RQ01–RQ08
 
 EventHub evaluates seven candidate service boundaries. The runnable prototype
@@ -80,7 +80,7 @@ cross-service access.
 |---|---|---|---|
 | Participant / organizer | Event Management | HTTP API | Public published catalog; event/activity management within authorization scope. |
 | Participant | Registration | HTTP API | Request, query, and cancel own registrations; view reservation/offer state. |
-| Registration | Event Management | Explicit API/contract to be finalized | Obtain published activity rules/capacity without reading Event Management data directly. Exact contract and capacity-update policy remain for ADRs/contracts (T008/T010/T012). |
+| Registration | Event Management | Explicit API/contract to be finalized | Validate current activity eligibility and obtain the frozen admission-capacity snapshot under [ADR-002](../adr/ADR-002-data-ownership.md). No direct database access. Wire details remain for T010/T012. |
 | Protected domain services | Identity & Access mock | Identity validation contract | Resolve synthetic identity, role, and organization scope; each domain service enforces authorization. Exact token/API shape is T019/T020. |
 | Registration | RabbitMQ | Asynchronous event publication | Persist registration/payment intent in its own outbox, then publish; do not make confirmation depend on Notification or Reporting. |
 | Billing mock | RabbitMQ / Registration | Asynchronous request and result | Consume payment requests and publish configured approval, refusal, or timeout; Registration alone applies the corresponding state transition. |

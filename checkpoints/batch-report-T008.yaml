@@ -1,0 +1,103 @@
+batch_id: "T008"
+completed_tasks: ["T008"]
+blocked_tasks: []
+files_changed:
+  T008:
+    - file: "docs/adr/ADR-001-service-boundaries.md"
+      change_type: "created"
+      description: "Capability boundaries, alternatives, evidence and consequences."
+    - file: "docs/adr/ADR-002-data-ownership.md"
+      change_type: "created"
+      description: "Separate logical databases and recoverable frozen-capacity snapshot."
+    - file: "docs/adr/ADR-003-registration-consistency.md"
+      change_type: "created"
+      description: "Activity row locks, atomic state/idempotency/outbox, FIFO and deadline races."
+    - file: "docs/adr/ADR-004-messaging-and-resilience.md"
+      change_type: "created"
+      description: "At-least-once outbox/inbox, confirms/ack, isolation, retries and quarantine."
+    - file: "docs/adr/ADR-005-prototype-scope.md"
+      change_type: "created"
+      description: "Real/mocked scope, minimum security, configuration and limitations."
+    - file: "docs/architecture/domain-scenarios.md"
+      change_type: "modified"
+      description: "Baseline 1.1.0 records the explicitly approved capacity freeze and scenario."
+    - file: "docs/architecture/context-map.md"
+      change_type: "modified"
+      description: "References accepted ADRs instead of unresolved capacity policy."
+    - file: "docs/architecture/service-boundaries.md"
+      change_type: "modified"
+      description: "Aligns ownership and atomic admission descriptions with ADR-002/003."
+    - file: "docs/architecture/paid-registration-flow.md"
+      change_type: "modified"
+      description: "Aligns baseline, capacity, outbox recovery and acknowledgment policy."
+    - file: "docs/architecture/paid-registration-flow.puml"
+      change_type: "modified"
+      description: "Distinguishes recorded decisions from pending wire/configuration details."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Records chosen mechanisms and marks T008 complete; T009 remains pending."
+    - file: "checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Adds T008 completion, evidence and requirement trace."
+upstream_artifacts_consumed:
+  T008:
+    - artifact: "plan.md"
+      used_for: "Five ADR names, phase 1.3 scope, requirements and task separation from T009."
+    - artifact: "constitution.md"
+      used_for: "KISS, data isolation, fail-fast, security, configuration and validation obligations."
+    - artifact: "processo.md"
+      used_for: "Decision alternatives/evidence and rationale governance without premature infrastructure."
+    - artifact: "especificação-preliminar-sistema.md"
+      used_for: "Architectural forces, representative implementation and explicit trade-offs."
+    - artifact: "docs/architecture/domain-scenarios.md"
+      used_for: "Approved capacity, payment/refund, FIFO, identity and certificate invariants."
+    - artifact: "docs/architecture/context-map.md"
+      used_for: "Candidate boundaries and integration graph."
+    - artifact: "docs/architecture/service-boundaries.md"
+      used_for: "Existing data owners and unresolved admission/capacity decisions."
+    - artifact: "docs/architecture/paid-registration-flow.md"
+      used_for: "Outage, duplicate/late result and recovery obligations."
+    - artifact: "docs/architecture/paid-registration-flow.puml"
+      used_for: "Preserve the sequence and update its pending-decision note."
+human_decisions:
+  date: "2026-11-09"
+  source: "User confirmation through the T008 decision form"
+  approved:
+    - "Freeze activity capacity after admission activation; other metadata remains editable."
+    - "Serialize Registration transitions with per-activity PostgreSQL row locks."
+    - "Use durable at-least-once outbox/consumer recovery and observable quarantine; unlimited refund business retries remain unchanged."
+evidence_mapping:
+  T008:
+    - upstream: "plan.md#13-registrar-decisoes-e-rationales"
+      output: "docs/adr/ADR-001-service-boundaries.md through ADR-005-prototype-scope.md"
+      evidence: "Five documents contain context, alternatives, decision, evidence/justification, consequences and validation follow-up."
+    - upstream: "docs/architecture/domain-scenarios.md"
+      output: "docs/adr/ADR-002-data-ownership.md and ADR-003-registration-consistency.md"
+      evidence: "Capacity snapshot, row-lock discipline, deadline and refund/FIFO rules preserve approved invariants."
+    - upstream: "docs/architecture/paid-registration-flow.md"
+      output: "docs/adr/ADR-004-messaging-and-resilience.md"
+      evidence: "Commit/publication crash gaps, duplicates, broker failure and downstream isolation have explicit recovery policies."
+traceability:
+  - requirement: "RQ01, RQ04-RQ08, RN01-RN07"
+    plan_item: "1.3"
+    task: "T008"
+    files:
+      - "docs/adr/ADR-001-service-boundaries.md"
+      - "docs/adr/ADR-002-data-ownership.md"
+      - "docs/adr/ADR-003-registration-consistency.md"
+      - "docs/adr/ADR-004-messaging-and-resilience.md"
+      - "docs/adr/ADR-005-prototype-scope.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "Repository-only python3 -m pytest -x collected zero tests (exit 5); no application suite/build exists yet."
+  - "Documentation checks validate artifacts, not running services, crash recovery, security enforcement or throughput."
+  - "T009 JSON rationales remain pending and are required before downstream implementation; T010-T012/T016 own wire/configuration details."
+test_results:
+  T008:
+    command: "python3 -m pytest -x . <session>/files/test_t008_docs.py; git diff --check"
+    passed: 9
+    failed: 0
+    skipped: 0
+    failures: []

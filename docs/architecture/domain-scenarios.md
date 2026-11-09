@@ -3,7 +3,7 @@
 **Estado de validação de negócio:** APROVADO  
 **Validador responsável:** Amg - UECE  
 **Validação:** 2026-11-09  
-**Versão:** 1.0.0  
+**Versão:** 1.1.0\
 **Base:** especificação preliminar do EventHub e decisões de escopo registradas em `plan.md`
 
 Este documento consolida vocabulário e comportamentos verificáveis para orientar
@@ -98,6 +98,12 @@ explícitos.
     inválido não vira fallback permissivo silencioso. Prazos e percentual de
     reembolso aprovados são configurações globais externas; override por evento
     não está aprovado.
+14. **Capacidade congelada (RF03/RF06/RN01):** a capacidade pode ser editada antes
+    da ativação das inscrições. A ativação congela a capacidade da atividade;
+    alterações posteriores são rejeitadas, mesmo se a ocupação voltar a zero.
+    Outros metadados continuam editáveis conforme suas regras. Esta limitação
+    do protótipo foi aprovada pelo usuário em T008 e está detalhada no
+    [ADR-002](../adr/ADR-002-data-ownership.md).
 
 ## Cenários Gherkin aprovados
 
@@ -306,6 +312,19 @@ Funcionalidade: Presença e certificado
     Então o certificado pode ser emitido uma única vez
 ```
 
+## Cenário adicional aprovado em T008
+
+```gherkin
+# language: pt
+Funcionalidade: Capacidade congelada após ativação
+  Cenário: Rejeitar alteração da capacidade após ativar as inscrições
+    Dado que a capacidade da atividade foi congelada na ativação das inscrições
+    E que a ocupação atual é zero
+    Quando o organizador solicita alterar a capacidade
+    Então a alteração é rejeitada explicitamente
+    E a capacidade congelada permanece inalterada
+```
+
 ## Decisões validadas pelo responsável de negócio
 
 As seguintes decisões foram deliberadas pelo responsável e integram a versão
@@ -332,7 +351,10 @@ aprovada:
    por evento de políticas foi aprovado.
 
 **Registro de validação:** Amg - UECE, responsável de negócio; decisões
-validadas uma por vez e versão consolidada aprovada em 2026-11-09.
+1-8 validadas uma por vez e versão 1.0.0 consolidada aprovada em 2026-11-09.
+Na mesma data, em T008, o usuário aprovou explicitamente a capacidade congelada
+após ativação, incorporada como invariante 14 e cenário adicional na versão
+1.1.0. As regras anteriormente aprovadas foram preservadas.
 
 ## Rastreabilidade
 
@@ -340,7 +362,7 @@ validadas uma por vez e versão consolidada aprovada em 2026-11-09.
 |---|---|
 | RF01 | Identity mock e autenticação para operações protegidas |
 | RF02 | Cenários de administração autorizada e isolamento por organização |
-| RF03 | Administração de evento e atividades pela organização responsável |
+| RF03 | Administração de evento e atividades pela organização responsável; capacidade congelada após ativação |
 | RF04 | Consulta pública expõe somente eventos publicados |
 | RF05 | Inscrição gratuita/paga, consulta própria, cancelamento e reembolso |
 | RF06 | Capacidade, concorrência, lista FIFO, oferta e expiração |

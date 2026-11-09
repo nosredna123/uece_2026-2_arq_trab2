@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 7
+  completed_tasks: 8
   in_progress_tasks: 0
-  pending_tasks: 37
-  completion_percentage: 15.91
+  pending_tasks: 36
+  completion_percentage: 18.18
 
 tasks:
   - task_id: "T001"
@@ -228,8 +228,70 @@ tasks:
       requirements: ["RF04-RF08", "RN01-RN05", "RQ03-RQ06"]
       full_trace: "RF/RN/RQ -> Phase-1.2 -> T007 -> paid-registration-flow.md/paid-registration-flow.puml"
 
-pending_tasks:
   - task_id: "T008"
+    description: "Registrar cinco ADRs de fronteiras, dados, consistência, mensageria e escopo."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/adr/ADR-001-service-boundaries.md"
+          changes:
+            - change_type: "added"
+              description: "Recorded capability boundaries, alternatives and independent deployment trade-offs."
+        - file: "docs/adr/ADR-002-data-ownership.md"
+          changes:
+            - change_type: "added"
+              description: "Selected isolated logical databases and human-approved frozen admission capacity."
+        - file: "docs/adr/ADR-003-registration-consistency.md"
+          changes:
+            - change_type: "added"
+              description: "Selected per-activity row locking, atomic state/idempotency/outbox and deadline/FIFO rules."
+        - file: "docs/adr/ADR-004-messaging-and-resilience.md"
+          changes:
+            - change_type: "added"
+              description: "Selected at-least-once delivery, confirms, commit-before-ack, deduplication and observable recovery."
+        - file: "docs/adr/ADR-005-prototype-scope.md"
+          changes:
+            - change_type: "added"
+              description: "Recorded four services/three mocks, authorization, external configuration and limits."
+        - file: "docs/architecture/domain-scenarios.md"
+          changes:
+            - change_type: "modified"
+              description: "Versioned the human-approved frozen-capacity constraint as baseline 1.1.0."
+        - file: "docs/architecture/context-map.md"
+          changes:
+            - change_type: "modified"
+              description: "Linked accepted boundary and capacity decisions."
+        - file: "docs/architecture/service-boundaries.md"
+          changes:
+            - change_type: "modified"
+              description: "Replaced pending ownership/concurrency choices with ADR decisions."
+        - file: "docs/architecture/paid-registration-flow.md"
+          changes:
+            - change_type: "modified"
+              description: "Aligned capacity, transaction and acknowledgment notes with ADR-002/003/004."
+        - file: "docs/architecture/paid-registration-flow.puml"
+          changes:
+            - change_type: "modified"
+              description: "Updated the decision-status note without changing the sequence."
+        - file: "plan.md"
+          changes:
+            - change_type: "modified"
+              description: "Recorded chosen capacity/concurrency policy and marked only T008 complete."
+    verification:
+      build_passed: null
+      test_results:
+        command: "python3 -m pytest -x . <session>/files/test_t008_docs.py"
+        passed: 9
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Nine documentation checks cover ADR sections, local links, approved domain constraint, diagram structure and checkpoint consistency. Initial repository-only pytest -x collected zero tests (exit 5); no application tests/build exist. These checks do not prove runtime behavior."
+    upstream_trace:
+      plan_item: "1.3"
+      requirements: ["RQ01", "RQ04-RQ08", "RN01-RN07"]
+      full_trace: "RQ/RN -> Phase-1.3 -> T008 -> docs/adr/ADR-001..005 and aligned architecture documents"
+
+pending_tasks:
   - task_id: "T009"
   - task_id: "T010"
   - task_id: "T011"
@@ -333,9 +395,23 @@ traceability_chain:
       - "docs/architecture/paid-registration-flow.puml"
     status: "complete"
 
+  - chain_id: "TRACE-T008"
+    requirement: "RQ01/RQ04-RQ08/RN01-RN07"
+    plan_phase: "Phase-1"
+    plan_item: "1.3"
+    tasks: ["T008"]
+    files:
+      - "docs/adr/ADR-001-service-boundaries.md"
+      - "docs/adr/ADR-002-data-ownership.md"
+      - "docs/adr/ADR-003-registration-consistency.md"
+      - "docs/adr/ADR-004-messaging-and-resilience.md"
+      - "docs/adr/ADR-005-prototype-scope.md"
+    status: "complete"
+
 validation:
   passed: true
   errors: []
   warnings:
-    - "No repository application test suite exists yet; T001/T002/T004 are documentation/evidence tasks. T003/T004 readiness checks passed."
+    - "No repository application test suite exists yet; T008 documentation checks are not runtime evidence. T003/T004 readiness checks passed."
+    - "T009 remains pending: JSON rationales must accompany these ADRs before downstream implementation."
   blocking_issues: []

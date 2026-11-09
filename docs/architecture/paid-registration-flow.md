@@ -1,6 +1,6 @@
 # Paid registration: end-to-end flow and failures
 
-**Domain baseline:** [approved scenarios](domain-scenarios.md), version 1.0.0  
+**Domain baseline:** [approved scenarios](domain-scenarios.md), version 1.1.0\
 **Service boundaries:** [context map](context-map.md) and
 [service boundaries](service-boundaries.md)  
 **Traceability:** RF04–RF08, RN01–RN05, RQ03–RQ06
@@ -68,13 +68,16 @@ sequenceDiagram
 ```
 
 The diagram states business-level interactions, not wire-level contracts.
-HTTP paths, identity-token format, event names/schemas, routing keys, retry
-policy, transaction boundaries, and the concurrency mechanism remain for
-ADR-002/003/004 and contract tasks T010–T012. Registration must never read
-Event Management data directly. Its admission decision must enforce the
-approved capacity invariant (RN01); the exact synchronization of configured
-activity capacity with Registration's reservation ledger is deliberately
-unresolved until those decisions are recorded.
+HTTP paths, identity-token format, event names/schemas and routing keys remain
+for contract tasks T010-T012. [ADR-002](../adr/ADR-002-data-ownership.md) now
+selects an idempotent, frozen capacity snapshot from Event Management before
+admission; capacity cannot change after activation.
+[ADR-003](../adr/ADR-003-registration-consistency.md) selects a per-activity
+Registration row lock and atomic state/idempotency/outbox writes.
+[ADR-004](../adr/ADR-004-messaging-and-resilience.md) selects publisher confirms,
+commit-before-acknowledgment, deduplication and observable retry/quarantine.
+No cross-service database access is allowed. Numeric operational settings and
+wire-level details remain for T010-T012/T016.
 
 ## State and capacity rules
 
@@ -111,13 +114,13 @@ unresolved until those decisions are recorded.
 | Event Management says activity is unpublished, closed, or ineligible | Reject the request according to the activity rule. | No reservation and no capacity change. | Return an explicit domain response. |
 | Event Management unavailable during activity validation | Do not infer publication or eligibility and do not silently use stale/unverified activity data. | No new reservation. | Surface the dependency failure and correlation ID; retry after recovery. Caching/fallback policy is not approved. |
 | Capacity is exhausted | Reject, or append the participant to the waitlist when enabled. | No extra occupied slot; never overbook. | Expose the resulting state. Waitlist order and offer policy follow the approved domain scenarios. |
-| Registration persistence fails before reservation/outbox commit | Fail the request; do not claim a pending or confirmed registration. | No committed reservation or payment request. | Surface the storage error. Transaction/atomic-admission implementation is an ADR-003 decision. |
-| RabbitMQ unavailable after outbox commit | Keep the reservation pending only until its configured expiry; do not confirm it because publication failed. Retry the persisted outbox publication according to the later messaging policy. | Reserved capacity remains occupied while the reservation is valid; expiry releases it once. | Expose lag/failure for the outbox and correlate by registration/event ID. Retry and terminal-age policy are ADR-004 decisions. |
+| Registration persistence fails before reservation/outbox commit | Fail the request; do not claim a pending or confirmed registration. | No committed reservation or payment request. | Surface the storage error; ADR-003 requires rollback of the local state/idempotency/outbox transaction. |
+| RabbitMQ unavailable after outbox commit | Keep the reservation pending only until its configured expiry; do not confirm it because publication failed. Retry persisted publication under ADR-004; durably suppress unsent expired payment requests. | Reserved capacity remains occupied while the reservation is valid; expiry releases it once. | Expose outbox age/failure and registration/event ID. An in-flight late approval still requires manual compensation. |
 | Billing mock unavailable or not responding | Do not confirm without an approval. The pending reservation remains subject to its expiry. | Slot remains occupied until a valid result or expiry; expiry releases it once and may promote the waitlist. | Record request/result timeout and correlation; repeated delivery must be idempotent. Exact retry schedule is not decided here. |
 | Billing explicitly refuses payment | Apply the refusal once and reject/close the pending registration. | Release the reservation once; offer the slot to the next FIFO participant if waitlist is enabled. | Emit an observable terminal result and relevant downstream event. |
 | No Billing result before reservation expiry | Expire the pending reservation. A later approval does not reverse expiry. | Release the slot once; waitlist promotion may proceed. | Record timeout/expiry. A late approval is routed for manual compensation; it cannot consume a subsequently allocated slot. |
 | Duplicate or out-of-order Billing result | Apply only a result valid for the current reservation state. | Never double-confirm, double-release, or reclaim an expired slot. | Deduplicate by stable event/registration identity; conflicting late results remain diagnosable. |
-| Registration database fails while applying Billing result | Do not acknowledge successful state transition unless it is durably applied. | Existing committed reservation remains pending until safely resolved/expired. | Redelivery is safe through idempotency; exact broker acknowledgment/transaction policy is deferred to ADR-004/T011. |
+| Registration database fails while applying Billing result | Do not acknowledge successful state transition unless it is durably applied. | Existing committed reservation remains pending until safely resolved/expired. | ADR-004 requires local state/deduplication commit before acknowledgment; redelivery is idempotent. Exact message schemas remain for T011. |
 | Notification mock unavailable after confirmation | Do not roll back or delay the confirmed registration. | Registration remains confirmed and occupies its slot. | Retain/observe failed delivery for reprocessing under the later notification contract. |
 | Reporting unavailable or projection delayed | Do not block registration, confirmation, or capacity release. | Registration state remains authoritative and unchanged. | Reporting catches up from its event-fed projection; expose projection lag/failure. |
 | Attendance & Certification unavailable | Do not block registration. | Registration state remains authoritative and unchanged. | Consumer resumes registration/activity events; idempotency prevents duplicate eligibility facts. |
@@ -125,8 +128,8 @@ unresolved until those decisions are recorded.
 Dependency failures never turn into success-shaped fallbacks. Each exposed error
 or asynchronous failure must retain the registration/correlation identity
 needed for diagnosis while excluding secrets. Retry timing, dead-lettering,
-retention, and operator controls require an explicit messaging ADR/contract;
-this flow does not invent them.
+retention, and operator interfaces are detailed in T011/T016 under the recovery
+policy selected by ADR-004; this flow does not invent numeric settings.
 
 ## Paid cancellation and refund
 
