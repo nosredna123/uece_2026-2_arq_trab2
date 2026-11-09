@@ -263,7 +263,7 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 
 ### Fase 1 — Domínio e arquitetura
 
-- [ ] T005 [Plan:1.1] Consolidar glossário, invariantes e cenários Gherkin para inscrição gratuita/paga, recusa, timeout, cancelamento, lista de espera, concorrência, notificações e autorização em `docs/architecture/domain-scenarios.md`; registrar validação do responsável de negócio.
+- [x] T005 [Plan:1.1] Consolidar glossário, invariantes e cenários Gherkin para inscrição gratuita/paga, recusa, timeout, cancelamento, lista de espera, concorrência, notificações e autorização em `docs/architecture/domain-scenarios.md`; registrar validação do responsável de negócio.
 - [ ] T006 [Plan:1.2] Desenhar grafo de dependências, limites dos sete serviços candidatos, recorte dos quatro implementados e diagrama de containers em `docs/architecture/context-map.md`, `docs/architecture/service-boundaries.md` e `docs/architecture/containers.puml`.
 - [ ] T007 [Plan:1.2] Documentar fluxo de inscrição paga, incluindo recusa, timeout e indisponibilidade de dependências, em `docs/architecture/paid-registration-flow.puml` e `docs/architecture/paid-registration-flow.md`.
 - [ ] T008 [P] [Plan:1.3] Registrar ADRs 001–005 com alternativas, decisão, evidências e consequências em `docs/adr/ADR-001-service-boundaries.md` a `docs/adr/ADR-005-prototype-scope.md`.

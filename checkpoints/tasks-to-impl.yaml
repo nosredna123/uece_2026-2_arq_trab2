@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 4
+  completed_tasks: 5
   in_progress_tasks: 0
-  pending_tasks: 40
-  completion_percentage: 9.09
+  pending_tasks: 39
+  completion_percentage: 11.36
 
 tasks:
   - task_id: "T001"
@@ -131,8 +131,34 @@ tasks:
       requirements: ["RQ07", "RQ08"]
       full_trace: "RQ07/RQ08 -> Phase-0.3 -> T004 -> docs/validation/environment-readiness.md"
 
-pending_tasks:
   - task_id: "T005"
+    description: "Consolidar glossário, invariantes e cenários Gherkin."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/architecture/domain-scenarios.md"
+          changes:
+            - change_type: "added"
+              description: "Added approved glossary, invariants, 28 Gherkin scenarios, requirements traceability, and business validation record."
+        - file: "plan.md"
+          changes:
+            - change_type: "modified"
+              description: "Marked T005 complete after explicit business-owner approval."
+    verification:
+      build_passed: null
+      test_results:
+        command: "Structural Gherkin validation and git diff --check"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The business approver Amg - UECE validated decisions individually and approved the consolidated version on 2026-11-09. Structural check verified 3 features, 28 scenarios, Dado/Quando/Então in each, and traceability for RF01-RF11/RN01-RN07/RQ01-RQ08."
+    upstream_trace:
+      plan_item: "1.1"
+      requirements: ["RF01-RF11", "RN01-RN07", "RQ01-RQ08"]
+      full_trace: "RF/RN/RQ -> Phase-1.1 -> T005 -> docs/architecture/domain-scenarios.md"
+
+pending_tasks:
   - task_id: "T006"
   - task_id: "T007"
   - task_id: "T008"
@@ -210,6 +236,14 @@ traceability_chain:
       - "docs/validation/environment-readiness.md"
       - "docs/development/environment-setup.md"
       - "README.md"
+    status: "complete"
+  - chain_id: "TRACE-T005"
+    requirement: "RF01-RF11/RN01-RN07/RQ01-RQ08"
+    plan_phase: "Phase-1"
+    plan_item: "1.1"
+    tasks: ["T005"]
+    files:
+      - "docs/architecture/domain-scenarios.md"
     status: "complete"
 
 validation:

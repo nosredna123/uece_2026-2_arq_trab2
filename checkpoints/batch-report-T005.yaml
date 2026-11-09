@@ -1,0 +1,52 @@
+batch_id: "T005"
+completed_tasks: ["T005"]
+blocked_tasks: []
+files_changed:
+  T005:
+    - file: "docs/architecture/domain-scenarios.md"
+      change_type: "created"
+      description: "Consolidated the approved EventHub glossary, domain invariants, 28 Gherkin scenarios, open-scope rules, and complete requirement traceability."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T005 complete after final business approval."
+upstream_artifacts_consumed:
+  T005:
+    - artifact: "plan.md"
+      used_for: "Phase 1.1 decisions, Java/Python prototype scope, configured reservation/waitlist defaults, and T005 deliverable."
+    - artifact: "constitution.md"
+      used_for: "Human approval before contracts/domain implementation, explicit invariants, and protected multi-organization access."
+    - artifact: "especificação-preliminar-sistema.md"
+      used_for: "RF01-RF11, RN01-RN07, and RQ01-RQ08 business and quality requirements."
+evidence_mapping:
+  T005:
+    - upstream: "plan.md#tarefas-T005"
+      output: "docs/architecture/domain-scenarios.md#glossário"
+      evidence: "Approved domain vocabulary includes events, activities, registrations, pending reservations, waitlist offers, payment/refund, auth roles, attendance, and reporting."
+    - upstream: "plan.md#tarefas-T005"
+      output: "docs/architecture/domain-scenarios.md#invariantes-aprovados"
+      evidence: "Records capacity, payment, refunds, idempotency, async dependencies, access boundaries, certificate eligibility, data ownership, and configuration invariants."
+    - upstream: "plan.md#tarefas-T005"
+      output: "docs/architecture/domain-scenarios.md#cenários-gherkin-aprovados"
+      evidence: "Structural validation found 3 features and 28 unique scenarios, each with Dado/Quando/Então."
+    - upstream: "plan.md#tarefas-T005"
+      output: "docs/architecture/domain-scenarios.md#registro-de-validação"
+      evidence: "Amg - UECE, responsible business approver, approved the individual decisions and consolidated version on 2026-11-09."
+traceability:
+  - requirement: "RF01-RF11, RN01-RN07, RQ01-RQ08"
+    plan_item: "1.1"
+    task: "T005"
+    files:
+      - "docs/architecture/domain-scenarios.md"
+      - "plan.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "No Gherkin parser or repository test suite is configured yet; syntax structure and traceability were checked with a focused validator. Contracts/code must preserve the approved invariants."
+test_results:
+  T005:
+    command: "Structural Gherkin validation and git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
