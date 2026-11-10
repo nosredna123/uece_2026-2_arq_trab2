@@ -9,6 +9,19 @@ if [[ ! -f "$ROOT/infra/.env" ]]; then
   exit 1
 fi
 
+if [[ -n "${PYTHON:-}" ]]; then
+  PYTHON_BIN="$PYTHON"
+elif [[ -x "$ROOT/.venv/bin/python" ]]; then
+  PYTHON_BIN="$ROOT/.venv/bin/python"
+else
+  PYTHON_BIN=python3
+fi
+
+if ! "$PYTHON_BIN" -c 'import httpx, pytest'; then
+  echo "Python test dependencies unavailable in $PYTHON_BIN. Create .venv and install requirements-validation.txt, or set PYTHON to a prepared interpreter." >&2
+  exit 1
+fi
+
 BILLING_MOCK_SCENARIO=APPROVED "${COMPOSE[@]}" up \
   --build \
   --detach \
@@ -30,5 +43,5 @@ export EVENTHUB_REPORTING_URL="$(service_url reporting)"
 export EVENTHUB_RUN_INTEGRATION=1
 
 cd "$ROOT"
-"${PYTHON:-python3}" -m pytest -x --import-mode=importlib \
+"$PYTHON_BIN" -m pytest -x --import-mode=importlib \
   tests/integration/paid-registration-flow/test_paid_registration_flow.py
