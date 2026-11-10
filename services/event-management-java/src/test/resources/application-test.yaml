@@ -1,5 +1,21 @@
 IDENTITY_BASE_URL: http://identity-mock:8080
 INTERNAL_SERVICE_KEY: synthetic-unit-only
+REGISTRATION_SERVICE_KEY: synthetic-registration-only
 HTTP_TIMEOUT_SECONDS: 5
 MESSAGE_RETRY_INITIAL_SECONDS: 1
 MESSAGE_RETRY_MAX_SECONDS: 60
+DATABASE_URL: jdbc:h2:mem:eventhub;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+DATABASE_USER: sa
+DATABASE_PASSWORD:
+MIGRATION_USER: sa
+MIGRATION_PASSWORD:
+
+spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql

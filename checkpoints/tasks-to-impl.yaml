@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 23
+  completed_tasks: 25
   in_progress_tasks: 0
-  pending_tasks: 21
-  completion_percentage: 52.27
+  pending_tasks: 19
+  completion_percentage: 56.82
 
 tasks:
   - task_id: "T001"
@@ -568,6 +568,58 @@ tasks:
       requirements: ["RF01", "RN07", "RQ07"]
       full_trace: "RF/RN/RQ -> Phase-3.1 -> T020 -> deterministic Identity mock, synthetic principal fixtures, strict service auth and Docker runtime"
 
+  - task_id: "T021"
+    description: "Escrever testes de contrato e domínio para o ciclo de vida de eventos/atividades e consulta pública."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/event-management-java/src/test/java/br/uece/eventhub/events/EventManagementContractTest.java"
+        - file: "services/event-management-java/src/test/java/br/uece/eventhub/events/EventManagementApplicationTest.java"
+        - file: "services/event-management-java/src/test/resources/application-test.yaml"
+        - file: "services/event-management-java/src/test/resources/schema-test.sql"
+        - file: "services/event-management-java/pom.xml"
+    verification:
+      build_passed: null
+      test_results:
+        command: "Event Management Maven test stage with Spotless and Surefire fail-fast"
+        passed: 6
+        failed: 0
+        skipped: 0
+      notes: "Contract tests cover publication visibility, case-insensitive catalog search, ordering, cancellation concealment, organizer/global-admin/participant authorization, identity-derived organization scope, idempotency/replay/conflict, concurrent retries, schedule eligibility, dedicated admission authentication, stable capacity snapshots, frozen capacity and correlation IDs."
+    upstream_trace:
+      plan_item: "3.2"
+      requirements: ["RF02", "RF03", "RF04", "RN07", "RQ01", "RQ02", "RQ05"]
+      full_trace: "RF/RN/RQ -> Phase-3.2 -> T021 -> Event Management lifecycle, public-query, authorization and capacity contract tests"
+
+  - task_id: "T022"
+    description: "Implementar persistência, migrações e endpoints de evento/atividade conforme os testes."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/event-management-java/src/main/java/br/uece/eventhub/events"
+        - file: "services/event-management-java/src/main/resources/db/migration/V2__event_management_idempotency_and_frozen_capacity.sql"
+        - file: "services/event-management-java/src/main/resources/db/migration/V3__serialize_idempotent_commands.sql"
+        - file: "services/event-management-java/src/main/resources/application.yaml"
+        - file: "services/event-management-java/pom.xml"
+        - file: "infra/docker-compose.yml"
+        - file: "infra/.env.example"
+        - file: "infra/environment.schema.json"
+        - file: "services/README.md"
+        - file: "plan.md"
+        - file: "checkpoints/tasks-to-impl.yaml"
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker compose --profile test build; docker compose up --build --wait event-management; PostgreSQL lifecycle/admission probes; environment validation"
+        passed: 119
+        failed: 0
+        skipped: 0
+      notes: "The complete Python suite passed 111 tests and Event Management passed 8 Java tests. PostgreSQL applied Flyway V1-V3; live probes verified concurrent idempotent create, CRUD/lifecycle routes, protected admission, stable snapshot retry, same-capacity update, rejected capacity change and cancellation concealment. All 11 Event Management endpoints responded with their contract status; environment and Compose validation passed."
+    upstream_trace:
+      plan_item: "3.2"
+      requirements: ["RF02", "RF03", "RF04", "RQ01", "RQ02", "RQ05", "RQ07"]
+      full_trace: "RF/RN/RQ -> Phase-3.2 -> T022 -> PostgreSQL-owned event/activity persistence, authenticated lifecycle API, public catalog and frozen admission snapshots"
+
   - task_id: "T029"
     description: "Implementar mock Billing durável com cenários configuráveis, idempotência e publicação de resultados."
     status: "completed"
@@ -625,8 +677,6 @@ tasks:
       full_trace: "RF08/RN05/RQ -> Phase-4.4 -> T032 -> durable async Notification mock and capped retry recovery"
 
 pending_tasks:
-  - task_id: "T021"
-  - task_id: "T022"
   - task_id: "T023"
   - task_id: "T024"
   - task_id: "T025"
@@ -844,6 +894,22 @@ traceability_chain:
     files: ["mocks/identity-access", "infra/.env.example", "infra/environment.schema.json"]
     status: "complete"
 
+  - chain_id: "TRACE-T021"
+    requirement: "RF02-RF04/RN07/RQ01-RQ02/RQ05"
+    plan_phase: "Phase-3"
+    plan_item: "3.2"
+    tasks: ["T021"]
+    files: ["services/event-management-java/src/test"]
+    status: "complete"
+
+  - chain_id: "TRACE-T022"
+    requirement: "RF02-RF04/RQ01-RQ02/RQ05/RQ07"
+    plan_phase: "Phase-3"
+    plan_item: "3.2"
+    tasks: ["T022"]
+    files: ["services/event-management-java/src", "infra/.env.example", "infra/environment.schema.json"]
+    status: "complete"
+
   - chain_id: "TRACE-T029"
     requirement: "RF07/RN02-RN03/RQ03/RQ05"
     plan_phase: "Phase-4"
@@ -865,6 +931,6 @@ validation:
   errors: []
   warnings:
     - "Documentation/rationale checks are not runtime evidence. T003/T004 readiness checks passed."
-    - "Business-domain end-to-end acceptance flows remain pending with T021 and subsequent domain tasks; T013 validates container startup and health only."
+    - "Cross-service registration, payment, check-in and reporting flows remain pending with T023 and subsequent domain tasks; T013 validates container startup and health only."
     - "GitHub branch rules and protected CI secrets/variables require administrator configuration; semantic and invariant-review gates fail closed until configured."
   blocking_issues: []

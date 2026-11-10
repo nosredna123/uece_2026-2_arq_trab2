@@ -19,14 +19,19 @@ Maven are inside the build image; the final image contains only the JRE and jar
 and runs as UID 10001. Dependencies are managed by Spring Boot 3.4.3, with
 jqwik 1.9.2 explicitly pinned.
 
-`/actuator/health` is the only implemented HTTP endpoint at scaffold stage.
-Tests deliberately isolate web startup from PostgreSQL/RabbitMQ and assert that
-domain routes are not fake success endpoints. Runtime requires explicit database,
-migration and RabbitMQ credentials and checks dependency health. T021-T030
-implement the real domain APIs and messaging. Typed settings validate required
-business/integration configuration before startup; see the root README.
+Event Management exposes the event/activity lifecycle, public published catalog,
+and Registration-only admission snapshot endpoints. Its tests use an isolated
+H2 database; the runtime uses PostgreSQL and Flyway. `REGISTRATION_SERVICE_KEY`
+is a dedicated credential for the internal admission endpoint and must not be
+replaced with the shared Identity mock credential. Runtime requires explicit
+database, migration and RabbitMQ credentials and checks dependency health.
+T023-T030 implement Registration's real domain APIs and messaging. Typed
+settings validate required business/integration configuration before startup;
+see the root README.
 
 Flyway V1 creates owner-local event/activity or capacity/enrollment tables.
+Event Management V2 adds frozen-capacity state and durable command receipts;
+V3 adds bounded database locks for concurrent idempotent commands.
 Later migrations must be new versions, never edits to already applied SQL.
 Runtime credentials differ from migration credentials; provisioning/grants are
 the responsibility of the Compose foundation.

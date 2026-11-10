@@ -10,12 +10,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {
-      "spring.autoconfigure.exclude="
-          + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration"
-    })
+    properties =
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration")
 @ActiveProfiles("test")
 class EventManagementApplicationTest {
   @Autowired private TestRestTemplate client;
@@ -25,6 +21,6 @@ class EventManagementApplicationTest {
     var response = client.getForEntity("/actuator/health", String.class);
     assertThat(response.getStatusCode().value()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"status\":\"UP\"");
-    assertThat(client.getForEntity("/events", String.class).getStatusCode().value()).isEqualTo(404);
+    assertThat(client.getForEntity("/events", String.class).getStatusCode().value()).isEqualTo(200);
   }
 }

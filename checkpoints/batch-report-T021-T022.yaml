@@ -1,0 +1,68 @@
+batch_id: "T021-T022"
+completed_tasks: ["T021", "T022"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T021:
+    - {file: "services/event-management-java/src/test/java/br/uece/eventhub/events/EventManagementContractTest.java", change_type: "created", description: "Added lifecycle, catalog, authorization, idempotency, admission, capacity and correlation contract tests."}
+    - {file: "services/event-management-java/src/test/java/br/uece/eventhub/events/EventManagementApplicationTest.java", change_type: "modified", description: "Updated scaffold assertion to require the real public catalog route."}
+    - {file: "services/event-management-java/src/test/resources/application-test.yaml", change_type: "modified", description: "Configured isolated H2, explicit test credentials and RabbitMQ exclusion."}
+    - {file: "services/event-management-java/src/test/resources/schema-test.sql", change_type: "created", description: "Added H2 schema for service-owned event, activity, snapshot, idempotency and command-lock tables."}
+    - {file: "services/event-management-java/pom.xml", change_type: "modified", description: "Added test-scoped H2 database driver."}
+  T022:
+    - {file: "services/event-management-java/src/main/java/br/uece/eventhub/events", change_type: "created", description: "Implemented trusted-principal integration, correlated API errors, JDBC persistence, lifecycle services, idempotency and HTTP routes."}
+    - {file: "services/event-management-java/src/main/resources/db/migration/V2__event_management_idempotency_and_frozen_capacity.sql", change_type: "created", description: "Added frozen-capacity state and durable command receipts without modifying V1."}
+    - {file: "services/event-management-java/src/main/resources/db/migration/V3__serialize_idempotent_commands.sql", change_type: "created", description: "Added bounded database lock stripes to serialize idempotent commands across concurrent requests."}
+    - {file: "services/event-management-java/src/main/resources/application.yaml", change_type: "modified", description: "Enabled strict request binding and configured the dedicated Registration credential."}
+    - {file: "infra/docker-compose.yml", change_type: "modified", description: "Passed the dedicated Registration service key to Event Management."}
+    - {file: "infra/.env.example", change_type: "modified", description: "Added a synthetic local Registration service credential."}
+    - {file: "infra/environment.schema.json", change_type: "modified", description: "Required and validated the Registration service credential."}
+    - {file: "services/README.md", change_type: "modified", description: "Documented the implemented Event Management API and its internal-service credential."}
+    - {file: "plan.md", change_type: "modified", description: "Marked T021 and T022 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Recorded T021/T022 completion, verification and traceability."}
+upstream_artifacts_consumed:
+  - {artifact: "docs/contracts/openapi/event-management.yaml", used_for: "Event/activity schemas, route semantics, public visibility, roles, pagination and admission response."}
+  - {artifact: "docs/contracts/openapi/common.yaml", used_for: "Correlation, idempotency, service authentication, error shape and status codes."}
+  - {artifact: "docs/contracts/openapi/identity-mock.yaml", used_for: "Token-only principal validation and trusted role/organization facts."}
+  - {artifact: "docs/architecture/data-ownership.md", used_for: "Service-owned event schema and no cross-database reads."}
+  - {artifact: "docs/rationales/ADR-002.json", used_for: "Stable admission snapshot and immutable capacity after activation."}
+evidence_mapping:
+  T021:
+    - upstream: "plan.md T021"
+      output: "Event Management lifecycle and public-catalog contract tests"
+      evidence: "Six contract test methods cover public visibility, ordering/search, lifecycle, authorization, idempotency, concurrency, schedules and admission-capacity invariants."
+  T022:
+    - upstream: "plan.md T022"
+      output: "Runnable PostgreSQL-backed Event Management API"
+      evidence: "All 11 route variants were exercised; PostgreSQL applied Flyway V1-V3 and live concurrent idempotency plus admission retry probes passed."
+traceability:
+  - {requirement: "RF02-RF04, RN07, RQ01-RQ02, RQ05, RQ07", plan_item: "3.2", task: "T021-T022", files: ["services/event-management-java", "infra/docker-compose.yml", "infra/environment.schema.json"], status: "completed"}
+endpoint_probes:
+  - {method: "GET", path: "/events", status: 200, result: "PASS"}
+  - {method: "POST", path: "/events", status: 201, result: "PASS"}
+  - {method: "GET", path: "/events/{eventId}", status: 200, result: "PASS"}
+  - {method: "PUT", path: "/events/{eventId}", status: 200, result: "PASS"}
+  - {method: "POST", path: "/events/{eventId}/publish", status: 200, result: "PASS"}
+  - {method: "POST", path: "/events/{eventId}/cancel", status: 200, result: "PASS"}
+  - {method: "GET", path: "/events/{eventId}/activities", status: 200, result: "PASS"}
+  - {method: "POST", path: "/events/{eventId}/activities", status: 201, result: "PASS"}
+  - {method: "GET", path: "/activities/{activityId}", status: 200, result: "PASS"}
+  - {method: "PUT", path: "/activities/{activityId}", status: 200, result: "PASS"}
+  - {method: "POST", path: "/internal/activities/{activityId}/admission", status: 200, result: "PASS"}
+test_results:
+  T021:
+    command: "docker run maven:3.9.9-eclipse-temurin-21 mvn -B -ff spotless:apply test"
+    passed: 6
+    failed: 0
+    skipped: 0
+    failures: []
+  T022:
+    command: "Event Management: 8 Java tests; python-suite-test: pytest -x (111 passed); full test-profile image build; PostgreSQL lifecycle/admission probes; environment validation"
+    passed: 119
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "The complete Python suite passed 111 tests and Event Management passed 8 Java tests; every service test image in the full test profile built successfully."
+protocol_violation: false
+errors: []
+warnings: []

@@ -13,6 +13,7 @@ import org.springframework.validation.annotation.Validated;
 public record IntegrationSettings(
     @NotBlank @URL String identityBaseUrl,
     @NotBlank String internalServiceKey,
+    @NotBlank String registrationServiceKey,
     @NotNull @Positive Integer httpTimeoutSeconds,
     @NotNull @Positive Integer retryInitialSeconds,
     @NotNull @Positive Integer retryMaxSeconds) {

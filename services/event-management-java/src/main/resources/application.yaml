@@ -1,6 +1,9 @@
 spring:
   application:
     name: event-management
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
   datasource:
     url: ${DATABASE_URL}
     username: ${DATABASE_USER}
@@ -25,6 +28,7 @@ management:
 integration:
   identity-base-url: ${IDENTITY_BASE_URL}
   internal-service-key: ${INTERNAL_SERVICE_KEY}
+  registration-service-key: ${REGISTRATION_SERVICE_KEY}
   http-timeout-seconds: ${HTTP_TIMEOUT_SECONDS}
   retry-initial-seconds: ${MESSAGE_RETRY_INITIAL_SECONDS}
   retry-max-seconds: ${MESSAGE_RETRY_MAX_SECONDS}
