@@ -2,7 +2,7 @@ FROM maven:3.9.9-eclipse-temurin-21 AS test
 WORKDIR /workspace
 COPY pom.xml .
 COPY src src
-RUN mvn -B -ff test
+RUN mvn -B -ff spotless:check test
 CMD ["mvn", "-B", "-ff", "test"]
 
 FROM test AS build

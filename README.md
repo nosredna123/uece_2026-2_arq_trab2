@@ -17,6 +17,9 @@ in containers; host Java/Python runtimes and host databases are optional.
    to build/test containers and run the health acceptance check. Domain
    acceptance flows remain pending; scaffold health is not proof of domain
    functionality.
+5. Review [CI governance setup](docs/development/ci-governance.md) before
+   opening pull requests; protected audit credentials and required repository
+   rules are needed for the gates to pass.
 
 ## Local environment variables and secrets
 

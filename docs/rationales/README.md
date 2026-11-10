@@ -13,4 +13,6 @@ semantic adherence or runtime behavior.
 When a requirement or premise changes, identify affected ADRs/rationales,
 obtain human approval for invariant changes and update both versions together.
 Preserve history through Git; never silently overwrite an earlier decision or
-mark an inconclusive semantic audit as passed. Semantic CI auditing is T017.
+mark an inconclusive semantic audit as passed. The pull-request workflow runs
+the fail-closed semantic audit; configure its protected endpoint and credential
+as described in [CI governance](../development/ci-governance.md).

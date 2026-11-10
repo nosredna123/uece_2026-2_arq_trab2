@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build and run all test targets
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build
+      - name: Re-run contract and rationale gates explicitly
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test python -m pytest -x --import-mode=importlib tests/contracts tests/docs/test_rationales.py
+      - name: Run Compose health acceptance
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile acceptance up --build --abort-on-container-exit --exit-code-from acceptance
+      - name: Remove test containers and volumes
+        if: always()
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml down --volumes --remove-orphans
+
+  python-lint:
+    name: python-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.9"
+          cache: pip
+          cache-dependency-path: requirements-validation.txt
+      - name: Install validation and lint tools
+        run: python -m pip install -r requirements-validation.txt
+      - name: Lint Python
+        run: ruff check .
+
+  invariant-review:
+    name: invariant-review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require an architect approval for changed invariants
+        env:
+          EVENTHUB_ARCHITECT_REVIEWERS: ${{ secrets.EVENTHUB_ARCHITECT_REVIEWERS }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/require_invariant_approval.py "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+  semantic-audit:
+    name: semantic-audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Audit the pull request against architecture rationales
+        env:
+          EVENTHUB_SEMANTIC_AUDIT_API_KEY: ${{ secrets.EVENTHUB_SEMANTIC_AUDIT_API_KEY }}
+          EVENTHUB_SEMANTIC_AUDIT_ENDPOINT: ${{ vars.EVENTHUB_SEMANTIC_AUDIT_ENDPOINT }}
+          EVENTHUB_SEMANTIC_AUDIT_MODEL: ${{ vars.EVENTHUB_SEMANTIC_AUDIT_MODEL }}
+        run: python scripts/audit_rationales.py "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+  gates:
+    name: gates
+    if: always()
+    needs:
+      - build-test
+      - python-lint
+      - invariant-review
+      - semantic-audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every required gate passed
+        env:
+          BUILD_TEST: ${{ needs.build-test.result }}
+          PYTHON_LINT: ${{ needs.python-lint.result }}
+          INVARIANT_REVIEW: ${{ needs.invariant-review.result }}
+          SEMANTIC_AUDIT: ${{ needs.semantic-audit.result }}
+        run: |
+          for result in "$BUILD_TEST" "$PYTHON_LINT" "$INVARIANT_REVIEW" "$SEMANTIC_AUDIT"; do
+            if [ "$result" != success ]; then
+              printf 'Required CI gate did not pass: %s\n' "$result" >&2
+              exit 1
+            fi
+          done
+
+  enable-auto-merge:
+    name: enable-auto-merge
+    if: >-
+      (github.event_name == 'pull_request' || github.event_name == 'pull_request_review') &&
+      needs.gates.result == 'success' &&
+      contains(github.event.pull_request.labels.*.name, 'automerge')
+    needs:
+      - gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Enable squash auto-merge after all gates pass
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge "$PR_URL" --auto --squash

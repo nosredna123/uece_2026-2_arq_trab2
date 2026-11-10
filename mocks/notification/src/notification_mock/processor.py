@@ -3,7 +3,6 @@ from hashlib import sha256
 
 from notification_mock.models import (
     InvalidNotificationEvent,
-    NotificationEvent,
     notice_type,
     parse_notification_event,
 )

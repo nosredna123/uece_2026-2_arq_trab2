@@ -1,0 +1,97 @@
+batch_id: "T017"
+completed_tasks: ["T017"]
+blocked_tasks: []
+files_changed:
+  T017:
+    - file: ".github/workflows/ci.yml"
+      change_type: "created"
+      description: "Added required build/test, lint, contract, rationale, semantic-audit, invariant-review, and opt-in auto-merge gates."
+    - file: "scripts/audit_rationales.py"
+      change_type: "created"
+      description: "Added a fail-closed OpenAI-compatible semantic audit client that requires HTTPS and a protected credential."
+    - file: "scripts/require_invariant_approval.py"
+      change_type: "created"
+      description: "Requires fresh approval by an allowlisted architect when rationale invariant arrays change."
+    - file: "tests/ci"
+      change_type: "created"
+      description: "Added unit tests for semantic-audit fail-closed behavior and invariant review policy."
+    - file: ".ruff.toml"
+      change_type: "created"
+      description: "Configured the Python lint gate."
+    - file: "requirements-validation.txt"
+      change_type: "modified"
+      description: "Pinned Ruff for repeatable CI linting."
+    - file: "services/event-management-java/pom.xml"
+      change_type: "modified"
+      description: "Configured Google Java Format through Spotless."
+    - file: "services/registration-java/pom.xml"
+      change_type: "modified"
+      description: "Configured Google Java Format through Spotless."
+    - file: "services/event-management-java/Dockerfile"
+      change_type: "modified"
+      description: "Run Java format verification before Maven tests."
+    - file: "services/registration-java/Dockerfile"
+      change_type: "modified"
+      description: "Run Java format verification before Maven tests."
+    - file: "mocks/notification/src/notification_mock/processor.py"
+      change_type: "modified"
+      description: "Removed the unused import discovered by the new Ruff gate."
+    - file: "docs/development/ci-governance.md"
+      change_type: "created"
+      description: "Documented required secrets, variables, branch rules, private endpoint policy, and opt-in auto-merge."
+    - file: "docs/rationales/README.md"
+      change_type: "modified"
+      description: "Linked semantic governance to the implemented CI gate."
+    - file: "README.md"
+      change_type: "modified"
+      description: "Linked the CI governance setup guide."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T017 complete."
+    - file: "checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Recorded T017 implementation, validation, and traceability."
+    - file: "checkpoints/batch-report-T017.yaml"
+      change_type: "created"
+      description: "Recorded batch outcomes and validation evidence."
+upstream_artifacts_consumed:
+  T017:
+    - artifact: "plan.md#T017"
+      used_for: "CI gates, protected credential, automatic merge, and human invariant escalation requirements."
+    - artifact: "constitution.md"
+      used_for: "Fail-closed behavior, secret handling, quality gates, and human approval of invariant changes."
+    - artifact: "docs/rationales"
+      used_for: "Semantic audit source-of-truth and invariant change detection."
+    - artifact: "processo.md#Etapa 4"
+      used_for: "Semantic regression audit and human-on-the-loop policy."
+evidence_mapping:
+  T017:
+    - upstream: "plan.md#T017"
+      output: ".github/workflows/ci.yml"
+      evidence: "All test/lint/review/audit jobs feed the required gates aggregate."
+    - upstream: "constitution.md#1.6"
+      output: "scripts/audit_rationales.py"
+      evidence: "Only an unambiguous semantic approval with no findings passes; missing credentials and endpoint errors fail closed."
+    - upstream: "processo.md#Etapa 4"
+      output: "scripts/require_invariant_approval.py"
+      evidence: "Fresh review by a configured architect is required for changed invariants."
+traceability:
+  - requirement: "RQ05/RQ07/RQ08"
+    plan_item: "2.3"
+    task: "T017"
+    files:
+      - ".github/workflows/ci.yml"
+      - "scripts/audit_rationales.py"
+      - "scripts/require_invariant_approval.py"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - "The private semantic endpoint, protected secrets/variables, and required branch rules must be configured by a repository administrator; live semantic review cannot run before that setup."
+test_results:
+  T017:
+    command: "docker compose --profile test build; docker compose run --rm python-suite-test python -m pytest -x --import-mode=importlib tests/contracts tests/docs/test_rationales.py; docker run ... ruff check .; docker run rhysd/actionlint; docker compose --profile acceptance up --build --abort-on-container-exit --exit-code-from acceptance"
+    passed: 111
+    failed: 0
+    skipped: 0
+    failures: []

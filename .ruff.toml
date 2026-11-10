@@ -1,0 +1,4 @@
+target-version = "py312"
+line-length = 100
+src = ["mocks", "services", "tests", "scripts", "infra"]
+extend-exclude = ["*.egg-info", "build", "dist", "target"]

@@ -2,3 +2,4 @@ pytest==8.3.5
 openapi-spec-validator==0.7.2
 PyYAML==6.0.2
 jsonschema==4.23.0
+ruff==0.11.2
