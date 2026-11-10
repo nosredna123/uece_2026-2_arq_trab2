@@ -23,7 +23,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.ResourceAccessException;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = "policy.waitlist-enabled=false")
 @ActiveProfiles("test")
 class RegistrationContractTest {
   private static final UUID ACTIVITY_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");

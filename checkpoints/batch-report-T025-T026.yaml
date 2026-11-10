@@ -1,0 +1,82 @@
+batch_id: "T025-T026"
+completed_tasks: ["T025", "T026"]
+blocked_tasks: []
+required_endpoints:
+  - method: POST
+    path: /registrations/{id}/accept-offer
+    source: docs/contracts/openapi/registration.yaml
+    status: implemented
+endpoint_probes:
+  - method: POST
+    path: /registrations/{id}/accept-offer
+    status: 200
+    result: "PASS (WaitlistContractTest free/paid acceptance and idempotent replay)"
+  - method: POST
+    path: /registrations/{id}/cancel
+    status: 200
+    result: "PASS (WaitlistContractTest cancellation and FIFO promotion)"
+runtime_probes:
+  - method: GET
+    path: /actuator/health
+    status: 200
+    result: "PASS (Registration runtime backed by PostgreSQL)"
+database_probes:
+  - check: "Registration Flyway migration history"
+    result: "PASS (V1, V2, and V3 succeeded)"
+files_changed:
+  T025:
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/WaitlistContractTest.java", change_type: "created", description: "Covered concurrent FIFO sequence assignment, cancellation promotion, offer expiration, next-entry promotion, acceptance and idempotent replay."}
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/WaitlistPolicyPropertyTest.java", change_type: "created", description: "Verified monotonic per-activity waitlist sequence assignment with jqwik."}
+    - {file: "services/registration-java/src/test/resources/schema-test.sql", change_type: "modified", description: "Added the isolated waitlist table for Registration HTTP tests."}
+  T026:
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationService.java", change_type: "modified", description: "Added FIFO queueing, capacity-preserving offers, cancellation and expiry promotion, idempotent acceptance, and storage-error mapping."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationController.java", change_type: "modified", description: "Added the participant-scoped accept-offer endpoint."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationExpiryScheduler.java", change_type: "created", description: "Schedules due-offer expiry and FIFO promotion."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/WaitlistPolicy.java", change_type: "created", description: "Provides overflow-safe monotonic sequence allocation."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationApplication.java", change_type: "modified", description: "Enabled scheduled offer expiry."}
+    - {file: "services/registration-java/src/main/resources/db/migration/V3__registration_fifo_waitlist.sql", change_type: "created", description: "Adds durable per-activity waitlist sequencing."}
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationContractTest.java", change_type: "modified", description: "Disabled waitlisting in the existing capacity-rejection contract case."}
+    - {file: "services/README.md", change_type: "modified", description: "Documents FIFO promotion, configurable offer expiry, and Registration V3."}
+    - {file: "plan.md", change_type: "modified", description: "Marked T025 and T026 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Recorded completion, test results, migration evidence, and traceability."}
+    - {file: "checkpoints/batch-report-T025-T026.yaml", change_type: "created", description: "Recorded task traceability and verification evidence."}
+upstream_artifacts_consumed:
+  - {artifact: "plan.md", used_for: "T025/T026 scope and Phase 4.2 requirements."}
+  - {artifact: "docs/contracts/openapi/registration.yaml", used_for: "Waitlist and offer endpoint/response contract."}
+  - {artifact: "docs/adr/ADR-003-registration-consistency.md", used_for: "Activity-lock serialization, occupancy invariants, and database-time semantics."}
+  - {artifact: "docs/architecture/domain-scenarios.md", used_for: "FIFO ordering, released-slot promotion, offer expiry, and no-overcapacity rules."}
+  - {artifact: "docs/architecture/data-ownership.md", used_for: "Registration-owned queue and activity-capacity ledger."}
+traceability:
+  - {requirement: "RF06, RN01, RN03, RN04, RQ04", plan_item: "4.2", task: "T025-T026", files: ["services/registration-java/src"], status: "completed"}
+test_results:
+  registration_java:
+    command: "docker run --rm --network=host -v \"$PWD/services/registration-java:/workspace\" -v /tmp/registration-m2:/root/.m2 -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B -ff spotless:apply test"
+    passed: 17
+    failed: 0
+    skipped: 0
+    property_checks: 3000
+  event_management_java:
+    command: "docker run --rm eventhub-event-management-test"
+    passed: 8
+    failed: 0
+    skipped: 0
+  repository_python:
+    command: "docker compose --env-file infra/.env -f infra/docker-compose.yml --profile test build --progress plain"
+    passed: 111
+    failed: 0
+    skipped: 0
+  total:
+    passed: 136
+    failed: 0
+    skipped: 0
+validation:
+  compose_config: "PASS"
+  compose_test_profile_build: "PASS"
+  registration_flyway_v3: "PASS"
+  registration_runtime_health: "PASS (200)"
+warnings:
+  - severity: LOW
+    message: "The repository Python suite passed with one existing Starlette/AnyIO BlockingPortal deprecation warning."
+  - severity: LOW
+    message: "Registration tests emit existing Spring MockBean deprecation warnings; all tests passed."
+errors: []

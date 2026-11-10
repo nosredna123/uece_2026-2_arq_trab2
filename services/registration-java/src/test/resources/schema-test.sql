@@ -32,3 +32,10 @@ CREATE TABLE IF NOT EXISTS command_receipt (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   PRIMARY KEY (principal_id, operation, idempotency_key)
 );
+
+CREATE TABLE IF NOT EXISTS waitlist_entry (
+  registration_id UUID PRIMARY KEY,
+  activity_id UUID NOT NULL,
+  sequence BIGINT NOT NULL CHECK (sequence > 0),
+  UNIQUE (activity_id, sequence)
+);

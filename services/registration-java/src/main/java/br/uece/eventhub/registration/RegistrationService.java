@@ -26,7 +26,25 @@ import org.springframework.transaction.support.TransactionTemplate;
 class RegistrationService {
   private static final String ACTIVE_STATUSES =
       "'WAITLISTED', 'OFFERED', 'PENDING_PAYMENT', 'CONFIRMED'";
+  private static final String REGISTRATION_SELECT =
+      "SELECT r.*, (SELECT w.sequence FROM waitlist_entry w "
+          + "WHERE w.registration_id = r.id) AS waitlist_sequence FROM registration r ";
   private static final RowMapper<RegistrationView> REGISTRATION_MAPPER =
+      (row, rowNumber) ->
+          new RegistrationView(
+              row.getObject("id", UUID.class),
+              row.getObject("activity_id", UUID.class),
+              row.getObject("participant_id", UUID.class),
+              row.getObject("organization_id", UUID.class),
+              row.getString("status"),
+              row.getString("refund_status"),
+              row.getObject("created_at", OffsetDateTime.class),
+              row.getLong("version"),
+              row.getObject("expires_at", OffsetDateTime.class),
+              row.getObject("offer_expires_at", OffsetDateTime.class),
+              row.getObject("waitlist_sequence", Long.class),
+              new MoneyView(row.getLong("amount_minor"), row.getString("currency").trim()));
+  private static final RowMapper<RegistrationView> REGISTRATION_LOCK_MAPPER =
       (row, rowNumber) ->
           new RegistrationView(
               row.getObject("id", UUID.class),
@@ -47,6 +65,7 @@ class RegistrationService {
   private final TransactionTemplate transaction;
   private final RegistrationPolicy policy;
   private final CapacityPolicy capacityPolicy = new CapacityPolicy();
+  private final WaitlistPolicy waitlistPolicy = new WaitlistPolicy();
   private final boolean postgres;
 
   RegistrationService(
@@ -112,9 +131,22 @@ class RegistrationService {
                   409, "ALREADY_REGISTERED", "An active registration already exists.");
             }
 
-            int occupied = allocate(ledger);
+            int afterPromotion = promoteNext(activityId, ledger.capacity(), ledger.occupied());
+            if (afterPromotion != ledger.occupied()) {
+              ledger = ledger.withOccupied(afterPromotion);
+            }
+            if (ledger.occupied() < 0 || ledger.occupied() > ledger.capacity()) {
+              throw new ApiException(
+                  503, "LEDGER_INTEGRITY_ERROR", "Activity capacity ledger is inconsistent.");
+            }
+            boolean waitlisted = ledger.occupied() == ledger.capacity();
+            if (waitlisted && !policy.waitlistEnabled()) {
+              throw new CapacityFullException();
+            }
+            int occupied = waitlisted ? ledger.occupied() : allocate(ledger);
             OffsetDateTime now = databaseNow();
-            boolean paid = snapshot.amountMinor() > 0;
+            boolean paid = !waitlisted && snapshot.amountMinor() > 0;
+            Long waitlistSequence = waitlisted ? nextWaitlistSequence(activityId) : null;
             OffsetDateTime expiresAt =
                 paid ? now.plusMinutes(policy.reservationExpiryMinutes()) : null;
             RegistrationView registration =
@@ -123,13 +155,13 @@ class RegistrationService {
                     activityId,
                     principal.subjectId(),
                     snapshot.organizationId(),
-                    paid ? "PENDING_PAYMENT" : "CONFIRMED",
+                    waitlisted ? "WAITLISTED" : paid ? "PENDING_PAYMENT" : "CONFIRMED",
                     "NONE",
                     now,
                     1,
                     expiresAt,
                     null,
-                    null,
+                    waitlistSequence,
                     new MoneyView(snapshot.amountMinor(), snapshot.currency()));
 
             jdbc.update(
@@ -148,7 +180,16 @@ class RegistrationService {
                 registration.price().amountMinor(),
                 registration.price().currency(),
                 registration.version());
-            updateOccupied(activityId, ledger.occupied(), occupied);
+            if (waitlisted) {
+              jdbc.update(
+                  "INSERT INTO waitlist_entry (registration_id, activity_id, sequence) "
+                      + "VALUES (?, ?, ?)",
+                  registration.id(),
+                  activityId,
+                  waitlistSequence);
+            } else {
+              updateOccupied(activityId, ledger.occupied(), occupied);
+            }
             CommandResult result = new CommandResult(201, registration);
             saveReceipt(principal.subjectId(), "CREATE", key, requestHash, result);
             return result;
@@ -193,7 +234,7 @@ class RegistrationService {
                 jdbc
                     .query(
                         "SELECT * FROM registration WHERE id = ? FOR UPDATE",
-                        REGISTRATION_MAPPER,
+                        REGISTRATION_LOCK_MAPPER,
                         registrationId)
                     .stream()
                     .findFirst()
@@ -230,14 +271,10 @@ class RegistrationService {
                 registrationId);
             if (occupiesSlot) {
               updateOccupied(activityId, ledger.occupied(), occupied);
+              promoteNext(activityId, ledger.capacity(), occupied);
             }
 
-            RegistrationView cancelled =
-                jdbc.query(
-                        "SELECT * FROM registration WHERE id = ?",
-                        REGISTRATION_MAPPER,
-                        registrationId)
-                    .getFirst();
+            RegistrationView cancelled = findRegistration(registrationId);
             CommandResult result = new CommandResult(200, cancelled);
             saveReceipt(principal.subjectId(), "CANCEL", key, requestHash, result);
             return result;
@@ -249,11 +286,208 @@ class RegistrationService {
     }
   }
 
+  Optional<CommandResult> replayAcceptOffer(Principal principal, String key, UUID registrationId) {
+    try {
+      return transaction.execute(
+          status ->
+              findReceipt(
+                  principal.subjectId(),
+                  "ACCEPT_OFFER",
+                  key,
+                  hash("accept-offer:" + registrationId)));
+    } catch (DataAccessException exception) {
+      throw storageUnavailable();
+    }
+  }
+
+  UUID activityIdForOwnOffer(UUID participantId, UUID registrationId) {
+    try {
+      UUID activityId =
+          jdbc.query(
+              "SELECT activity_id FROM registration WHERE id = ? AND participant_id = ?",
+              resultSet -> resultSet.next() ? resultSet.getObject("activity_id", UUID.class) : null,
+              registrationId,
+              participantId);
+      if (activityId == null) {
+        throw notFound();
+      }
+      return activityId;
+    } catch (DataAccessException exception) {
+      throw storageUnavailable();
+    }
+  }
+
+  CommandResult acceptOffer(
+      Principal principal, String key, UUID registrationId, AdmissionSnapshot snapshot) {
+    String requestHash = hash("accept-offer:" + registrationId);
+    OfferOutcome outcome;
+    try {
+      outcome =
+          transaction.execute(
+              status -> {
+                Optional<CommandResult> existing =
+                    findReceipt(principal.subjectId(), "ACCEPT_OFFER", key, requestHash);
+                if (existing.isPresent()) {
+                  return new OfferOutcome(existing.get(), null);
+                }
+
+                UUID activityId =
+                    jdbc.query(
+                        "SELECT activity_id FROM registration WHERE id = ?",
+                        resultSet ->
+                            resultSet.next()
+                                ? resultSet.getObject("activity_id", UUID.class)
+                                : null,
+                        registrationId);
+                if (activityId == null) {
+                  throw notFound();
+                }
+                Ledger ledger = lockLedger(activityId);
+                Optional<CommandResult> raced =
+                    findReceipt(principal.subjectId(), "ACCEPT_OFFER", key, requestHash);
+                if (raced.isPresent()) {
+                  return new OfferOutcome(raced.get(), null);
+                }
+
+                RegistrationView current =
+                    jdbc
+                        .query(
+                            "SELECT * FROM registration WHERE id = ? FOR UPDATE",
+                            REGISTRATION_LOCK_MAPPER,
+                            registrationId)
+                        .stream()
+                        .findFirst()
+                        .orElseThrow(RegistrationService::notFound);
+                if (!current.participantId().equals(principal.subjectId())) {
+                  throw notFound();
+                }
+                if (!current.status().equals("OFFERED")) {
+                  throw new ApiException(
+                      409, "INVALID_STATE", "This registration has no active offer.");
+                }
+                validateSnapshot(ledger, snapshot);
+
+                OffsetDateTime now = databaseNow();
+                if (current.offerExpiresAt() == null) {
+                  throw new ApiException(
+                      503, "WAITLIST_INTEGRITY_ERROR", "The active offer has no expiry deadline.");
+                }
+                if (!now.isBefore(current.offerExpiresAt())) {
+                  expireOfferLocked(current, ledger);
+                  return new OfferOutcome(
+                      null,
+                      new ApiException(409, "OFFER_EXPIRED", "The waitlist offer has expired."));
+                }
+
+                boolean paid = snapshot.amountMinor() > 0;
+                OffsetDateTime paymentExpiresAt =
+                    paid ? now.plusMinutes(policy.reservationExpiryMinutes()) : null;
+                int changed =
+                    jdbc.update(
+                        "UPDATE registration SET status = ?, amount_minor = ?, currency = ?, "
+                            + "expires_at = ?, offer_expires_at = NULL, version = version + 1 "
+                            + "WHERE id = ? AND status = 'OFFERED'",
+                        paid ? "PENDING_PAYMENT" : "CONFIRMED",
+                        snapshot.amountMinor(),
+                        snapshot.currency(),
+                        paymentExpiresAt,
+                        registrationId);
+                if (changed != 1) {
+                  throw new ApiException(
+                      503, "WAITLIST_INTEGRITY_ERROR", "The active offer changed unexpectedly.");
+                }
+                RegistrationView accepted = findRegistration(registrationId);
+                CommandResult result = new CommandResult(200, accepted);
+                saveReceipt(principal.subjectId(), "ACCEPT_OFFER", key, requestHash, result);
+                return new OfferOutcome(result, null);
+              });
+    } catch (DuplicateKeyException exception) {
+      return replayAfterUniqueConflict(principal.subjectId(), "ACCEPT_OFFER", key, requestHash);
+    } catch (DataAccessException exception) {
+      throw storageUnavailable();
+    }
+    if (outcome.error() != null) {
+      throw outcome.error();
+    }
+    return outcome.result();
+  }
+
+  void expireOffers() {
+    try {
+      OffsetDateTime now = databaseNow();
+      List<UUID> expiredCandidates =
+          jdbc.query(
+              "SELECT id FROM registration WHERE status = 'OFFERED' "
+                  + "AND offer_expires_at <= ? ORDER BY offer_expires_at, id",
+              (row, rowNumber) -> row.getObject("id", UUID.class),
+              now);
+      expiredCandidates.forEach(this::expireOffer);
+    } catch (DataAccessException exception) {
+      throw storageUnavailable();
+    }
+  }
+
+  private void expireOffer(UUID registrationId) {
+    try {
+      transaction.execute(
+          status -> {
+            UUID activityId =
+                jdbc.query(
+                    "SELECT activity_id FROM registration WHERE id = ?",
+                    resultSet ->
+                        resultSet.next() ? resultSet.getObject("activity_id", UUID.class) : null,
+                    registrationId);
+            if (activityId == null) {
+              return null;
+            }
+            Ledger ledger = lockLedger(activityId);
+            RegistrationView current =
+                jdbc
+                    .query(
+                        "SELECT * FROM registration WHERE id = ? FOR UPDATE",
+                        REGISTRATION_LOCK_MAPPER,
+                        registrationId)
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+            if (current == null || !current.status().equals("OFFERED")) {
+              return null;
+            }
+            if (current.offerExpiresAt() == null) {
+              throw new ApiException(
+                  503, "WAITLIST_INTEGRITY_ERROR", "The active offer has no expiry deadline.");
+            }
+            if (databaseNow().isBefore(current.offerExpiresAt())) {
+              return null;
+            }
+            expireOfferLocked(current, ledger);
+            return null;
+          });
+    } catch (DataAccessException exception) {
+      throw storageUnavailable();
+    }
+  }
+
+  private void expireOfferLocked(RegistrationView current, Ledger ledger) {
+    int changed =
+        jdbc.update(
+            "UPDATE registration SET status = 'EXPIRED', version = version + 1 "
+                + "WHERE id = ? AND status = 'OFFERED'",
+            current.id());
+    if (changed != 1) {
+      throw new ApiException(
+          503, "WAITLIST_INTEGRITY_ERROR", "The active offer changed unexpectedly.");
+    }
+    int released = release(ledger);
+    updateOccupied(current.activityId(), ledger.occupied(), released);
+    promoteNext(current.activityId(), ledger.capacity(), released);
+  }
+
   RegistrationView getOwn(UUID participantId, UUID registrationId) {
     try {
       return jdbc
           .query(
-              "SELECT * FROM registration WHERE id = ? AND participant_id = ?",
+              REGISTRATION_SELECT + "WHERE r.id = ? AND r.participant_id = ?",
               REGISTRATION_MAPPER,
               registrationId,
               participantId)
@@ -271,8 +505,8 @@ class RegistrationService {
     }
     try {
       return jdbc.query(
-          "SELECT * FROM registration WHERE participant_id = ? "
-              + "ORDER BY created_at, id LIMIT ? OFFSET ?",
+          REGISTRATION_SELECT
+              + "WHERE r.participant_id = ? ORDER BY r.created_at, r.id LIMIT ? OFFSET ?",
           REGISTRATION_MAPPER,
           participantId,
           limit,
@@ -333,6 +567,67 @@ class RegistrationService {
     }
   }
 
+  private long nextWaitlistSequence(UUID activityId) {
+    Long highest =
+        jdbc.queryForObject(
+            "SELECT COALESCE(MAX(sequence), 0) FROM waitlist_entry WHERE activity_id = ?",
+            Long.class,
+            activityId);
+    try {
+      return waitlistPolicy.nextSequence(highest == null ? 0 : highest);
+    } catch (IllegalStateException exception) {
+      throw new ApiException(503, "WAITLIST_INTEGRITY_ERROR", "Waitlist sequence is inconsistent.");
+    }
+  }
+
+  private int promoteNext(UUID activityId, int capacity, int occupied) {
+    if (occupied >= capacity) {
+      return occupied;
+    }
+    List<UUID> candidates =
+        jdbc.query(
+            "SELECT r.id FROM waitlist_entry w JOIN registration r "
+                + "ON r.id = w.registration_id WHERE w.activity_id = ? AND r.status = 'WAITLISTED' "
+                + "ORDER BY w.sequence LIMIT 1",
+            (row, rowNumber) -> row.getObject("id", UUID.class),
+            activityId);
+    if (candidates.isEmpty()) {
+      return occupied;
+    }
+    int promotedOccupancy = allocate(capacity, occupied);
+    UUID registrationId = candidates.getFirst();
+    OffsetDateTime offerExpiresAt = databaseNow().plusMinutes(policy.waitlistOfferExpiryMinutes());
+    int changed =
+        jdbc.update(
+            "UPDATE registration SET status = 'OFFERED', offer_expires_at = ?, "
+                + "version = version + 1 WHERE id = ? AND status = 'WAITLISTED'",
+            offerExpiresAt,
+            registrationId);
+    if (changed != 1) {
+      throw new ApiException(
+          503, "WAITLIST_INTEGRITY_ERROR", "The next waitlist entry changed unexpectedly.");
+    }
+    updateOccupied(activityId, occupied, promotedOccupancy);
+    return promotedOccupancy;
+  }
+
+  private int allocate(int capacity, int occupied) {
+    try {
+      return capacityPolicy.allocate(capacity, occupied);
+    } catch (IllegalStateException exception) {
+      throw new ApiException(
+          503, "LEDGER_INTEGRITY_ERROR", "Activity capacity ledger is inconsistent.");
+    }
+  }
+
+  private RegistrationView findRegistration(UUID registrationId) {
+    return jdbc
+        .query(REGISTRATION_SELECT + "WHERE r.id = ?", REGISTRATION_MAPPER, registrationId)
+        .stream()
+        .findFirst()
+        .orElseThrow(RegistrationService::notFound);
+  }
+
   private Ledger lockLedger(UUID activityId) {
     return jdbc
         .query(
@@ -383,12 +678,7 @@ class RegistrationService {
   }
 
   private int allocate(Ledger ledger) {
-    try {
-      return capacityPolicy.allocate(ledger.capacity(), ledger.occupied());
-    } catch (IllegalStateException exception) {
-      throw new ApiException(
-          503, "LEDGER_INTEGRITY_ERROR", "Activity capacity ledger is inconsistent.");
-    }
+    return allocate(ledger.capacity(), ledger.occupied());
   }
 
   private int release(Ledger ledger) {
@@ -490,8 +780,14 @@ class RegistrationService {
     return new ApiException(503, "STORAGE_UNAVAILABLE", "Registration storage is unavailable.");
   }
 
+  private record OfferOutcome(CommandResult result, ApiException error) {}
+
   private record Ledger(
-      UUID activityId, UUID snapshotId, long snapshotVersion, int capacity, int occupied) {}
+      UUID activityId, UUID snapshotId, long snapshotVersion, int capacity, int occupied) {
+    Ledger withOccupied(int nextOccupied) {
+      return new Ledger(activityId, snapshotId, snapshotVersion, capacity, nextOccupied);
+    }
+  }
 
   private record Receipt(String requestHash, int responseStatus, String responseBody) {}
 }

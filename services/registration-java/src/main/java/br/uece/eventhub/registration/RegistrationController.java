@@ -77,6 +77,25 @@ class RegistrationController {
     return ResponseEntity.status(result.status()).body(result.body());
   }
 
+  @PostMapping("/registrations/{id}/accept-offer")
+  ResponseEntity<RegistrationView> acceptOffer(
+      @PathVariable UUID id,
+      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+      HttpServletRequest request) {
+    requireIdempotencyKey(idempotencyKey);
+    String correlationId = correlationId(request);
+    Principal principal = participant(request, correlationId);
+    Optional<CommandResult> replay = service.replayAcceptOffer(principal, idempotencyKey, id);
+    if (replay.isPresent()) {
+      return ResponseEntity.status(replay.get().status()).body(replay.get().body());
+    }
+    UUID activityId = service.activityIdForOwnOffer(principal.subjectId(), id);
+    AdmissionSnapshot snapshot =
+        eventManagementClient.activateOrValidateAdmission(activityId, correlationId);
+    CommandResult result = service.acceptOffer(principal, idempotencyKey, id, snapshot);
+    return ResponseEntity.status(result.status()).body(result.body());
+  }
+
   @GetMapping("/activities/{activityId}/availability")
   AvailabilityView availability(@PathVariable UUID activityId, HttpServletRequest request) {
     PublicActivity activity =

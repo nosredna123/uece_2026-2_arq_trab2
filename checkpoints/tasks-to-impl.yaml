@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 27
+  completed_tasks: 29
   in_progress_tasks: 0
-  pending_tasks: 17
-  completion_percentage: 61.36
+  pending_tasks: 15
+  completion_percentage: 65.91
 
 tasks:
   - task_id: "T001"
@@ -670,6 +670,57 @@ tasks:
       requirements: ["RF05", "RF06", "RN01", "RN04", "RQ02", "RQ04"]
       full_trace: "RF/RN/RQ -> Phase-4.1 -> T024 -> PostgreSQL activity-row locking, durable idempotency, registration state and free/paid admission behavior"
 
+  - task_id: "T025"
+    description: "Escrever testes property-based e concorrentes para ordenação da fila, cancelamento, expiração e oferta de vaga."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/registration-java/src/test/java/br/uece/eventhub/registration/WaitlistContractTest.java"
+        - file: "services/registration-java/src/test/java/br/uece/eventhub/registration/WaitlistPolicyPropertyTest.java"
+        - file: "services/registration-java/src/test/resources/schema-test.sql"
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker run --network=host maven:3.9.9-eclipse-temurin-21 mvn -B -ff spotless:apply test"
+        passed: 17
+        failed: 0
+        skipped: 0
+      notes: "Concurrent admission tests cover unique FIFO sequence assignment, cancellation promotion, offer expiry, next-entry promotion, idempotent replay, and paid-offer acceptance. The waitlist sequence property and two existing capacity properties passed 3,000 generated checks in total."
+    upstream_trace:
+      plan_item: "4.2"
+      requirements: ["RF06", "RN01", "RN03", "RN04", "RQ04"]
+      full_trace: "RF06/RN01/RN03-RN04/RQ04 -> Phase-4.2 -> T025 -> Concurrent and property-based waitlist/capacity contract evidence"
+
+  - task_id: "T026"
+    description: "Implementar lista de espera ordenada, promoção automática e prazo configurável para aceitar oferta conforme os testes."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationService.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationController.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationExpiryScheduler.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/WaitlistPolicy.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationApplication.java"
+        - file: "services/registration-java/src/main/resources/db/migration/V3__registration_fifo_waitlist.sql"
+        - file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationContractTest.java"
+        - file: "services/README.md"
+        - file: "plan.md"
+        - file: "checkpoints/tasks-to-impl.yaml"
+        - file: "checkpoints/batch-report-T025-T026.yaml"
+    verification:
+      build_passed: true
+      test_results:
+        command: "Registration Maven suite; full Docker Compose test profile; Event Management test image"
+        passed: 136
+        failed: 0
+        skipped: 0
+        breakdown: {registration_java: 17, event_management_java: 8, repository_python: 111}
+      notes: "Waitlisted registrations receive monotonic per-activity sequence numbers while the activity ledger is locked. Cancellation and expiry atomically release and offer slots to the first waiter; acceptance is actor-scoped/idempotent, preserves occupancy, and converts paid offers into pending payment reservations with a new payment deadline. Registration (17), Event Management (8), and repository Python (111) tests passed. The Registration suite included 3,000 jqwik checks; PostgreSQL applied Registration Flyway V3 and the live health endpoint returned 200."
+    upstream_trace:
+      plan_item: "4.2"
+      requirements: ["RF06", "RN01", "RN03", "RN04", "RQ04"]
+      full_trace: "RF06/RN01/RN03-RN04/RQ04 -> Phase-4.2 -> T026 -> PostgreSQL-owned FIFO waitlist, slot offers, acceptance and expiry"
+
   - task_id: "T029"
     description: "Implementar mock Billing durável com cenários configuráveis, idempotência e publicação de resultados."
     status: "completed"
@@ -727,8 +778,6 @@ tasks:
       full_trace: "RF08/RN05/RQ -> Phase-4.4 -> T032 -> durable async Notification mock and capped retry recovery"
 
 pending_tasks:
-  - task_id: "T025"
-  - task_id: "T026"
   - task_id: "T027"
   - task_id: "T028"
   - task_id: "T030"
@@ -987,6 +1036,6 @@ validation:
   errors: []
   warnings:
     - "Documentation/rationale checks are not runtime evidence. T003/T004 readiness checks passed."
-    - "FIFO waitlisting, payment processing, check-in and reporting flows remain pending with T025 and subsequent domain tasks; T013 validates container startup and health only."
+    - "Payment processing, check-in and reporting flows remain pending with T027 and subsequent domain tasks; T013 validates container startup and health only."
     - "GitHub branch rules and protected CI secrets/variables require administrator configuration; semantic and invariant-review gates fail closed until configured."
   blocking_issues: []
