@@ -12,6 +12,7 @@ NAMES = (
     "registration-consistency",
     "messaging-and-resilience",
     "prototype-scope",
+    "demo-webapp",
 )
 
 
@@ -32,6 +33,6 @@ def test_versioned_rationale(number, name):
 
 def test_complete_rationale_inventory():
     paths = sorted((ROOT / "docs/rationales").glob("ADR-*.json"))
-    assert [path.stem for path in paths] == [f"ADR-{n:03}" for n in range(1, 6)]
+    assert [path.stem for path in paths] == [f"ADR-{n:03}" for n in range(1, 7)]
     artifacts = [json.loads(path.read_text())["artifact"] for path in paths]
-    assert len(set(artifacts)) == 5
+    assert len(set(artifacts)) == 6

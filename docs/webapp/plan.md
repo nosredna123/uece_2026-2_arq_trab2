@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Planning deliverable; no web-app implementation has begun.  
+**Status:** Planning deliverable; web-app implementation has not begun.  
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -30,10 +30,12 @@ original [backend plan](../../plan.md).
 
 ### Input inventory
 
-- [Constitution](../../constitution.md), especially sections 1.1-1.7.
+- [Constitution](../../constitution.md), especially sections 1.1-1.7, and
+  [ADR-006](../adr/ADR-006-demo-webapp.md) with its
+  [versioned rationale](../rationales/ADR-006.json).
 - [Domain baseline](../architecture/domain-scenarios.md),
   [service boundaries](../architecture/service-boundaries.md),
-  [data ownership](../architecture/data-ownership.md), and ADR-001 through ADR-005.
+  [data ownership](../architecture/data-ownership.md), and ADR-001 through ADR-006.
 - [Event Management](../contracts/openapi/event-management.yaml),
   [Registration](../contracts/openapi/registration.yaml),
   [Attendance](../contracts/openapi/attendance-certification.yaml),
@@ -376,8 +378,9 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-All task IDs are unimplemented. Tests belong before the corresponding behavior
-within each phase. File paths below are repository-relative **planned** outputs.
+T045-T046 are complete; T047-T080 remain unimplemented. Tests belong before the
+corresponding behavior within each phase. File paths below are repository-relative
+**planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
 Explicit prerequisites appear in section 7; numerical order is the safe default.
 
@@ -386,10 +389,10 @@ Explicit prerequisites appear in section 7; numerical order is the safe default.
 #### Plan 0.1 -- Record the bounded presentation decision
 
 **Requirements:** REQ-001, REQ-002, REQ-015, REQ-017, REQ-019, REQ-021.  
-**Inputs:** constitution, accepted discussion, ADR-001/004/005, current contracts.
+**Inputs:** constitution, accepted discussion, ADR-001/004/005/006, current contracts.
 
-- [ ] T045 [Plan:0.1] Write `docs/adr/ADR-006-demo-webapp.md` and `docs/rationales/ADR-006.json` documenting Python server rendering, section labels, server-only synthetic personas, no domain/storage/gateway expansion, bounded single-worker sessions, and presentation-layer mutation exclusion. Preserve earlier decisions/versions; request human arbitration only for an actual invariant conflict.
-- [ ] T046 [Plan:0.1] Extend `tests/docs/test_rationales.py` to cover exactly ADR-001 through ADR-006 and their artifacts/versions/invariants; update `docs/rationales/README.md` and this plan's decision references. Run rationale/semantic/invariant gates without disabling existing protections.
+- [x] T045 [Plan:0.1] Write `docs/adr/ADR-006-demo-webapp.md` and `docs/rationales/ADR-006.json` documenting Python server rendering, section labels, server-only synthetic personas, no domain/storage/gateway expansion, bounded single-worker sessions, and presentation-layer mutation exclusion. Preserve earlier decisions/versions; request human arbitration only for an actual invariant conflict.
+- [x] T046 [Plan:0.1] Extend `tests/docs/test_rationales.py` to cover exactly ADR-001 through ADR-006 and their artifacts/versions/invariants; update `docs/rationales/README.md` and this plan's decision references. Run rationale/semantic/invariant gates without disabling existing protections.
 
 **Done when:** ADR/rationale schema and inventory tests pass; no earlier
 invariant is weakened; presentation scope is documented before implementation.
