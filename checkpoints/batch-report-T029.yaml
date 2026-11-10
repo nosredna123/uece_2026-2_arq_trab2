@@ -1,0 +1,42 @@
+batch_id: "T029"
+completed_tasks: ["T029"]
+blocked_tasks: []
+files_changed:
+  T029:
+    - {file: "mocks/billing/src/billing_mock", change_type: "created", description: "Validated message models, SQLite operation/attempt store, transactional result outbox and RabbitMQ consumer/publisher worker."}
+    - {file: "mocks/billing/tests/test_billing_processor.py", change_type: "created", description: "Tests approval/refusal/timeout, retries, operation/attempt idempotency, refund matching/rounding, strict config and confirmed outbox behavior."}
+    - {file: "mocks/billing/Dockerfile", change_type: "created", description: "Pinned dependency, isolated test, persistent-store and non-root runtime stages with broker/store healthcheck."}
+    - {file: "mocks/billing/README.md", change_type: "created", description: "Documents scenarios, persistence, retry and broker topology requirements."}
+    - {file: "infra/.env.example", change_type: "modified", description: "Adds the mounted Billing SQLite store path."}
+    - {file: "infra/environment.schema.json", change_type: "modified", description: "Requires a non-empty Billing store path."}
+    - {file: "tests/configuration/test_environment.py", change_type: "modified", description: "Rejects an empty Billing store path."}
+    - {file: "tests/contracts/billing-mock", change_type: "created", description: "Validates emitted payment and refund results against the AsyncAPI JSON Schema."}
+    - {file: "README.md", change_type: "modified", description: "Documents the Billing durable store-volume mapping."}
+    - {file: "plan.md", change_type: "modified", description: "Marked T029 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Recorded T029 completion, evidence and traceability."}
+upstream_artifacts_consumed:
+  T029:
+    - {artifact: "docs/contracts/asyncapi/eventhub.yaml", used_for: "billing.requested and billing.result channel names, producer identity and envelope."}
+    - {artifact: "docs/contracts/asyncapi/README.md", used_for: "Durable queue behavior, timeout/replay, idempotency, quarantine and refund rounding requirements."}
+    - {artifact: "docs/contracts/schemas/billing-request.json", used_for: "Strict payment/refund request fields and conditional requirements."}
+    - {artifact: "docs/contracts/schemas/billing-result.json", used_for: "Exact emitted outcome shape and status values."}
+    - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "Persistent messages, publisher confirms, transactional outbox, manual acknowledgement and at-least-once recovery."}
+    - {artifact: "infra/environment.schema.json", used_for: "Broker, scenario, refund percentage, retry and durable store settings."}
+evidence_mapping:
+  T029:
+    - upstream: "plan.md T029"
+      output: "Runnable Billing mock worker with durable request/outcome handling"
+      evidence: "All 81 repository tests and 18 container tests passed; live RabbitMQ probes verified payment/refund results, duplicate suppression, quarantine and persisted state across worker restart."
+traceability:
+  - {requirement: "RF07, RN02-RN03, RQ03, RQ05", plan_item: "4.3", task: "T029", files: ["mocks/billing", "infra/.env.example", "infra/environment.schema.json"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "Registration outbox and result-consumer implementation remain T027/T028/T030 work; end-to-end enrollment is not claimed."
+test_results:
+  T029:
+    command: "python -m pytest -x --import-mode=importlib; docker build --target test/runtime; live RabbitMQ payment/refund/quarantine/restart probes; git diff --check"
+    passed: 81
+    failed: 0
+    skipped: 0
+    failures: []

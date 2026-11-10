@@ -63,7 +63,9 @@ Compose wiring must map `EVENT_*`/`REGISTRATION_*` database values to each Java
 service's `DATABASE_URL/USER/PASSWORD` and `MIGRATION_USER/PASSWORD`; Python
 `ATTENDANCE_*`/`REPORTING_*` URLs map to `DATABASE_URL` and
 `MIGRATION_DATABASE_URL`. Never reuse bootstrap credentials for runtime.
-Common integration/messaging variables are passed by their names.
+Common integration/messaging variables are passed by their names. Billing
+persists operations, attempts and result outbox messages at `BILLING_STORE_PATH`
+on its dedicated volume.
 
 - Reservation and FIFO offer periods start at the approved configurable 30
   minutes; cancellation window at seven days and refund percentage at 90.

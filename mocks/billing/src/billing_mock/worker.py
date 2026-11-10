@@ -1,0 +1,140 @@
+import logging
+import sqlite3
+import time
+
+import pika
+from pika.exceptions import AMQPError
+from pika.spec import BasicProperties
+
+from billing_mock.models import InvalidBillingRequest
+from billing_mock.processor import BillingProcessor, PublishNotConfirmed
+from billing_mock.settings import WorkerSettings
+from billing_mock.store import BillingStore
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+def create_connection(settings: WorkerSettings) -> pika.BlockingConnection:
+    credentials = pika.PlainCredentials(
+        settings.rabbitmq_user,
+        settings.rabbitmq_password,
+    )
+    parameters = pika.ConnectionParameters(
+        host=settings.rabbitmq_host,
+        port=settings.rabbitmq_port,
+        credentials=credentials,
+        heartbeat=60,
+        blocked_connection_timeout=30,
+    )
+    return pika.BlockingConnection(parameters)
+
+
+def declare_topology(channel: pika.adapters.blocking_connection.BlockingChannel) -> None:
+    channel.exchange_declare(
+        exchange="eventhub.v1",
+        exchange_type="topic",
+        durable=True,
+        auto_delete=False,
+    )
+    channel.queue_declare(queue="billing.v1", durable=True)
+    channel.queue_bind(
+        queue="billing.v1",
+        exchange="eventhub.v1",
+        routing_key="billing.requested",
+    )
+    channel.queue_declare(queue="billing.v1.quarantine", durable=True)
+    channel.queue_bind(
+        queue="billing.v1.quarantine",
+        exchange="eventhub.v1",
+        routing_key="billing.v1.quarantine",
+    )
+
+
+def quarantine_message(
+    channel: pika.adapters.blocking_connection.BlockingChannel,
+    properties: BasicProperties,
+    body: bytes,
+    error: InvalidBillingRequest,
+) -> None:
+    headers = dict(properties.headers or {})
+    headers["errorCode"] = "INVALID_BILLING_REQUEST"
+    headers["errorMessage"] = str(error)
+    channel.basic_publish(
+        exchange="eventhub.v1",
+        routing_key="billing.v1.quarantine",
+        body=body,
+        properties=BasicProperties(
+            content_type="application/json",
+            delivery_mode=2,
+            message_id=properties.message_id,
+            correlation_id=properties.correlation_id,
+            headers=headers,
+        ),
+        mandatory=True,
+    )
+
+
+def run_worker(settings: WorkerSettings) -> None:
+    store = BillingStore(settings.store_path)
+    processor = BillingProcessor(settings.billing, store)
+    retry_delay = settings.retry_initial_seconds
+
+    while True:
+        connection = None
+        try:
+            connection = create_connection(settings)
+            channel = connection.channel()
+            declare_topology(channel)
+            channel.confirm_delivery()
+            processor.publish_pending(channel)
+
+            def on_message(
+                active_channel: pika.adapters.blocking_connection.BlockingChannel,
+                method: pika.spec.Basic.Deliver,
+                properties: BasicProperties,
+                body: bytes,
+            ) -> None:
+                try:
+                    processor.process_message(
+                        body,
+                        transport_message_id=properties.message_id or "",
+                        transport_correlation_id=properties.correlation_id or "",
+                    )
+                except InvalidBillingRequest as error:
+                    quarantine_message(active_channel, properties, body, error)
+                else:
+                    processor.publish_pending(active_channel)
+                active_channel.basic_ack(delivery_tag=method.delivery_tag)
+
+            channel.basic_qos(prefetch_count=1)
+            channel.basic_consume(
+                queue="billing.v1",
+                on_message_callback=on_message,
+                auto_ack=False,
+            )
+            LOGGER.info("Billing mock consuming durable requests")
+            channel.start_consuming()
+            retry_delay = settings.retry_initial_seconds
+        except (AMQPError, OSError, sqlite3.Error, PublishNotConfirmed) as error:
+            LOGGER.error(
+                "Billing worker unavailable error_type=%s retry_seconds=%s",
+                type(error).__name__,
+                retry_delay,
+            )
+            if connection is not None and connection.is_open:
+                connection.close()
+            time.sleep(retry_delay)
+            retry_delay = min(
+                retry_delay * 2,
+                settings.retry_max_seconds,
+            )
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO)
+    run_worker(WorkerSettings.from_environment())
+
+
+if __name__ == "__main__":
+    main()

@@ -28,6 +28,7 @@ def test_example_is_valid_and_real_env_is_ignored():
     ("EVENT_MANAGEMENT_PORT=8081", "EVENT_MANAGEMENT_PORT=99999"),
     ("MESSAGE_RETRY_MAX_SECONDS=60", "MESSAGE_RETRY_MAX_SECONDS=0"),
     ("IDENTITY_MOCK_AVAILABLE=true", "IDENTITY_MOCK_AVAILABLE=yes"),
+    ("BILLING_STORE_PATH=/data/billing.sqlite3", "BILLING_STORE_PATH="),
     ("REPORTING_PORT=8084", "REPORTING_PORT=8081"),
 ])
 def test_invalid_configuration_fails_without_exposing_values(tmp_path, old, new):

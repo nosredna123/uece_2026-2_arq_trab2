@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 17
+  completed_tasks: 18
   in_progress_tasks: 0
-  pending_tasks: 27
-  completion_percentage: 38.64
+  pending_tasks: 26
+  completion_percentage: 40.91
 
 tasks:
   - task_id: "T001"
@@ -473,6 +473,26 @@ tasks:
       requirements: ["RF01", "RN07", "RQ07"]
       full_trace: "RF/RN/RQ -> Phase-3.1 -> T020 -> deterministic Identity mock, synthetic principal fixtures, strict service auth and Docker runtime"
 
+  - task_id: "T029"
+    description: "Implementar mock Billing durável com cenários configuráveis, idempotência e publicação de resultados."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mocks/billing"
+        - file: "infra/.env.example"
+        - file: "infra/environment.schema.json"
+        - file: "tests/configuration/test_environment.py"
+        - file: "tests/contracts/billing-mock/test_billing_result_schema.py"
+        - file: "README.md"
+    verification:
+      build_passed: true
+      test_results: {command: "python -m pytest -x --import-mode=importlib; Docker mock test/runtime builds; RabbitMQ worker integration", passed: 81, failed: 0, skipped: 0}
+      notes: "All 81 repository tests pass; the isolated Docker test stage passes 18 processor tests. Live RabbitMQ integration verified approval, percentage refund, duplicate suppression, intact quarantine, persistent outbox confirmation, restart health and stored operation/attempt recovery. Container runs as UID/GID 10001."
+    upstream_trace:
+      plan_item: "4.3"
+      requirements: ["RF07", "RN02", "RN03", "RQ03", "RQ05"]
+      full_trace: "RF/RN/RQ -> Phase-4.3 -> T029 -> durable Billing mock, idempotent scenarios, RabbitMQ result publication and quarantine"
+
 pending_tasks:
   - task_id: "T013"
   - task_id: "T017"
@@ -485,7 +505,6 @@ pending_tasks:
   - task_id: "T026"
   - task_id: "T027"
   - task_id: "T028"
-  - task_id: "T029"
   - task_id: "T030"
   - task_id: "T031"
   - task_id: "T032"
@@ -661,6 +680,14 @@ traceability_chain:
     plan_item: "3.1"
     tasks: ["T020"]
     files: ["mocks/identity-access", "infra/.env.example", "infra/environment.schema.json"]
+    status: "complete"
+
+  - chain_id: "TRACE-T029"
+    requirement: "RF07/RN02-RN03/RQ03/RQ05"
+    plan_phase: "Phase-4"
+    plan_item: "4.3"
+    tasks: ["T029"]
+    files: ["mocks/billing", "infra/.env.example", "infra/environment.schema.json"]
     status: "complete"
 
 validation:
