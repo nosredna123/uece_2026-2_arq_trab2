@@ -1,0 +1,105 @@
+batch_id: "B03"
+completed_tasks: ["T049", "T050"]
+blocked_tasks: []
+files_changed:
+  T049:
+    - file: "web/demo-python/tests/test_clients.py"
+      change_type: "created"
+      description: "Test each contract operation, request shape, auth/correlation/idempotency, bounded history, and validation."
+    - file: "web/demo-python/tests/test_errors.py"
+      change_type: "created"
+      description: "Test service errors, transport uncertainty, timeouts, malformed bodies, redaction, and redirect handling."
+  T050:
+    - file: "web/demo-python/src/demo_web/clients.py"
+      change_type: "created"
+      description: "Implement typed operation-specific HTTPX calls with fixed origins and no automatic retries."
+    - file: "web/demo-python/src/demo_web/models.py"
+      change_type: "created"
+      description: "Define validated request/response types for existing Event, Registration, Attendance, and Reporting contracts."
+    - file: "web/demo-python/src/demo_web/errors.py"
+      change_type: "created"
+      description: "Represent explicit service, transport, timeout, and invalid-response errors."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T049 and T050 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record six completed tasks and remaining plan prerequisites."
+upstream_artifacts_consumed:
+  T049:
+    - artifact: "docs/contracts/openapi/event-management.yaml"
+      used_for: "Catalog and organizer operation paths, request/response bodies, status codes, and public access."
+    - artifact: "docs/contracts/openapi/registration.yaml"
+      used_for: "Availability, own-registration, cancellation, offer, and idempotency behavior."
+    - artifact: "docs/contracts/openapi/attendance-certification.yaml"
+      used_for: "Check-in and certificate response schemas/statuses."
+    - artifact: "docs/contracts/openapi/reporting.yaml"
+      used_for: "Organization-scoped report schema and bounded filters."
+    - artifact: "docs/contracts/openapi/common.yaml"
+      used_for: "Bearer, correlation, idempotency, error, and pagination conventions."
+  T050:
+    - artifact: "services/attendance-certification-python/src/attendance_service/app.py"
+      used_for: "Existing header/correlation implementation conventions."
+    - artifact: "services/attendance-certification-python/pyproject.toml"
+      used_for: "Repository-compatible FastAPI/HTTPX/Pydantic runtime versions."
+evidence_mapping:
+  T049:
+    - upstream: "docs/contracts/openapi/*.yaml"
+      output: "web/demo-python/tests/test_clients.py and test_errors.py"
+      evidence: "All contract and failure cases pass using HTTPX MockTransport."
+  T050:
+    - upstream: "docs/contracts/openapi/*.yaml"
+      output: "web/demo-python/src/demo_web/clients.py and models.py"
+      evidence: "All tests pass; request history is per-session and bounded; no automatic retry or redirect."
+traceability:
+  - requirement: "REQ-004"
+    plan_item: "1.2"
+    task: "T050"
+    files: ["web/demo-python/src/demo_web/clients.py", "web/demo-python/src/demo_web/models.py"]
+    status: "completed"
+  - requirement: "REQ-006"
+    plan_item: "1.2"
+    task: "T050"
+    files: ["web/demo-python/src/demo_web/clients.py", "web/demo-python/src/demo_web/errors.py"]
+    status: "completed"
+  - requirement: "REQ-008"
+    plan_item: "1.2"
+    task: "T050"
+    files: ["web/demo-python/src/demo_web/clients.py", "web/demo-python/src/demo_web/models.py"]
+    status: "completed"
+  - requirement: "REQ-010"
+    plan_item: "1.2"
+    task: "T050"
+    files: ["web/demo-python/src/demo_web/clients.py", "web/demo-python/src/demo_web/models.py"]
+    status: "completed"
+  - requirement: "REQ-011"
+    plan_item: "1.2"
+    task: "T050"
+    files: ["web/demo-python/src/demo_web/clients.py", "web/demo-python/src/demo_web/models.py"]
+    status: "completed"
+  - requirement: "REQ-014"
+    plan_item: "1.2"
+    task: "T050"
+    files: ["web/demo-python/src/demo_web/clients.py", "web/demo-python/src/demo_web/errors.py"]
+    status: "completed"
+  - requirement: "REQ-015"
+    plan_item: "1.2"
+    task: "T049"
+    files: ["web/demo-python/tests/test_clients.py", "web/demo-python/tests/test_errors.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings: []
+test_results:
+  T049:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 235
+    failed: 0
+    skipped: 6
+    failures: []
+  T050:
+    command: "docker build --target test -f web/demo-python/Dockerfile web/demo-python"
+    passed: 49
+    failed: 0
+    skipped: 0
+    failures: []

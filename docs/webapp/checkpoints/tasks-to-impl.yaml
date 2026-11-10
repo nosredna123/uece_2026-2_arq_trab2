@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 4
+  completed_tasks: 6
   in_progress_tasks: 0
-  pending_tasks: 32
-  completion_percentage: 11.1
+  pending_tasks: 30
+  completion_percentage: 16.7
 
 tasks:
   - task_id: "T045"
@@ -123,11 +123,55 @@ tasks:
       plan_item: "1.1"
       requirements: ["REQ-001", "REQ-015", "REQ-016"]
       full_trace: "REQ-001/015/016 → Phase-1.1 → T048 → demo package, validated settings, and Docker images"
+  - task_id: "T049"
+    description: "Specify HTTP operation and error contracts with mock transports."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_clients.py"
+          changes: ["Exercise all planned service operations and verify paths, query/body shapes, auth, idempotency, correlation, timeout, and bounded session history."]
+        - file: "web/demo-python/tests/test_errors.py"
+          changes: ["Verify error status/code preservation, timeout uncertainty, connection failures, malformed responses, redaction, and no redirect following."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 235
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "HTTPX MockTransport tests use response shapes from the existing OpenAPI contracts."
+    upstream_trace:
+      plan_item: "1.2"
+      requirements: ["REQ-004", "REQ-006", "REQ-008", "REQ-010", "REQ-011", "REQ-014", "REQ-015"]
+      full_trace: "REQ-004/006/008/010/011/014/015 → Phase-1.2 → T049 → HTTP contract and error tests"
+  - task_id: "T050"
+    description: "Implement typed service clients and sanitized diagnostic errors."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/clients.py"
+          changes: ["Implement explicit operation-specific calls, bounded HTTP timeouts, correlation/idempotency headers, and isolated bounded per-session history."]
+        - file: "web/demo-python/src/demo_web/models.py"
+          changes: ["Validate request and response payloads against existing contracts."]
+        - file: "web/demo-python/src/demo_web/errors.py"
+          changes: ["Preserve safe service status/code and explicitly report transport/unknown outcomes."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target test -f web/demo-python/Dockerfile web/demo-python"
+        passed: 49
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The complete root suite passed; runtime client retries are not performed."
+    upstream_trace:
+      plan_item: "1.2"
+      requirements: ["REQ-004", "REQ-006", "REQ-008", "REQ-010", "REQ-011", "REQ-014", "REQ-015"]
+      full_trace: "REQ-004/006/008/010/011/014/015 → Phase-1.2 → T050 → typed service client adapter"
 
 pending_tasks:
-  - {task_id: "T049", description: "Specify HTTP client and error contracts", blocked_by: ["T048"], priority: "P1"}
-  - {task_id: "T050", description: "Implement typed service clients and diagnostics", blocked_by: ["T049"], priority: "P1"}
-  - {task_id: "T051", description: "Specify session, CSRF, and idempotency tests", blocked_by: ["T050"], priority: "P1"}
+  - {task_id: "T051", description: "Specify session, CSRF, and idempotency tests", blocked_by: [], priority: "P1"}
   - {task_id: "T052", description: "Implement sessions and command ledger", blocked_by: ["T051"], priority: "P1"}
   - {task_id: "T053", description: "Specify page and badge contracts", blocked_by: ["T052"], priority: "P1"}
   - {task_id: "T054", description: "Implement shared shell and labels", blocked_by: ["T053"], priority: "P1"}

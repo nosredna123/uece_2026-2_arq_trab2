@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T048 are complete; T049-T080 remain unimplemented. Tests belong before the
+T045-T050 are complete; T051-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -415,8 +415,8 @@ tests pass; no Node or host install required; existing configurations still vali
 
 **Requirements:** REQ-004, REQ-006, REQ-008, REQ-010, REQ-011, REQ-014, REQ-015.
 
-- [ ] T049 [Plan:1.2] Write `web/demo-python/tests/test_clients.py` and `test_errors.py` with HTTPX mock transports using valid existing contract payloads: all needed operations, authorization/correlation headers, timeouts, refused connections, 401/403/404/409/422/503, malformed success bodies, and credential redaction.
-- [ ] T050 [Plan:1.2] Implement `src/demo_web/clients.py`, `models.py`, and `errors.py` with typed operation-specific calls, managed client lifecycle, bounded HTTP timeouts, response validation, correlation/error preservation, no open redirects/proxy, and bounded sanitized per-session request history. Never retry mutations using an implicit new key.
+- [x] T049 [Plan:1.2] Write `web/demo-python/tests/test_clients.py` and `test_errors.py` with HTTPX mock transports using valid existing contract payloads: all needed operations, authorization/correlation headers, timeouts, refused connections, 401/403/404/409/422/503, malformed success bodies, and credential redaction.
+- [x] T050 [Plan:1.2] Implement `src/demo_web/clients.py`, `models.py`, and `errors.py` with typed operation-specific calls, managed client lifecycle, bounded HTTP timeouts, response validation, correlation/error preservation, no open redirects/proxy, and bounded sanitized per-session request history. Never retry mutations using an implicit new key.
 
 **Done when:** each required backend operation is contract-tested; dependency
 failures remain explicit; history contains no bearer/service keys or request bodies.
