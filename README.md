@@ -72,14 +72,15 @@ Common integration/messaging variables are passed by their names.
   with issuance after activity completion; configuration cannot disable that
   invariant. Event prices/capacity/dates are persisted data, not global defaults.
 - Billing payment/refund scenarios independently select APPROVED/REFUSED/TIMEOUT.
-  Notification availability selects true/false. These are synthetic controls,
-  not production integrations or public bypass endpoints.
+  Identity and Notification availability select true/false. These are
+  synthetic controls, not production integrations or public bypass endpoints.
 - Retry initial/max delays and HTTP timeout are externally configured positive
   seconds; max delay cannot be below initial delay. Refund business attempts
   remain unlimited regardless of the delay cap.
 - Java validated configuration records and Python typed settings fail startup
-  for missing/invalid required service settings. Mock startup validators must
-  enforce the same template contract when mocks are implemented.
+  for missing/invalid required service settings. Identity mock startup also
+  requires and strictly validates its key and availability setting; remaining
+  mocks must enforce the same template contract.
 
 The template's host ports are 8081-8085 for the four services and Identity mock;
 database/broker ports are 5432, 5672 and 15672. Set different available ports

@@ -1,0 +1,41 @@
+batch_id: "T020"
+completed_tasks: ["T020"]
+blocked_tasks: []
+files_changed:
+  T020:
+    - {file: "mocks/identity-access/src/identity_access_mock", change_type: "created", description: "FastAPI runtime, strict settings, packaged synthetic fixtures, authenticated validation, health and correlated sanitized errors."}
+    - {file: "mocks/identity-access/tests", change_type: "created", description: "Runtime and authorization-contract tests for trusted roles, organization scope, token rejection, service authentication, unavailable scenario and correlation IDs."}
+    - {file: "mocks/identity-access/Dockerfile", change_type: "created", description: "Pinned Python dependency, test and non-root runtime stages."}
+    - {file: "mocks/identity-access/pyproject.toml", change_type: "created", description: "Pinned FastAPI runtime and test dependencies with packaged fixture data."}
+    - {file: "infra/.env.example", change_type: "modified", description: "Adds the explicit synthetic Identity availability scenario."}
+    - {file: "infra/environment.schema.json", change_type: "modified", description: "Requires and validates the Identity availability boolean."}
+    - {file: "tests/configuration/test_environment.py", change_type: "modified", description: "Rejects invalid Identity availability values."}
+    - {file: "tests/contracts/identity-mock/test_identity_contract.py", change_type: "modified", description: "Reads fixtures from their packaged source location."}
+    - {file: "docs/contracts/README.md", change_type: "modified", description: "Documents trusted principal facts and domain-service authorization responsibility."}
+    - {file: "README.md", change_type: "modified", description: "Documents Identity availability control and strict mock startup settings."}
+    - {file: "plan.md", change_type: "modified", description: "Marked T020 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Recorded T020 completion, evidence and traceability."}
+upstream_artifacts_consumed:
+  T020:
+    - {artifact: "docs/contracts/openapi/identity-mock.yaml", used_for: "Token-only internal endpoint, service authentication, 401/503 behavior and no caller-supplied identity claims."}
+    - {artifact: "docs/contracts/openapi/common.yaml", used_for: "Principal role and organization fields, shared error shape and correlation behavior."}
+    - {artifact: "docs/contracts/openapi/registration.yaml", used_for: "Participant identity ownership remains enforced by domain services."}
+    - {artifact: "mocks/identity-access/src/identity_access_mock/fixtures.json", used_for: "Deterministic synthetic identity tokens, roles and organization scope from T019."}
+evidence_mapping:
+  T020:
+    - upstream: "plan.md T020"
+      output: "Runnable, containerized Identity & Access mock"
+      evidence: "All repository tests pass; Docker test stage passes 12 tests; runtime container responds on health and returns the organizer/participant principal without exposing credentials."
+traceability:
+  - {requirement: "RF01, RN07, RQ07", plan_item: "3.1", task: "T020", files: ["mocks/identity-access", "infra/.env.example", "infra/environment.schema.json"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "Identity mock returns trusted claims; domain services must enforce cross-participant and organization authorization."
+test_results:
+  T020:
+    command: "python -m pytest -x --import-mode=importlib; docker build --target test/runtime; runtime smoke probe; git diff --check"
+    passed: 60
+    failed: 0
+    skipped: 0
+    failures: []

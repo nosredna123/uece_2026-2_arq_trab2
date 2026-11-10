@@ -17,6 +17,10 @@ in [asyncapi/eventhub.yaml](asyncapi/eventhub.yaml) and its
   credential. Validate its allowed caller, not only its presence; tokens and
   keys must never be logged. Internal endpoints are not public development
   bypasses. Mock scenarios are environment-driven, not public control APIs.
+- Identity resolves only configured synthetic tokens and returns trusted
+  subject, role and organization facts. Organizer principals require an
+  organization; participant and global-admin fixtures have no organization
+  binding. Domain services enforce those facts and participant ownership.
 - Every response (including errors) carries `X-Correlation-ID`. Generate a UUID
   when absent; reject malformed supplied values with a correlated 400. Shared
   error fields never contain credentials or foreign participant data.

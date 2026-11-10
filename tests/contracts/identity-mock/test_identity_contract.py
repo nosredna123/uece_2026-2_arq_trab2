@@ -9,7 +9,10 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_synthetic_fixtures_cover_approved_scopes():
     fixtures = json.loads(
-        (ROOT / "mocks/identity-access/fixtures.json").read_text()
+        (
+            ROOT
+            / "mocks/identity-access/src/identity_access_mock/fixtures.json"
+        ).read_text()
     )
     assert set(fixtures) == {"participant", "organizer", "globalAdmin"}
     tokens = [fixture["token"] for fixture in fixtures.values()]
