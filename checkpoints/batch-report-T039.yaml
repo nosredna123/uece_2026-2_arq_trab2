@@ -1,0 +1,73 @@
+batch_id: "T039"
+completed_tasks: ["T039"]
+blocked_tasks: []
+files_changed:
+  T039:
+    - file: "tests/concurrency/test_capacity_contention.py"
+      change_type: "created"
+      description: "Added barrier-synchronized, live API contention for one capacity slot, with concurrent availability sampling and waitlist-promotion assertions."
+    - file: "tests/concurrency/run.sh"
+      change_type: "created"
+      description: "Added a Compose runner requiring and explicitly enabling the waitlist policy."
+    - file: "tests/concurrency/README.md"
+      change_type: "created"
+      description: "Documented the contention setup, invariant checks, invocation, and recorded live result."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T039 complete."
+    - file: "checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Recorded T039 completion, traceability, and validation status."
+upstream_artifacts_consumed:
+  T039:
+    - artifact: "plan.md#T039"
+      used_for: "Controlled-capacity, reproducible-concurrency task scope."
+    - artifact: "docs/architecture/domain-scenarios.md#Invariantes aprovados"
+      used_for: "Capacity and waitlist invariants."
+    - artifact: "docs/contracts/openapi/registration.yaml#/activities/{activityId}/availability"
+      used_for: "Capacity, occupied, and available response fields."
+    - artifact: "services/registration-java/src/test/java/br/uece/eventhub/registration/WaitlistContractTest.java"
+      used_for: "Existing waitlist promotion behavior and status transitions."
+traceability:
+  - requirement: "RF06/RN01/RN04/RQ02/RQ04"
+    plan_item: "6.1"
+    task: "T039"
+    files:
+      - "tests/concurrency"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "The repository Python suite reports one existing Starlette/AnyIO BlockingPortal deprecation warning."
+  - severity: "LOW"
+    message: "Docker Compose used its default builder because buildx is unavailable; all requested builds passed."
+test_results:
+  T039_live_concurrency:
+    command: "PYTHON=/path/to/validation-venv/bin/python bash tests/concurrency/run.sh"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "Capacity-one live test passed with two synchronized participants, concurrent availability sampling, cancellation, and offer promotion."
+  repository_python:
+    command: "PYTHONPATH=.:services/attendance-certification-python/src:services/reporting-python/src:mocks/identity-access/src:mocks/billing/src:mocks/notification/src python -m pytest -x --import-mode=importlib"
+    passed: 131
+    failed: 0
+    skipped: 6
+    failures: []
+    notes: "Six live integration tests were skipped when their dedicated runners were not enabled."
+  changed_python_lint:
+    command: "python -m ruff check --no-cache tests/concurrency/test_capacity_contention.py; bash -n tests/concurrency/run.sh"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "Ruff and Bash syntax checks passed."
+  compose_test_targets:
+    command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "All containerized unit/contract test targets built successfully."

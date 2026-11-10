@@ -313,7 +313,7 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 
 - [x] T037 [Plan:6.1] Criar teste ponta a ponta em `tests/integration/paid-registration-flow/` que inicia os quatro serviços e mocks e valida consulta → reserva → pagamento fake aprovado → confirmação → check-in → certificado → projeção de relatório.
 - [x] T038 [Plan:6.1] Criar cenários de integração para recusa, expiração, promoção de lista de espera, Notification fake indisponível e Reporting indisponível em `tests/integration/failure-scenarios/`.
-- [ ] T039 [Plan:6.1] Executar teste de concorrência em `tests/concurrency/` com capacidade controlada e concorrência reproduzível; registrar que reservas confirmadas/ofertadas nunca superam a capacidade.
+- [x] T039 [Plan:6.1] Executar teste de concorrência em `tests/concurrency/` com capacidade controlada e concorrência reproduzível; registrar que reservas confirmadas/ofertadas nunca superam a capacidade.
 - [ ] T040 [Plan:6.1] Configurar mutation testing para os quatro serviços executáveis e CI; exigir score ≥95% no núcleo de domínio ou documentar cada exclusão aprovada.
 - [ ] T041 [Plan:6.1] Criar ensaio de carga repetível em `tests/load/` e registrar baseline, perfil de até 20× e resultados comparativos de consultas/inscrições em `docs/validation/evidence.md`.
 - [ ] T042 [Plan:6.2] Propagar correlation/trace ID em APIs, mensagens e logs estruturados nos quatro serviços e mocks, incluindo `registrationId` para diagnóstico ponta a ponta.
