@@ -1,6 +1,8 @@
 package br.uece.eventhub.registration;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -39,6 +41,9 @@ class EventManagementClient {
           || response.activity() == null
           || response.activity().organizationId() == null
           || response.activity().price() == null
+          || response.activity().startsAt() == null
+          || response.activity().endsAt() == null
+          || !response.activity().endsAt().isAfter(response.activity().startsAt())
           || response.snapshotId() == null
           || response.snapshotVersion() < 1
           || response.frozenCapacity() < 1) {
@@ -53,7 +58,9 @@ class EventManagementClient {
           response.frozenCapacity(),
           response.activity().organizationId(),
           response.activity().price().amountMinor(),
-          response.activity().price().currency());
+          response.activity().price().currency(),
+          OffsetDateTime.ofInstant(response.activity().startsAt(), ZoneOffset.UTC),
+          OffsetDateTime.ofInstant(response.activity().endsAt(), ZoneOffset.UTC));
     } catch (RestClientResponseException exception) {
       throw dependencyException(exception, "Admission validation");
     } catch (RestClientException exception) {

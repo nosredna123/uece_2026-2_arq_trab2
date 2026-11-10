@@ -82,9 +82,17 @@ class RegistrationContractTest {
   }
 
   @Test
-  void confirmsFreeRegistrationAndReplaysSameIdempotentResponse() {
+  void confirmsFreeRegistrationAndReplaysSameIdempotentResponse() throws Exception {
     ResponseEntity<JsonNode> first = create(ACTIVITY_ID, "free-registration", "participant-token");
     ResponseEntity<JsonNode> retry = create(ACTIVITY_ID, "free-registration", "participant-token");
+    UUID registrationId = UUID.fromString(first.getBody().path("id").asText());
+    String snapshotBody =
+        jdbc.queryForObject(
+            "SELECT body FROM billing_outbox WHERE registration_id = ? "
+                + "AND routing_key = 'registration.changed'",
+            String.class,
+            registrationId);
+    JsonNode snapshot = new ObjectMapper().readTree(snapshotBody);
 
     assertThat(first.getStatusCode().value()).isEqualTo(201);
     assertThat(first.getBody().path("status").asText()).isEqualTo("CONFIRMED");
@@ -93,6 +101,12 @@ class RegistrationContractTest {
     assertThat(retry.getBody().path("id").asText()).isEqualTo(first.getBody().path("id").asText());
     assertThat(occupied(ACTIVITY_ID)).isEqualTo(1);
     assertThat(outboxCount()).isZero();
+    assertThat(registrationSnapshotCount(registrationId)).isEqualTo(1);
+    assertThat(snapshot.path("eventType").asText()).isEqualTo("registration.changed");
+    assertThat(snapshot.path("aggregateVersion").asLong()).isEqualTo(1);
+    assertThat(snapshot.path("data").path("status").asText()).isEqualTo("CONFIRMED");
+    assertThat(snapshot.path("data").path("activityStartsAt").asText()).isNotBlank();
+    assertThat(snapshot.path("data").path("activityEndsAt").asText()).isNotBlank();
   }
 
   @Test
@@ -221,7 +235,8 @@ class RegistrationContractTest {
     UUID registrationId = UUID.fromString(first.getBody().path("id").asText());
     String body =
         jdbc.queryForObject(
-            "SELECT body FROM billing_outbox WHERE registration_id = ?",
+            "SELECT body FROM billing_outbox WHERE registration_id = ? "
+                + "AND routing_key = 'billing.requested'",
             String.class,
             registrationId);
     JsonNode request = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body);
@@ -254,11 +269,7 @@ class RegistrationContractTest {
               return null;
             })
         .when(rabbitTemplate)
-        .send(
-            eq("eventhub.v1"),
-            eq("billing.requested"),
-            any(Message.class),
-            any(CorrelationData.class));
+        .send(eq("eventhub.v1"), anyString(), any(Message.class), any(CorrelationData.class));
 
     int published = outboxPublisher.publishPending();
     ArgumentCaptor<Message> message = ArgumentCaptor.forClass(Message.class);
@@ -269,7 +280,7 @@ class RegistrationContractTest {
             message.capture(),
             any(CorrelationData.class));
 
-    assertThat(published).isEqualTo(1);
+    assertThat(published).isEqualTo(2);
     assertThat(message.getValue().getMessageProperties().getDeliveryMode())
         .isEqualTo(MessageDeliveryMode.PERSISTENT);
     assertThat(message.getValue().getMessageProperties().getMessageId()).isNotBlank();
@@ -281,7 +292,7 @@ class RegistrationContractTest {
                     + "WHERE registration_id = ? AND published_at IS NOT NULL",
                 Integer.class,
                 registrationId))
-        .isEqualTo(1);
+        .isEqualTo(2);
   }
 
   @Test
@@ -296,18 +307,14 @@ class RegistrationContractTest {
               return null;
             })
         .when(rabbitTemplate)
-        .send(
-            eq("eventhub.v1"),
-            eq("billing.requested"),
-            any(Message.class),
-            any(CorrelationData.class));
+        .send(eq("eventhub.v1"), anyString(), any(Message.class), any(CorrelationData.class));
 
     assertThat(outboxPublisher.publishPending()).isZero();
     assertThat(outboxCount()).isEqualTo(1);
   }
 
   @Test
-  void approvalConfirmsPaymentAndDuplicateResultsDoNotChangeCapacity() {
+  void approvalConfirmsPaymentAndDuplicateResultsDoNotChangeCapacity() throws Exception {
     when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
         .thenReturn(admission(ACTIVITY_ID, 1, 2500));
     ResponseEntity<JsonNode> created = create(ACTIVITY_ID, "approved-payment", "participant-token");
@@ -320,6 +327,11 @@ class RegistrationContractTest {
     assertThat(status(registrationId)).isEqualTo("CONFIRMED");
     assertThat(occupied(ACTIVITY_ID)).isEqualTo(1);
     assertThat(inboxDisposition(result.eventId())).isEqualTo("APPLIED_APPROVAL");
+    assertThat(registrationSnapshotCount(registrationId)).isEqualTo(2);
+    JsonNode latestSnapshot =
+        new ObjectMapper().readTree(latestRegistrationSnapshot(registrationId));
+    assertThat(latestSnapshot.path("aggregateVersion").asLong()).isEqualTo(2);
+    assertThat(latestSnapshot.path("data").path("status").asText()).isEqualTo("CONFIRMED");
   }
 
   @Test
@@ -336,13 +348,15 @@ class RegistrationContractTest {
 
     assertThat(status(registrationId)).isEqualTo("REFUSED");
     assertThat(occupied(ACTIVITY_ID)).isZero();
+    assertThat(registrationSnapshotCount(registrationId)).isEqualTo(2);
     ResponseEntity<JsonNode> next = create(ACTIVITY_ID, "after-refusal", "other-participant-token");
     assertThat(next.getStatusCode().value()).isEqualTo(201);
     assertThat(occupied(ACTIVITY_ID)).isEqualTo(1);
   }
 
   @Test
-  void expiredReservationReleasesOnceAndLateApprovalIsRecordedWithoutReconfirmation() {
+  void expiredReservationReleasesOnceAndLateApprovalIsRecordedWithoutReconfirmation()
+      throws Exception {
     when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
         .thenReturn(admission(ACTIVITY_ID, 1, 2500));
     ResponseEntity<JsonNode> created = create(ACTIVITY_ID, "expired-payment", "participant-token");
@@ -360,6 +374,10 @@ class RegistrationContractTest {
     assertThat(status(registrationId)).isEqualTo("EXPIRED");
     assertThat(occupied(ACTIVITY_ID)).isZero();
     assertThat(inboxDisposition(lateApproval.eventId())).isEqualTo("LATE_APPROVAL");
+    assertThat(registrationSnapshotCount(registrationId)).isEqualTo(2);
+    JsonNode latestSnapshot =
+        new ObjectMapper().readTree(latestRegistrationSnapshot(registrationId));
+    assertThat(latestSnapshot.path("data").path("status").asText()).isEqualTo("EXPIRED");
     assertThat(
             jdbc.queryForObject(
                 "SELECT body FROM billing_result_inbox WHERE event_id = ?",
@@ -526,8 +544,25 @@ class RegistrationContractTest {
 
   private int outboxCount() {
     return jdbc.queryForObject(
-        "SELECT COUNT(*) FROM billing_outbox WHERE published_at IS NULL AND suppressed_at IS NULL",
+        "SELECT COUNT(*) FROM billing_outbox WHERE routing_key = 'billing.requested' "
+            + "AND published_at IS NULL AND suppressed_at IS NULL",
         Integer.class);
+  }
+
+  private int registrationSnapshotCount(UUID registrationId) {
+    return jdbc.queryForObject(
+        "SELECT COUNT(*) FROM billing_outbox WHERE registration_id = ? "
+            + "AND routing_key = 'registration.changed'",
+        Integer.class,
+        registrationId);
+  }
+
+  private String latestRegistrationSnapshot(UUID registrationId) {
+    return jdbc.queryForObject(
+        "SELECT body FROM billing_outbox WHERE registration_id = ? "
+            + "AND routing_key = 'registration.changed' ORDER BY created_at DESC LIMIT 1",
+        String.class,
+        registrationId);
   }
 
   private String status(UUID registrationId) {
@@ -543,7 +578,8 @@ class RegistrationContractTest {
   private BillingResult billingResult(UUID registrationId, String status, UUID eventId) {
     String requestBody =
         jdbc.queryForObject(
-            "SELECT body FROM billing_outbox WHERE registration_id = ?",
+            "SELECT body FROM billing_outbox WHERE registration_id = ? "
+                + "AND routing_key = 'billing.requested'",
             String.class,
             registrationId);
     try {
@@ -573,12 +609,15 @@ class RegistrationContractTest {
   }
 
   private AdmissionSnapshot admission(UUID activityId, int capacity, long amountMinor) {
+    OffsetDateTime startsAt = OffsetDateTime.now(ZoneOffset.UTC).plusDays(1);
     return new AdmissionSnapshot(
         UUID.nameUUIDFromBytes(("snapshot-" + activityId).getBytes()),
         1,
         capacity,
         ORGANIZATION_ID,
         amountMinor,
-        "USD");
+        "USD",
+        startsAt,
+        startsAt.plusHours(1));
   }
 }

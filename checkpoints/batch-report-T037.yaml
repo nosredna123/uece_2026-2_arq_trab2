@@ -1,0 +1,78 @@
+batch_id: "T037"
+completed_tasks: ["T037"]
+blocked_tasks: []
+implementation:
+  files_changed:
+    - file: "tests/integration/paid-registration-flow"
+      change_type: "created"
+      description: "Added a Compose-backed paid registration workflow and documented setup."
+    - file: "services/event-management-java/src/main"
+      change_type: "modified"
+      description: "Added transactional activity.changed snapshots and a confirmed, retryable RabbitMQ outbox publisher."
+    - file: "services/event-management-java/src/main/resources/db/migration/V4__activity_changed_outbox.sql"
+      change_type: "created"
+      description: "Added durable Event Management outbox storage and pending-event index."
+    - file: "services/registration-java/src/main"
+      change_type: "modified"
+      description: "Added registration.changed outbox snapshots for creation and lifecycle transitions with required activity schedule data."
+    - file: "services/README.md"
+      change_type: "modified"
+      description: "Documented activity and registration snapshot event publication."
+    - file: "requirements-validation.txt"
+      change_type: "modified"
+      description: "Pinned HTTPX required by the live integration runner."
+upstream_artifacts_consumed:
+  - {artifact: "plan.md", used_for: "T037 scope and Phase 6.1 integration acceptance criteria."}
+  - {artifact: "docs/contracts/asyncapi/eventhub.yaml", used_for: "Activity and registration event routing."}
+  - {artifact: "docs/contracts/schemas/activity-changed.json", used_for: "Event Management activity snapshot payload."}
+  - {artifact: "docs/contracts/schemas/registration-changed.json", used_for: "Registration lifecycle snapshots and conditional deadlines."}
+  - {artifact: "docs/contracts/openapi/attendance-certification.yaml", used_for: "Check-in and certificate endpoints."}
+  - {artifact: "docs/contracts/openapi/reporting.yaml", used_for: "Authorized Reporting query and projected totals."}
+  - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "Transactional outbox, confirmed publication and retry behavior."}
+traceability:
+  - {requirement: "RF04/RF05/RF07/RF09/RF10/RF11/RN02/RN06/RQ03/RQ04/RQ05", plan_item: "6.1", task: "T037", files: ["tests/integration/paid-registration-flow", "services/event-management-java/src/main", "services/registration-java/src/main"], status: "completed"}
+test_results:
+  paid_registration_flow:
+    command: "PYTHON=/path/to/validation-venv/bin/python bash tests/integration/paid-registration-flow/run.sh"
+    passed: 1
+    failed: 0
+    skipped: 0
+    result: "PASS (live Compose flow: catalog and availability, paid reservation, Billing approval, registration confirmation, check-in, certificate retrieval and Reporting counts)"
+  repository_python:
+    command: "PYTHONPATH=.:services/attendance-certification-python/src:services/reporting-python/src:mocks/identity-access/src:mocks/billing/src:mocks/notification/src pytest -x --import-mode=importlib"
+    passed: 130
+    failed: 0
+    skipped: 1
+    result: "PASS (the live integration test is skipped when the dedicated Compose runner is not enabled)"
+  event_management_java:
+    command: "mvn -B -ff spotless:apply test"
+    passed: 8
+    failed: 0
+    skipped: 0
+    result: "PASS"
+  registration_java:
+    command: "mvn -B -ff spotless:apply test"
+    passed: 26
+    failed: 0
+    skipped: 0
+    result: "PASS"
+  compose_test_targets:
+    command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build"
+    passed: 0
+    failed: 0
+    skipped: 0
+    result: "PASS (all test and runtime images built; test stages execute their fail-fast suites)"
+validation:
+  live_compose_flow: "PASS"
+  registration_snapshot_outbox: "PASS (versioned registration.changed snapshots projected by Attendance and Reporting)"
+  activity_snapshot_outbox: "PASS (published activity snapshot enabled Attendance eligibility)"
+  reporting_projection: "PASS (confirmed=1, paymentsApproved=1, checkedIn=1, certificates=1)"
+  compose_test_targets: "PASS"
+  python_repository_suite: "PASS (130 passed, 1 skipped)"
+  event_management_java_suite: "PASS (8 tests)"
+  registration_java_suite: "PASS (26 tests)"
+warnings:
+  - severity: LOW
+    message: "The repository Python suite reports one existing Starlette/AnyIO BlockingPortal deprecation warning."
+  - severity: LOW
+    message: "Docker Compose warned that buildx is unavailable and used its default builder; all requested image builds passed."

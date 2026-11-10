@@ -31,8 +31,9 @@ waiter; offers can be accepted through the Registration API and expire after
 the configured `WAITLIST_OFFER_EXPIRY_MINUTES` deadline. A scheduled worker
 expires overdue offers and promotes the next waiter without exceeding frozen
 activity capacity. Paid reservations atomically persist a Billing request in
-Registration's outbox. Publisher confirms, persistent messages, stable event and
-attempt identities, and capped retry delays make request publication replayable.
+Registration's outbox; lifecycle snapshots are persisted there as well for
+Attendance, Reporting and Notification. Publisher confirms, persistent messages,
+stable event and attempt identities, and capped retry delays make publication replayable.
 Billing results are correlated and deduplicated in the Registration inbox before
 manual acknowledgment; approvals confirm only live reservations, while refusal
 and database-clock expiry release a slot once and promote the next waiter. Late
@@ -48,8 +49,9 @@ V3 adds bounded database locks for concurrent idempotent commands. Registration
 V2 adds durable command receipts for idempotent enrollment and cancellation;
 V3 adds FIFO waitlist sequencing, V4 adds the Billing request outbox, V5 adds
 expired-request suppression and the Billing result inbox, and V6 retains the
-complete result payload for late-payment reconciliation. Later migrations must
-be new versions, never edits to already applied SQL.
+complete result payload for late-payment reconciliation. Event Management V4
+adds its transactional `activity.changed` outbox, published with confirms and
+retry. Later migrations must be new versions, never edits to already applied SQL.
 Runtime credentials differ from migration credentials; provisioning/grants are
 the responsibility of the Compose foundation.
 

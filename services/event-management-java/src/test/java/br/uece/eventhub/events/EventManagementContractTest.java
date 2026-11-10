@@ -43,6 +43,7 @@ class EventManagementContractTest {
 
   @BeforeEach
   void resetDatabaseAndIdentity() {
+    jdbcTemplate.update("DELETE FROM event_outbox");
     jdbcTemplate.update("DELETE FROM command_receipt");
     jdbcTemplate.update("DELETE FROM admission_snapshot");
     jdbcTemplate.update("DELETE FROM activity");
@@ -58,18 +59,16 @@ class EventManagementContractTest {
   }
 
   @Test
-  void publicCatalogExposesOnlyPublishedEventsAndActivities() {
+  void publicCatalogExposesOnlyPublishedEventsAndActivities() throws Exception {
     ResponseEntity<JsonNode> draft = createEvent("Catalog Event", "create-event-1");
     assertThat(draft.getStatusCode().value()).isEqualTo(201);
     UUID eventId = UUID.fromString(draft.getBody().path("id").asText());
     ResponseEntity<JsonNode> laterActivity =
         createActivity(eventId, "Later activity", "2030-01-01T12:00:00Z", "create-activity-1");
     assertThat(laterActivity.getStatusCode().value()).isEqualTo(201);
-    assertThat(
-            createActivity(eventId, "Earlier activity", "2030-01-01T10:00:00Z", "create-activity-2")
-                .getStatusCode()
-                .value())
-        .isEqualTo(201);
+    ResponseEntity<JsonNode> earlierActivity =
+        createActivity(eventId, "Earlier activity", "2030-01-01T10:00:00Z", "create-activity-2");
+    assertThat(earlierActivity.getStatusCode().value()).isEqualTo(201);
 
     ResponseEntity<JsonNode> beforePublication = client.getForEntity("/events", JsonNode.class);
     assertThat(beforePublication.getStatusCode().value()).isEqualTo(200);
@@ -92,6 +91,14 @@ class EventManagementContractTest {
 
     ResponseEntity<JsonNode> published = post("/events/" + eventId + "/publish", null, "publish-1");
     assertThat(published.getStatusCode().value()).isEqualTo(200);
+    assertThat(outboxCount()).isEqualTo(2);
+    assertThat(eventSnapshotStatus(UUID.fromString(laterActivity.getBody().path("id").asText()), 2))
+        .isEqualTo("PUBLISHED");
+    assertThat(
+            eventSnapshotStatus(UUID.fromString(earlierActivity.getBody().path("id").asText()), 2))
+        .isEqualTo("PUBLISHED");
+    post("/events/" + eventId + "/publish", null, "publish-replay-new-key");
+    assertThat(outboxCount()).isEqualTo(2);
     ResponseEntity<JsonNode> catalog = client.getForEntity("/events?q=cAtAlOg", JsonNode.class);
     assertThat(catalog.getStatusCode().value()).isEqualTo(200);
     assertThat(catalog.getBody()).hasSize(1);
@@ -115,6 +122,9 @@ class EventManagementContractTest {
         post("/events/" + eventId + "/cancel", null, "cancel-event");
     assertThat(cancelled.getStatusCode().value()).isEqualTo(200);
     assertThat(cancelled.getBody().path("status").asText()).isEqualTo("CANCELLED");
+    assertThat(outboxCount()).isEqualTo(4);
+    assertThat(eventSnapshotStatus(UUID.fromString(laterActivity.getBody().path("id").asText()), 3))
+        .isEqualTo("CANCELLED");
     assertThat(client.getForEntity("/events", JsonNode.class).getBody()).isEmpty();
     assertThat(client.getForEntity("/events/" + eventId, JsonNode.class).getStatusCode().value())
         .isEqualTo(404);
@@ -361,5 +371,24 @@ class EventManagementContractTest {
         capacity,
         "price",
         java.util.Map.of("amountMinor", 0, "currency", "BRL"));
+  }
+
+  private int outboxCount() {
+    return jdbcTemplate.queryForObject(
+        "SELECT COUNT(*) FROM event_outbox WHERE routing_key = 'activity.changed'", Integer.class);
+  }
+
+  private String eventSnapshotStatus(UUID activityId, long aggregateVersion) throws Exception {
+    String body =
+        jdbcTemplate.queryForObject(
+            "SELECT body FROM event_outbox WHERE aggregate_id = ? AND aggregate_version = ?",
+            String.class,
+            activityId,
+            aggregateVersion);
+    return new com.fasterxml.jackson.databind.ObjectMapper()
+        .readTree(body)
+        .path("data")
+        .path("status")
+        .asText();
   }
 }

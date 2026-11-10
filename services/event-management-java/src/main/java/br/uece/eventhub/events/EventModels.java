@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 record EventInput(
@@ -60,3 +61,22 @@ record AdmissionSnapshotView(
 record CommandResult(int status, Object body) {}
 
 record StoredCommand(String requestHash, Integer responseStatus, String responseBody) {}
+
+record ActivityChangedEvent(
+    UUID eventId,
+    String eventType,
+    String schemaVersion,
+    UUID aggregateId,
+    long aggregateVersion,
+    UUID correlationId,
+    OffsetDateTime occurredAt,
+    String producer,
+    ActivityChangedData data) {}
+
+record ActivityChangedData(
+    UUID activityId,
+    UUID eventId,
+    UUID organizationId,
+    String status,
+    Instant startsAt,
+    Instant endsAt) {}

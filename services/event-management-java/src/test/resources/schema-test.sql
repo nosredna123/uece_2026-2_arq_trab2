@@ -48,6 +48,23 @@ CREATE TABLE IF NOT EXISTS command_receipt (
     )
 );
 
+CREATE TABLE IF NOT EXISTS event_outbox (
+  event_id UUID PRIMARY KEY,
+  aggregate_id UUID NOT NULL,
+  aggregate_version BIGINT NOT NULL CHECK (aggregate_version > 0),
+  routing_key VARCHAR(128) NOT NULL,
+  correlation_id UUID NOT NULL,
+  body CLOB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  available_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  published_at TIMESTAMP WITH TIME ZONE,
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  claim_token UUID,
+  claim_expires_at TIMESTAMP WITH TIME ZONE,
+  last_error VARCHAR(512),
+  CHECK ((claim_token IS NULL) = (claim_expires_at IS NULL))
+);
+
 CREATE TABLE IF NOT EXISTS command_lock (
     stripe_id smallint PRIMARY KEY CHECK (stripe_id BETWEEN 0 AND 63)
 );

@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 36
+  completed_tasks: 37
   in_progress_tasks: 0
-  pending_tasks: 8
-  completion_percentage: 81.82
+  pending_tasks: 7
+  completion_percentage: 84.09
 
 tasks:
   - task_id: "T001"
@@ -941,8 +941,32 @@ tasks:
       requirements: ["RF11", "RN07", "RQ01", "RQ03", "RQ05", "RQ06", "RQ07"]
       full_trace: "RF11/RN07/RQ01/RQ03/RQ05/RQ06/RQ07 -> Phase-5.2 -> T036 -> event-fed Reporting projection and authorized API with no cross-service database reads"
 
-pending_tasks:
   - task_id: "T037"
+    description: "Criar teste ponta a ponta de inscrição paga, aprovação, check-in, certificado e relatório."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "tests/integration/paid-registration-flow"
+        - file: "services/event-management-java/src/main"
+        - file: "services/event-management-java/src/main/resources/db/migration/V4__activity_changed_outbox.sql"
+        - file: "services/registration-java/src/main"
+        - file: "services/README.md"
+        - file: "requirements-validation.txt"
+      notes: "Added a Compose-driven paid-flow test. Fixed missing upstream activity.changed and registration.changed producers by persisting snapshots transactionally and publishing them with confirmed, retryable outboxes."
+    verification:
+      build_passed: true
+      test_results:
+        command: "paid-flow integration runner; Python repository suite with -x; both Java Maven suites with -ff; Compose --profile test build"
+        passed: 165
+        failed: 0
+        skipped: 1
+      notes: "End-to-end paid reservation, fake approval, confirmation, check-in, certificate retrieval and Reporting projection passed (1 test). Python suite passed 130 with one integration test skipped outside the live runner; Event Management Java passed 8 and Registration Java passed 26. All Compose test targets built successfully."
+    upstream_trace:
+      plan_item: "6.1"
+      requirements: ["RF04", "RF05", "RF07", "RF09", "RF10", "RF11", "RN02", "RN06", "RQ03", "RQ04", "RQ05"]
+      full_trace: "RF04/RF05/RF07/RF09/RF10/RF11 -> Phase-6.1 -> T037 -> live paid-registration-to-reporting integration"
+
+pending_tasks:
   - task_id: "T038"
   - task_id: "T039"
   - task_id: "T040"
@@ -1224,12 +1248,22 @@ traceability_chain:
       - "infra/docker-compose.yml"
       - "docs/contracts/openapi/reporting.yaml"
     status: "complete"
+  - chain_id: "TRACE-T037"
+    requirement: "RF04/RF05/RF07/RF09/RF10/RF11/RN02/RN06/RQ03/RQ04/RQ05"
+    plan_phase: "Phase-6"
+    plan_item: "6.1"
+    tasks: ["T037"]
+    files:
+      - "tests/integration/paid-registration-flow"
+      - "services/event-management-java/src/main"
+      - "services/registration-java/src/main"
+    status: "complete"
 
 validation:
   passed: true
   errors: []
   warnings:
     - "Documentation/rationale checks are not runtime evidence. T003/T004 readiness checks passed."
-    - "The full paid-registration-to-reporting flow is scheduled for T037; T036 separately verified Reporting's live authorized query, database migration and RabbitMQ consumer."
+    - "T037 passed the live paid-registration-to-reporting flow, including RabbitMQ projections, check-in, certificate issuance and authorized report counts."
     - "GitHub branch rules and protected CI secrets/variables require administrator configuration; semantic and invariant-review gates fail closed until configured."
   blocking_issues: []

@@ -1,5 +1,6 @@
 package br.uece.eventhub.registration;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -17,7 +18,9 @@ record AdmissionSnapshot(
     int frozenCapacity,
     UUID organizationId,
     long amountMinor,
-    String currency) {}
+    String currency,
+    OffsetDateTime activityStartsAt,
+    OffsetDateTime activityEndsAt) {}
 
 record PublicActivity(UUID id, int capacity) {}
 
@@ -88,3 +91,29 @@ record BillingResultData(
     String status,
     long amountMinor,
     String currency) {}
+
+record RegistrationChangedEvent(
+    UUID eventId,
+    String eventType,
+    String schemaVersion,
+    UUID aggregateId,
+    long aggregateVersion,
+    UUID correlationId,
+    OffsetDateTime occurredAt,
+    String producer,
+    RegistrationChangedData data) {}
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+record RegistrationChangedData(
+    UUID registrationId,
+    UUID activityId,
+    UUID organizationId,
+    UUID participantId,
+    String status,
+    String refundStatus,
+    long amountMinor,
+    String currency,
+    OffsetDateTime activityStartsAt,
+    OffsetDateTime activityEndsAt,
+    OffsetDateTime expiresAt,
+    OffsetDateTime offerExpiresAt) {}

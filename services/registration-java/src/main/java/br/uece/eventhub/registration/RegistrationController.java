@@ -78,8 +78,10 @@ class RegistrationController {
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       HttpServletRequest request) {
     requireIdempotencyKey(idempotencyKey);
-    Principal principal = participant(request, correlationId(request));
-    CommandResult result = service.cancel(principal, idempotencyKey, id);
+    String correlationId = correlationId(request);
+    Principal principal = participant(request, correlationId);
+    CommandResult result =
+        service.cancel(principal, idempotencyKey, id, UUID.fromString(correlationId));
     return ResponseEntity.status(result.status()).body(result.body());
   }
 

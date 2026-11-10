@@ -19,3 +19,6 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema-test.sql
+eventhub:
+  messaging:
+    enabled: false

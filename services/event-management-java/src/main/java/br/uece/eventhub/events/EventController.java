@@ -51,7 +51,9 @@ public class EventController {
       @Valid @RequestBody EventInput input,
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       HttpServletRequest request) {
-    return command(service.updateEvent(principal(request), eventId, idempotencyKey, input));
+    return command(
+        service.updateEvent(
+            principal(request), eventId, idempotencyKey, input, correlationId(request)));
   }
 
   @PostMapping("/events/{eventId}/publish")
@@ -59,7 +61,8 @@ public class EventController {
       @PathVariable UUID eventId,
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       HttpServletRequest request) {
-    return command(service.publishEvent(principal(request), eventId, idempotencyKey));
+    return command(
+        service.publishEvent(principal(request), eventId, idempotencyKey, correlationId(request)));
   }
 
   @PostMapping("/events/{eventId}/cancel")
@@ -67,7 +70,8 @@ public class EventController {
       @PathVariable UUID eventId,
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       HttpServletRequest request) {
-    return command(service.cancelEvent(principal(request), eventId, idempotencyKey));
+    return command(
+        service.cancelEvent(principal(request), eventId, idempotencyKey, correlationId(request)));
   }
 
   @GetMapping("/events/{eventId}/activities")
@@ -84,7 +88,9 @@ public class EventController {
       @Valid @RequestBody ActivityInput input,
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       HttpServletRequest request) {
-    return command(service.createActivity(principal(request), eventId, idempotencyKey, input));
+    return command(
+        service.createActivity(
+            principal(request), eventId, idempotencyKey, input, correlationId(request)));
   }
 
   @GetMapping("/activities/{activityId}")
@@ -98,7 +104,9 @@ public class EventController {
       @Valid @RequestBody ActivityInput input,
       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       HttpServletRequest request) {
-    return command(service.updateActivity(principal(request), activityId, idempotencyKey, input));
+    return command(
+        service.updateActivity(
+            principal(request), activityId, idempotencyKey, input, correlationId(request)));
   }
 
   @PostMapping("/internal/activities/{activityId}/admission")
@@ -115,8 +123,12 @@ public class EventController {
         || authorization.substring("Bearer ".length()).isBlank()) {
       throw new ApiException(401, "UNAUTHENTICATED", "A valid bearer credential is required.");
     }
-    String correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUTE).toString();
-    return identityClient.validate(authorization.substring("Bearer ".length()), correlationId);
+    return identityClient.validate(
+        authorization.substring("Bearer ".length()), correlationId(request).toString());
+  }
+
+  private static UUID correlationId(HttpServletRequest request) {
+    return UUID.fromString(request.getAttribute(CorrelationIdFilter.ATTRIBUTE).toString());
   }
 
   private static ResponseEntity<?> command(CommandResult result) {

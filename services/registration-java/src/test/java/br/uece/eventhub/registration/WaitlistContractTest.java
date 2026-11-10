@@ -157,6 +157,7 @@ class WaitlistContractTest {
 
   @Test
   void acceptingPaidOfferStartsPaymentReservationWithoutReleasingTheSlot() {
+    OffsetDateTime startsAt = OffsetDateTime.now(ZoneOffset.UTC).plusDays(1);
     when(eventManagementClient.activateOrValidateAdmission(any(UUID.class), anyString()))
         .thenReturn(
             new AdmissionSnapshot(
@@ -165,7 +166,9 @@ class WaitlistContractTest {
                 CAPACITY,
                 ORGANIZATION_ID,
                 2500,
-                "USD"));
+                "USD",
+                startsAt,
+                startsAt.plusHours(1)));
     ResponseEntity<JsonNode> holder = create("paid-holder");
     ResponseEntity<JsonNode> waiter = create("paid-waiter");
     UUID holderId = UUID.fromString(holder.getBody().path("id").asText());
@@ -194,10 +197,18 @@ class WaitlistContractTest {
     assertThat(replayed.getBody().path("id").asText()).isEqualTo(waiterId.toString());
     assertThat(
             jdbc.queryForObject(
-                "SELECT COUNT(*) FROM billing_outbox WHERE registration_id = ?",
+                "SELECT COUNT(*) FROM billing_outbox WHERE registration_id = ? "
+                    + "AND routing_key = 'billing.requested'",
                 Integer.class,
                 waiterId))
         .isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM billing_outbox WHERE registration_id = ? "
+                    + "AND routing_key = 'registration.changed'",
+                Integer.class,
+                waiterId))
+        .isEqualTo(3);
     assertThat(occupied()).isEqualTo(CAPACITY);
   }
 
@@ -231,13 +242,16 @@ class WaitlistContractTest {
   }
 
   private AdmissionSnapshot admission(UUID activityId) {
+    OffsetDateTime startsAt = OffsetDateTime.now(ZoneOffset.UTC).plusDays(1);
     return new AdmissionSnapshot(
         UUID.nameUUIDFromBytes(("snapshot-" + activityId).getBytes(StandardCharsets.UTF_8)),
         1,
         CAPACITY,
         ORGANIZATION_ID,
         0,
-        "USD");
+        "USD",
+        startsAt,
+        startsAt.plusHours(1));
   }
 
   private List<WaitlistedRecord> waitlist() {

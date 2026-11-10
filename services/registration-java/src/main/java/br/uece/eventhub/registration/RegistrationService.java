@@ -1,6 +1,7 @@
 package br.uece.eventhub.registration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -185,6 +186,11 @@ class RegistrationService {
                 registration.price().amountMinor(),
                 registration.price().currency(),
                 registration.version());
+            insertRegistrationSnapshot(
+                registration,
+                correlationId,
+                snapshot.activityStartsAt(),
+                snapshot.activityEndsAt());
             if (waitlisted) {
               jdbc.update(
                   "INSERT INTO waitlist_entry (registration_id, activity_id, sequence) "
@@ -211,7 +217,7 @@ class RegistrationService {
     }
   }
 
-  CommandResult cancel(Principal principal, String key, UUID registrationId) {
+  CommandResult cancel(Principal principal, String key, UUID registrationId, UUID correlationId) {
     String requestHash = hash("cancel:" + registrationId);
     try {
       return transaction.execute(
@@ -283,6 +289,7 @@ class RegistrationService {
             }
 
             RegistrationView cancelled = findRegistration(registrationId);
+            insertRegistrationSnapshot(cancelled, correlationId);
             CommandResult result = new CommandResult(200, cancelled);
             saveReceipt(principal.subjectId(), "CANCEL", key, requestHash, result);
             return result;
@@ -409,6 +416,11 @@ class RegistrationService {
                       503, "WAITLIST_INTEGRITY_ERROR", "The active offer changed unexpectedly.");
                 }
                 RegistrationView accepted = findRegistration(registrationId);
+                insertRegistrationSnapshot(
+                    accepted,
+                    correlationId,
+                    snapshot.activityStartsAt(),
+                    snapshot.activityEndsAt());
                 if (paid) {
                   insertBillingRequest(accepted, correlationId);
                 }
@@ -519,9 +531,11 @@ class RegistrationService {
                             + "version = version + 1 WHERE id = ? AND status = 'PENDING_PAYMENT'",
                         registrationId);
                 requirePaymentTransition(changed);
+                insertRegistrationSnapshot(
+                    findRegistration(registrationId), result.correlationId());
                 disposition = "APPLIED_APPROVAL";
               } else {
-                refusePaymentLocked(current, ledger);
+                refusePaymentLocked(current, ledger, result.correlationId());
                 disposition = "APPLIED_REFUSAL";
               }
             } else if (current.status().equals("EXPIRED")
@@ -739,13 +753,14 @@ class RegistrationService {
     }
   }
 
-  private void refusePaymentLocked(RegistrationView current, Ledger ledger) {
+  private void refusePaymentLocked(RegistrationView current, Ledger ledger, UUID correlationId) {
     int changed =
         jdbc.update(
             "UPDATE registration SET status = 'REFUSED', version = version + 1 "
                 + "WHERE id = ? AND status = 'PENDING_PAYMENT'",
             current.id());
     requirePaymentTransition(changed);
+    insertRegistrationSnapshot(findRegistration(current.id()), correlationId);
     int occupied = release(ledger);
     updateOccupied(current.activityId(), ledger.occupied(), occupied);
     promoteNext(current.activityId(), ledger.capacity(), occupied);
@@ -766,6 +781,7 @@ class RegistrationService {
             + "AND published_at IS NULL",
         databaseNow(),
         current.id());
+    insertRegistrationSnapshot(findRegistration(current.id()));
     promoteNext(current.activityId(), ledger.capacity(), occupied);
   }
 
@@ -786,6 +802,7 @@ class RegistrationService {
       throw new ApiException(
           503, "WAITLIST_INTEGRITY_ERROR", "The active offer changed unexpectedly.");
     }
+    insertRegistrationSnapshot(findRegistration(current.id()));
     int released = release(ledger);
     updateOccupied(current.activityId(), ledger.occupied(), released);
     promoteNext(current.activityId(), ledger.capacity(), released);
@@ -928,6 +945,105 @@ class RegistrationService {
     }
   }
 
+  private void insertRegistrationSnapshot(
+      RegistrationView registration,
+      UUID correlationId,
+      OffsetDateTime activityStartsAt,
+      OffsetDateTime activityEndsAt) {
+    if (activityStartsAt == null
+        || activityEndsAt == null
+        || !activityEndsAt.isAfter(activityStartsAt)) {
+      throw new ApiException(
+          503,
+          "EVENT_MANAGEMENT_UNAVAILABLE",
+          "Admission validation returned invalid activity dates.");
+    }
+
+    OffsetDateTime occurredAt = databaseNow();
+    UUID eventId = UUID.randomUUID();
+    RegistrationChangedEvent event =
+        new RegistrationChangedEvent(
+            eventId,
+            "registration.changed",
+            "1.0.0",
+            registration.id(),
+            registration.version(),
+            correlationId,
+            occurredAt,
+            "registration",
+            new RegistrationChangedData(
+                registration.id(),
+                registration.activityId(),
+                registration.organizationId(),
+                registration.participantId(),
+                registration.status(),
+                registration.refundStatus(),
+                registration.price().amountMinor(),
+                registration.price().currency(),
+                activityStartsAt,
+                activityEndsAt,
+                registration.expiresAt(),
+                registration.offerExpiresAt()));
+    try {
+      jdbc.update(
+          "INSERT INTO billing_outbox (event_id, registration_id, routing_key, correlation_id, "
+              + "body, created_at, available_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          eventId,
+          registration.id(),
+          "registration.changed",
+          correlationId,
+          objectMapper.writeValueAsString(event),
+          occurredAt,
+          occurredAt);
+    } catch (JsonProcessingException exception) {
+      throw new ApiException(
+          500, "EVENT_SERIALIZATION_FAILED", "Registration snapshot could not be persisted.");
+    }
+  }
+
+  private void insertRegistrationSnapshot(RegistrationView registration, UUID correlationId) {
+    RegistrationSnapshotContext context = registrationSnapshotContext(registration.id());
+    insertRegistrationSnapshot(
+        registration, correlationId, context.activityStartsAt(), context.activityEndsAt());
+  }
+
+  private void insertRegistrationSnapshot(RegistrationView registration) {
+    RegistrationSnapshotContext context = registrationSnapshotContext(registration.id());
+    insertRegistrationSnapshot(
+        registration,
+        context.correlationId(),
+        context.activityStartsAt(),
+        context.activityEndsAt());
+  }
+
+  private RegistrationSnapshotContext registrationSnapshotContext(UUID registrationId) {
+    List<String> bodies =
+        jdbc.query(
+            "SELECT body FROM billing_outbox WHERE registration_id = ? "
+                + "AND routing_key = 'registration.changed' ORDER BY created_at, event_id LIMIT 1",
+            (row, rowNumber) -> row.getString("body"),
+            registrationId);
+    if (bodies.isEmpty()) {
+      throw new ApiException(
+          503,
+          "REGISTRATION_SNAPSHOT_MISSING",
+          "Registration activity details are unavailable for event publication.");
+    }
+    try {
+      JsonNode event = objectMapper.readTree(bodies.getFirst());
+      JsonNode data = event.path("data");
+      return new RegistrationSnapshotContext(
+          UUID.fromString(event.path("correlationId").asText()),
+          OffsetDateTime.parse(data.path("activityStartsAt").asText()),
+          OffsetDateTime.parse(data.path("activityEndsAt").asText()));
+    } catch (JsonProcessingException | IllegalArgumentException exception) {
+      throw new ApiException(
+          503,
+          "REGISTRATION_SNAPSHOT_INVALID",
+          "Stored registration activity details could not be restored.");
+    }
+  }
+
   private int promoteNext(UUID activityId, int capacity, int occupied) {
     if (occupied >= capacity) {
       return occupied;
@@ -955,6 +1071,7 @@ class RegistrationService {
       throw new ApiException(
           503, "WAITLIST_INTEGRITY_ERROR", "The next waitlist entry changed unexpectedly.");
     }
+    insertRegistrationSnapshot(findRegistration(registrationId));
     updateOccupied(activityId, occupied, promotedOccupancy);
     return promotedOccupancy;
   }
@@ -1006,7 +1123,10 @@ class RegistrationService {
     }
     if (snapshot.amountMinor() < 0
         || snapshot.currency() == null
-        || !snapshot.currency().matches("[A-Z]{3}")) {
+        || !snapshot.currency().matches("[A-Z]{3}")
+        || snapshot.activityStartsAt() == null
+        || snapshot.activityEndsAt() == null
+        || !snapshot.activityEndsAt().isAfter(snapshot.activityStartsAt())) {
       throw new ApiException(
           503, "EVENT_MANAGEMENT_UNAVAILABLE", "Admission validation returned invalid pricing.");
     }
@@ -1138,4 +1258,7 @@ class RegistrationService {
   }
 
   private record Receipt(String requestHash, int responseStatus, String responseBody) {}
+
+  private record RegistrationSnapshotContext(
+      UUID correlationId, OffsetDateTime activityStartsAt, OffsetDateTime activityEndsAt) {}
 }

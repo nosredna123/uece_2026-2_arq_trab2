@@ -1,9 +1,13 @@
 package br.uece.eventhub.events;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,9 +18,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class EventRepository {
   private final JdbcTemplate jdbcTemplate;
+  private final ObjectMapper objectMapper;
 
-  public EventRepository(JdbcTemplate jdbcTemplate) {
+  public EventRepository(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
     this.jdbcTemplate = jdbcTemplate;
+    this.objectMapper = objectMapper;
   }
 
   public EventView createEvent(EventInput input) {
@@ -151,6 +157,62 @@ public class EventRepository {
         eventId,
         limit,
         offset);
+  }
+
+  public List<ActivityView> listActivitiesForEvent(UUID eventId) {
+    return jdbcTemplate.query(
+        """
+        SELECT a.id, a.event_id, e.organization_id, a.title, a.starts_at, a.ends_at,
+               a.location, a.responsible, a.capacity, a.amount_minor, a.currency,
+               a.version, a.capacity_frozen
+        FROM activity a JOIN event e ON e.id = a.event_id
+        WHERE a.event_id = ?
+        ORDER BY a.starts_at, a.id
+        """,
+        ACTIVITY_MAPPER,
+        eventId);
+  }
+
+  public void incrementActivityVersions(UUID eventId) {
+    jdbcTemplate.update("UPDATE activity SET version = version + 1 WHERE event_id = ?", eventId);
+  }
+
+  public void enqueueActivityChanged(ActivityView activity, String status, UUID correlationId) {
+    OffsetDateTime occurredAt = OffsetDateTime.now(ZoneOffset.UTC);
+    UUID eventId = UUID.randomUUID();
+    ActivityChangedEvent event =
+        new ActivityChangedEvent(
+            eventId,
+            "activity.changed",
+            "1.0.0",
+            activity.id(),
+            activity.version(),
+            correlationId,
+            occurredAt,
+            "event-management",
+            new ActivityChangedData(
+                activity.id(),
+                activity.eventId(),
+                activity.organizationId(),
+                status,
+                activity.startsAt(),
+                activity.endsAt()));
+    try {
+      jdbcTemplate.update(
+          "INSERT INTO event_outbox (event_id, aggregate_id, aggregate_version, routing_key, "
+              + "correlation_id, body, created_at, available_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          eventId,
+          activity.id(),
+          activity.version(),
+          "activity.changed",
+          correlationId,
+          objectMapper.writeValueAsString(event),
+          occurredAt,
+          occurredAt);
+    } catch (JsonProcessingException exception) {
+      throw new ApiException(
+          500, "EVENT_SERIALIZATION_FAILED", "Activity snapshot could not be persisted.");
+    }
   }
 
   public int countActivities(UUID eventId) {

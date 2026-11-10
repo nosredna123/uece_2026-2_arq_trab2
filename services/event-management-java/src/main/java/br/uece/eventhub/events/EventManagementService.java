@@ -61,7 +61,7 @@ public class EventManagementService {
   }
 
   public CommandResult updateEvent(
-      Principal principal, UUID eventId, String key, EventInput input) {
+      Principal principal, UUID eventId, String key, EventInput input, UUID correlationId) {
     validateRange(input.startsAt(), input.endsAt(), "Event");
     return idempotency.execute(
         principal.subjectId(),
@@ -87,11 +87,15 @@ public class EventManagementService {
           if (repository.updateEvent(eventId, input) != 1) {
             throw conflict("EVENT_STATE_CONFLICT", "The event could not be updated.");
           }
+          if ("PUBLISHED".equals(event.status())) {
+            publishActivitySnapshots(eventId, "PUBLISHED", correlationId);
+          }
           return new CommandResult(200, repository.findEvent(eventId).orElseThrow());
         });
   }
 
-  public CommandResult publishEvent(Principal principal, UUID eventId, String key) {
+  public CommandResult publishEvent(
+      Principal principal, UUID eventId, String key, UUID correlationId) {
     return idempotency.execute(
         principal.subjectId(),
         "publishEvent:" + eventId,
@@ -114,11 +118,13 @@ public class EventManagementService {
                 "An event must contain activities within its scheduled period before publication.");
           }
           repository.setEventStatus(eventId, "PUBLISHED");
+          publishActivitySnapshots(eventId, "PUBLISHED", correlationId);
           return new CommandResult(200, repository.findEvent(eventId).orElseThrow());
         });
   }
 
-  public CommandResult cancelEvent(Principal principal, UUID eventId, String key) {
+  public CommandResult cancelEvent(
+      Principal principal, UUID eventId, String key, UUID correlationId) {
     return idempotency.execute(
         principal.subjectId(),
         "cancelEvent:" + eventId,
@@ -132,12 +138,15 @@ public class EventManagementService {
             return new CommandResult(200, event);
           }
           repository.setEventStatus(eventId, "CANCELLED");
+          if ("PUBLISHED".equals(event.status())) {
+            publishActivitySnapshots(eventId, "CANCELLED", correlationId);
+          }
           return new CommandResult(200, repository.findEvent(eventId).orElseThrow());
         });
   }
 
   public CommandResult createActivity(
-      Principal principal, UUID eventId, String key, ActivityInput input) {
+      Principal principal, UUID eventId, String key, ActivityInput input, UUID correlationId) {
     validateRange(input.startsAt(), input.endsAt(), "Activity");
     return idempotency.execute(
         principal.subjectId(),
@@ -150,12 +159,16 @@ public class EventManagementService {
           event = repository.findEvent(eventId).orElseThrow();
           ensureEventEditable(event);
           validateActivityPeriod(input, event);
-          return new CommandResult(201, repository.createActivity(eventId, input));
+          ActivityView activity = repository.createActivity(eventId, input);
+          if ("PUBLISHED".equals(event.status())) {
+            repository.enqueueActivityChanged(activity, event.status(), correlationId);
+          }
+          return new CommandResult(201, activity);
         });
   }
 
   public CommandResult updateActivity(
-      Principal principal, UUID activityId, String key, ActivityInput input) {
+      Principal principal, UUID activityId, String key, ActivityInput input, UUID correlationId) {
     validateRange(input.startsAt(), input.endsAt(), "Activity");
     return idempotency.execute(
         principal.subjectId(),
@@ -180,7 +193,11 @@ public class EventManagementService {
             throw conflict(
                 "ACTIVITY_STATE_CONFLICT", "The activity could not be updated with this capacity.");
           }
-          return new CommandResult(200, repository.findActivity(activityId).orElseThrow());
+          ActivityView updated = repository.findActivity(activityId).orElseThrow();
+          if ("PUBLISHED".equals(event.status())) {
+            repository.enqueueActivityChanged(updated, event.status(), correlationId);
+          }
+          return new CommandResult(200, updated);
         });
   }
 
@@ -240,6 +257,13 @@ public class EventManagementService {
             .orElseThrow(() -> notFound("ACTIVITY_NOT_FOUND", "Activity was not found."));
     authorizeOrganization(principal, activity.organizationId());
     return activity;
+  }
+
+  private void publishActivitySnapshots(UUID eventId, String status, UUID correlationId) {
+    repository.incrementActivityVersions(eventId);
+    for (ActivityView activity : repository.listActivitiesForEvent(eventId)) {
+      repository.enqueueActivityChanged(activity, status, correlationId);
+    }
   }
 
   private static void authorizeCreate(Principal principal, UUID organizationId) {
