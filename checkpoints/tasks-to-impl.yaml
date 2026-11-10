@@ -1,14 +1,14 @@
 metadata:
   generated: "2026-11-09"
   source_tasks: "plan.md#tarefas"
-  last_updated: "2026-11-09"
+  last_updated: "2026-11-10"
 
 summary:
   total_tasks: 44
-  completed_tasks: 18
+  completed_tasks: 20
   in_progress_tasks: 0
-  pending_tasks: 26
-  completion_percentage: 40.91
+  pending_tasks: 24
+  completion_percentage: 45.45
 
 tasks:
   - task_id: "T001"
@@ -493,6 +493,42 @@ tasks:
       requirements: ["RF07", "RN02", "RN03", "RQ03", "RQ05"]
       full_trace: "RF/RN/RQ -> Phase-4.3 -> T029 -> durable Billing mock, idempotent scenarios, RabbitMQ result publication and quarantine"
 
+  - task_id: "T031"
+    description: "Escrever testes de contrato, idempotência, indisponibilidade e reprocessamento do Notification fake."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mocks/notification/tests/test_notification_processor.py"
+        - file: "tests/integration/test_notification_recovery.py"
+    verification:
+      build_passed: null
+      test_results: {command: "python -m pytest -x --import-mode=importlib; Notification Docker test stage; live RabbitMQ recovery/quarantine integration", passed: 96, failed: 0, skipped: 0}
+      notes: "Contract-shaped source events, durable deduplication, unavailable diagnostics, retry delay and replay after worker restart are covered. Initial red test confirmed the mock package was absent; all 96 repository tests pass with T032 implemented."
+    upstream_trace:
+      plan_item: "4.4"
+      requirements: ["RF08", "RN05", "RQ01", "RQ03", "RQ05"]
+      full_trace: "RF08/RN05/RQ -> Phase-4.4 -> T031 -> Notification idempotency, outage and recovery evidence"
+
+  - task_id: "T032"
+    description: "Implementar mock assíncrono de Notification com entregas simuladas duráveis e indisponibilidade configurável."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mocks/notification"
+        - file: "infra/.env.example"
+        - file: "infra/environment.schema.json"
+        - file: "tests/configuration/test_environment.py"
+        - file: "README.md"
+        - file: "services/README.md"
+    verification:
+      build_passed: true
+      test_results: {command: "python -m pytest -x --import-mode=importlib; docker build --target test/runtime; live RabbitMQ recovery/quarantine integration", passed: 96, failed: 0, skipped: 0}
+      notes: "All 96 repository tests and 13 Docker test-stage tests pass. Runtime and test images build. Live RabbitMQ verified persisted retry diagnostics while unavailable, successful replay after restart, duplicate suppression, confirmed quarantine, preserved event/correlation identity, and UID/GID 10001 runtime."
+    upstream_trace:
+      plan_item: "4.4"
+      requirements: ["RF08", "RN05", "RQ01", "RQ03", "RQ05"]
+      full_trace: "RF08/RN05/RQ -> Phase-4.4 -> T032 -> durable async Notification mock and capped retry recovery"
+
 pending_tasks:
   - task_id: "T013"
   - task_id: "T017"
@@ -506,8 +542,6 @@ pending_tasks:
   - task_id: "T027"
   - task_id: "T028"
   - task_id: "T030"
-  - task_id: "T031"
-  - task_id: "T032"
   - task_id: "T033"
   - task_id: "T034"
   - task_id: "T035"
@@ -690,9 +724,18 @@ traceability_chain:
     files: ["mocks/billing", "infra/.env.example", "infra/environment.schema.json"]
     status: "complete"
 
+  - chain_id: "TRACE-T031-T032"
+    requirement: "RF08/RN05/RQ01/RQ03/RQ05"
+    plan_phase: "Phase-4"
+    plan_item: "4.4"
+    tasks: ["T031", "T032"]
+    files: ["mocks/notification", "tests/integration/test_notification_recovery.py", "infra/.env.example", "infra/environment.schema.json"]
+    status: "complete"
+
 validation:
   passed: true
   errors: []
   warnings:
     - "Documentation/rationale checks are not runtime evidence. T003/T004 readiness checks passed."
+    - "T013 Compose wiring and full-stack acceptance tests remain pending."
   blocking_issues: []

@@ -47,10 +47,17 @@ configuration fails startup. Domain routes and event consumers are later tasks.
 Unit tests explicitly use isolated SQLite files only for scaffold health checks;
 actual Alembic DDL targets PostgreSQL and is validated separately against it.
 
-For host-side full Python tests, install validation requirements and both
-services' `[test]` extras into an isolated environment, then run:
+For host-side full Python tests, install the validation requirements and all
+service and mock packages with their `[test]` extras into an isolated Python
+3.12 environment, then run:
 
 ```sh
+python -m pip install -r requirements-validation.txt \
+  -e "services/attendance-certification-python[test]" \
+  -e "services/reporting-python[test]" \
+  -e "mocks/identity-access[test]" \
+  -e "mocks/billing[test]" \
+  -e "mocks/notification[test]"
 python -m pytest -x --import-mode=importlib
 ```
 

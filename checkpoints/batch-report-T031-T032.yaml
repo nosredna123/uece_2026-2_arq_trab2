@@ -1,0 +1,54 @@
+batch_id: "T031-T032"
+completed_tasks: ["T031", "T032"]
+blocked_tasks: []
+files_changed:
+  T031:
+    - {file: "mocks/notification/tests/test_notification_processor.py", change_type: "created", description: "Tests supported source event categories, idempotency, unavailable outcomes, retry behavior, schema constraints and settings."}
+    - {file: "tests/integration/test_notification_recovery.py", change_type: "created", description: "Exercises delayed requeue and durable replay after worker restart."}
+  T032:
+    - {file: "mocks/notification", change_type: "created", description: "Adds strict AsyncAPI event parsing, SQLite inbox/delivery records, retry-aware RabbitMQ worker, confirmed quarantine, healthcheck, Docker stages and usage documentation."}
+    - {file: "infra/.env.example", change_type: "modified", description: "Adds the persistent Notification SQLite path."}
+    - {file: "infra/environment.schema.json", change_type: "modified", description: "Requires a non-empty Notification store path."}
+    - {file: "tests/configuration/test_environment.py", change_type: "modified", description: "Rejects an empty Notification store path."}
+    - {file: "README.md", change_type: "modified", description: "Documents Notification's durable data volume mapping."}
+    - {file: "services/README.md", change_type: "modified", description: "Documents host test dependencies for service and mock packages."}
+    - {file: "plan.md", change_type: "modified", description: "Marks T031 and T032 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Records implementation, validation and requirement traceability."}
+upstream_artifacts_consumed:
+  T031:
+    - {artifact: "docs/contracts/asyncapi/README.md", used_for: "Notification delivery semantics, idempotency, retryable unavailability and correlation requirements."}
+    - {artifact: "docs/contracts/schemas/registration-changed.json", used_for: "Registration snapshot fields and conditional deadlines."}
+    - {artifact: "docs/contracts/schemas/activity-changed.json", used_for: "Activity lifecycle notification inputs."}
+    - {artifact: "docs/contracts/schemas/attendance-recorded.json", used_for: "Attendance fact notification inputs."}
+    - {artifact: "docs/contracts/schemas/certificate-issued.json", used_for: "Certificate notification inputs."}
+  T032:
+    - {artifact: "docs/contracts/asyncapi/eventhub.yaml", used_for: "Durable notification queue, four source routing keys and quarantine exchange routing."}
+    - {artifact: "docs/architecture/data-ownership.md", used_for: "At-most-one successful simulated delivery keyed by source event ID; retryable failures."}
+    - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "Commit-before-ack, confirmed quarantine and recovery behavior."}
+    - {artifact: "infra/environment.schema.json", used_for: "Availability and shared capped retry settings; Notification store path requirement."}
+evidence_mapping:
+  T031:
+    - {upstream: "Notification source-event schemas and outage/idempotency behavior", output: "mocks/notification/tests/test_notification_processor.py; tests/integration/test_notification_recovery.py", evidence: "All 96 repository tests pass; recovery integration confirms persisted retry state and one successful replay."}
+  T032:
+    - {upstream: "AsyncAPI notification.v1 subscriptions and quarantine contract", output: "mocks/notification/src/notification_mock/worker.py", evidence: "Live RabbitMQ integration confirms durable subscription, delayed requeue and quarantine body/identity preservation."}
+    - {upstream: "Notification delivery ownership and retry semantics", output: "mocks/notification/src/notification_mock/store.py", evidence: "SQLite restart and duplicate tests confirm retry diagnostics and at-most-one successful delivery per source event."}
+traceability:
+  - {requirement: "RF08, RN05, RQ01, RQ03, RQ05", plan_item: "4.4", task: "T031", files: ["mocks/notification/tests/test_notification_processor.py", "tests/integration/test_notification_recovery.py"], status: "completed"}
+  - {requirement: "RF08, RN05, RQ01, RQ03, RQ05", plan_item: "4.4", task: "T032", files: ["mocks/notification", "infra/.env.example", "infra/environment.schema.json"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "T013 Compose wiring and full-stack acceptance tests remain pending; this batch verified the Notification worker against an isolated RabbitMQ broker."
+test_results:
+  T031:
+    command: "python -m pytest -x --import-mode=importlib; Notification Docker test stage; live RabbitMQ recovery/quarantine integration"
+    passed: 96
+    failed: 0
+    skipped: 0
+    failures: []
+  T032:
+    command: "python -m pytest -x --import-mode=importlib; docker build --target test/runtime; live RabbitMQ recovery/quarantine integration; environment schema validation"
+    passed: 96
+    failed: 0
+    skipped: 0
+    failures: []

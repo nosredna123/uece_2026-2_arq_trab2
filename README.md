@@ -41,9 +41,9 @@ python scripts/validate-environment.py infra/.env
 python -m pytest -x --import-mode=importlib
 ```
 
-Full Python tests also require installing both service `[test]` extras as
-described in [services/README.md](services/README.md). The validator itself may
-be run without a host Python installation:
+Full Python tests also require installing the service and mock `[test]` extras
+as described in [services/README.md](services/README.md). The validator itself
+may be run without a host Python installation:
 
 ```sh
 docker run --rm -v "$PWD:/workspace:ro" -w /workspace python:3.12.9-slim-bookworm \
@@ -65,7 +65,8 @@ service's `DATABASE_URL/USER/PASSWORD` and `MIGRATION_USER/PASSWORD`; Python
 `MIGRATION_DATABASE_URL`. Never reuse bootstrap credentials for runtime.
 Common integration/messaging variables are passed by their names. Billing
 persists operations, attempts and result outbox messages at `BILLING_STORE_PATH`
-on its dedicated volume.
+on its dedicated volume. Notification persists retry diagnostics and simulated
+deliveries at `NOTIFICATION_STORE_PATH` on its own dedicated volume.
 
 - Reservation and FIFO offer periods start at the approved configurable 30
   minutes; cancellation window at seven days and refund percentage at 90.

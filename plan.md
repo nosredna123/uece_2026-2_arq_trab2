@@ -299,8 +299,8 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 - [ ] T028 [Plan:4.3] Implementar outbox transacional e publicação idempotente de solicitação de pagamento em `services/registration-java/src/`, conforme os testes.
 - [x] T029 [US2] [Plan:4.3] Implementar Billing fake em `mocks/billing/`, consumindo pedidos e publicando resultados de aprovação/recusa/timeout conforme AsyncAPI e configuração de ambiente.
 - [ ] T030 [US2] [Plan:4.3] Implementar consumo do resultado, confirmação somente após aprovação e expiração com prazo padrão de 30 minutos configurável em `services/registration-java/src/`; liberar reservas recusadas/expiradas uma única vez.
-- [ ] T031 [US2] [Plan:4.4] Escrever testes de idempotência, indisponibilidade e reprocessamento para Notification fake em `mocks/notification/tests/` e `tests/integration/`.
-- [ ] T032 [US2] [Plan:4.4] Implementar fake assíncrono de Notification em `mocks/notification/`, registrando entregas simuladas e permitindo simular indisponibilidade sem bloquear o fluxo de inscrição.
+- [x] T031 [US2] [Plan:4.4] Escrever testes de idempotência, indisponibilidade e reprocessamento para Notification fake em `mocks/notification/tests/` e `tests/integration/`.
+- [x] T032 [US2] [Plan:4.4] Implementar fake assíncrono de Notification em `mocks/notification/`, registrando entregas simuladas e permitindo simular indisponibilidade sem bloquear o fluxo de inscrição.
 
 ### Fase 5 — US3/US4: Serviços executáveis
 

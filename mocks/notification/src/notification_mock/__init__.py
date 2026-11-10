@@ -1,0 +1,1 @@
+"""Asynchronous simulated notification consumer."""
