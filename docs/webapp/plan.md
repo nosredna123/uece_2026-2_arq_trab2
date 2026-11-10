@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Implementation in progress; T045-T052 are complete.
+**Status:** Implementation in progress; T045-T054 are complete.
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T052 are complete; T053-T080 remain unimplemented. Tests belong before the
+T045-T054 are complete; T055-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -437,8 +437,8 @@ cross-session/persona requests are denied; no backend effects on a GET or refres
 
 **Requirements:** REQ-002, REQ-003, REQ-014, REQ-015, REQ-017.
 
-- [ ] T053 [Plan:2.1] Add `web/demo-python/tests/test_pages.py` and `test_badges.py` verifying banner/legend, section-level badge semantics, keyboard explanation controls, escaped content, correct page status/errors, no token leakage, and distinct implementation/operational status indicators.
-- [ ] T054 [Plan:2.1] Implement `src/demo_web/presentation.py`, `templates/base.html`, `templates/home.html`, `templates/error.html`, `templates/partials/badge.html`, `templates/partials/request_history.html`, and `static/app.css`; centralize the three icon/text definitions and page metadata. Provide readable projector layout, focus visibility, semantic headings, and no remote assets.
+- [x] T053 [Plan:2.1] Add `web/demo-python/tests/test_pages.py` and `test_badges.py` verifying banner/legend, section-level badge semantics, keyboard explanation controls, escaped content, correct page status/errors, no token leakage, and distinct implementation/operational status indicators.
+- [x] T054 [Plan:2.1] Implement `src/demo_web/presentation.py`, `templates/base.html`, `templates/home.html`, `templates/error.html`, `templates/partials/badge.html`, `templates/partials/request_history.html`, and `static/app.css`; centralize the three icon/text definitions and page metadata. Provide readable projector layout, focus visibility, semantic headings, and no remote assets.
 
 **Done when:** mixed pages disclose each source correctly; badges are meaningful
 without color; partial dependency failure cannot become an unlabelled empty page.

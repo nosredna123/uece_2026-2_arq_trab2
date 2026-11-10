@@ -1,0 +1,28 @@
+{% if entries %}
+<div class="table-wrap">
+  <table class="history-table">
+    <thead>
+      <tr>
+        <th scope="col">Service</th>
+        <th scope="col">Method</th>
+        <th scope="col">Status</th>
+        <th scope="col">Elapsed</th>
+        <th scope="col">Correlation</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr>
+        <td>{{ entry.service }}</td>
+        <td><code>{{ entry.method }}</code></td>
+        <td>{{ entry.status if entry.status is not none else "Unknown" }}</td>
+        <td>{{ entry.elapsed_ms }} ms</td>
+        <td><code>{{ entry.correlation_id }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="empty-state">No service requests have been made during this session.</p>
+{% endif %}

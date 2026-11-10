@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="content-card error-card" role="alert" aria-labelledby="error-heading">
+  {% set kind = "demo_presentation" %}
+  {% include "partials/badge.html" %}
+  <p class="eyebrow">HTTP {{ status_code }}</p>
+  <h2 id="error-heading">{{ message }}</h2>
+  <p class="card-copy">Use the page status above to distinguish implementation state from this request's outcome.</p>
+  <a class="text-link" href="/">Return to the demonstration home <span aria-hidden="true">→</span></a>
+</section>
+{% endblock %}

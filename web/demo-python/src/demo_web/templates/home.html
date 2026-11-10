@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-grid">
+  <section id="persona-section" class="content-card persona-card"
+           data-section="persona" data-provenance="demo_presentation"
+           aria-labelledby="persona-heading">
+    {% set kind = "demo_presentation" %}
+    {% include "partials/badge.html" %}
+    <div class="card-heading">
+      <p class="eyebrow">Choose your point of view</p>
+      <h2 id="persona-heading">Synthetic persona</h2>
+    </div>
+    <p class="card-copy">These presentation identities are fictional. They are not accounts or production authentication.</p>
+    <p class="current-persona">Current persona <strong>{{ persona_label }}</strong></p>
+    <div class="persona-options">
+      {% for persona_id, label in persona_options %}
+      <form method="post" action="/persona/{{ persona_id }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="persona-button{% if persona_id == current_persona %} is-selected{% endif %}"
+                type="submit"
+                aria-pressed="{{ 'true' if persona_id == current_persona else 'false' }}">
+          <span>{{ label }}</span>
+          <span class="button-arrow" aria-hidden="true">→</span>
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+    <p class="card-footnote">Changing persona invalidates earlier browser command intents.</p>
+  </section>
+
+  <section id="payment-section" class="content-card simulated-card"
+           data-section="payment" data-provenance="simulated_dependency"
+           aria-labelledby="payment-heading">
+    {% set kind = "simulated_dependency" %}
+    {% include "partials/badge.html" %}
+    <div class="card-heading">
+      <p class="eyebrow">A dependency, not a payment provider</p>
+      <h2 id="payment-heading">Simulated billing</h2>
+    </div>
+    <p class="card-copy">The existing Billing mock supplies simulated outcomes after a registration is created.</p>
+    <div class="notice-box">
+      <span class="notice-icon" aria-hidden="true">i</span>
+      <p>This shell does not collect card details or start a registration. No payment has been attempted.</p>
+    </div>
+  </section>
+
+  <section id="request-history-section" class="content-card history-card"
+           data-section="request-history" data-provenance="live_service"
+           aria-labelledby="history-heading">
+    {% set kind = "live_service" %}
+    {% include "partials/badge.html" %}
+    <div class="card-heading">
+      <p class="eyebrow">Evidence from this browser session</p>
+      <h2 id="history-heading">Service request history</h2>
+    </div>
+    <p class="card-copy">Only service name, method, status, elapsed time, and correlation ID are shown.</p>
+    {% include "partials/request_history.html" %}
+  </section>
+</div>
+{% endblock %}

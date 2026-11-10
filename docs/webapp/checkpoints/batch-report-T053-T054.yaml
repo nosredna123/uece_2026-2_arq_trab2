@@ -1,0 +1,132 @@
+batch_id: "B05"
+completed_tasks: ["T053", "T054"]
+blocked_tasks: []
+files_changed:
+  T053:
+    - file: "web/demo-python/tests/test_pages.py"
+      change_type: "created"
+      description: "Test shared shell, status/error semantics, persona form, escaping, local assets, and credential non-disclosure."
+    - file: "web/demo-python/tests/test_badges.py"
+      change_type: "created"
+      description: "Test centralized provenance labels/icons, section semantics, keyboard explanation, and escaped request history."
+  T054:
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "created"
+      description: "Centralize badge definitions, page metadata, persona labels, and package asset paths."
+    - file: "web/demo-python/src/demo_web/templates/base.html"
+      change_type: "created"
+      description: "Provide the prototype banner, semantic shell, separate status indicators, accessible provenance guide, and local stylesheet."
+    - file: "web/demo-python/src/demo_web/templates/home.html"
+      change_type: "created"
+      description: "Render persona selection and clearly labeled simulated billing and live request-history sections."
+    - file: "web/demo-python/src/demo_web/templates/error.html"
+      change_type: "created"
+      description: "Render sanitized HTML error pages without losing the HTTP status code."
+    - file: "web/demo-python/src/demo_web/templates/partials/badge.html"
+      change_type: "created"
+      description: "Render centrally defined, visible icon-and-text badges."
+    - file: "web/demo-python/src/demo_web/templates/partials/request_history.html"
+      change_type: "created"
+      description: "Render bounded sanitized service history with Jinja escaping."
+    - file: "web/demo-python/src/demo_web/static/app.css"
+      change_type: "created"
+      description: "Style the responsive local shell with readable contrast and visible keyboard focus."
+    - file: "web/demo-python/src/demo_web/app.py"
+      change_type: "modified"
+      description: "Mount local static assets, manage service client lifecycle, and render safe HTML HTTP errors."
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Render the home page and accept native URL-encoded CSRF-protected persona forms."
+    - file: "web/demo-python/tests/test_sessions.py"
+      change_type: "modified"
+      description: "Assert persona POST/Redirect/GET returns to the HTML home page."
+    - file: "web/demo-python/pyproject.toml"
+      change_type: "modified"
+      description: "Package template and stylesheet assets in built wheels."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T053-T054 complete and update overall implementation status."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T053-T054 evidence and refresh pending-task counts."
+upstream_artifacts_consumed:
+  T053:
+    - artifact: "docs/webapp/plan.md"
+      used_for: "Badge semantics, page/error, accessibility, escaping, status, and non-disclosure acceptance."
+    - artifact: "docs/adr/ADR-006-demo-webapp.md"
+      used_for: "Independent server-rendered Python client and local-only presentation boundary."
+  T054:
+    - artifact: "web/demo-python/src/demo_web/sessions.py"
+      used_for: "Opaque session resolution and fixed synthetic persona choices."
+    - artifact: "web/demo-python/src/demo_web/clients.py"
+      used_for: "Per-session sanitized request history shape."
+evidence_mapping:
+  T053:
+    - upstream: "docs/webapp/plan.md#Plan-2.1"
+      output: "web/demo-python/tests/test_pages.py and test_badges.py"
+      evidence: "HTML checks cover all three provenance types, safe errors/escaping, keyboard disclosure, local resources, and no credential rendering."
+  T054:
+    - upstream: "docs/adr/ADR-006-demo-webapp.md"
+      output: "web/demo-python/src/demo_web/templates and static/app.css"
+      evidence: "Integrated browser rendered the page, switched to Participant 1, and confirmed no horizontal overflow at a narrow viewport."
+traceability:
+  - requirement: "REQ-002"
+    plan_item: "2.1"
+    task: "T054"
+    files: ["web/demo-python/src/demo_web/presentation.py", "web/demo-python/src/demo_web/templates/base.html", "web/demo-python/src/demo_web/templates/home.html"]
+    status: "completed"
+  - requirement: "REQ-003"
+    plan_item: "2.1"
+    task: "T054"
+    files: ["web/demo-python/src/demo_web/templates/home.html", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-014"
+    plan_item: "2.1"
+    task: "T054"
+    files: ["web/demo-python/src/demo_web/templates/partials/request_history.html"]
+    status: "completed"
+  - requirement: "REQ-015"
+    plan_item: "2.1"
+    task: "T054"
+    files: ["web/demo-python/src/demo_web/app.py", "web/demo-python/src/demo_web/presentation.py"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "2.1"
+    task: "T053"
+    files: ["web/demo-python/tests/test_pages.py", "web/demo-python/tests/test_badges.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: LOW
+    message: "Six existing backend integration/concurrency tests were skipped because their external infrastructure was unavailable."
+test_results:
+  T053:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 254
+    failed: 0
+    skipped: 6
+    failures: []
+  T054:
+    command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+    passed: 60
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/"
+    status: 200
+    result: "PASS (integrated browser and local HTTP probe)"
+  - method: "GET"
+    path: "/static/app.css"
+    status: 200
+    result: "PASS (served from the local application package)"
+  - method: "POST"
+    path: "/persona/participant"
+    status: 303
+    result: "PASS (same-origin native form; redirect returns to /)"
+  - method: "GET"
+    path: "/missing-page"
+    status: 404
+    result: "PASS (HTML error page preserves the not-found status)"

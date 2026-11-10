@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f2f4ef">
+    <title>{{ page.title }} · EventHub Demo</title>
+    <link rel="stylesheet" href="/static/app.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="prototype-banner" role="note">
+      <span class="banner-mark" aria-hidden="true">EH</span>
+      <span><strong>EventHub prototype</strong> · local demonstration · not production</span>
+    </div>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="EventHub Demo home">
+        <span class="brand-mark" aria-hidden="true">E</span>
+        <span>EventHub <span class="brand-subtitle">DEMO</span></span>
+      </a>
+      <p class="header-note">Service boundaries, made visible</p>
+    </header>
+    <main id="main-content" class="page-shell">
+      <section class="page-intro" aria-labelledby="page-title">
+        <p class="eyebrow">{{ page.eyebrow }}</p>
+        <h1 id="page-title">{{ page.heading }}</h1>
+        <p class="intro-copy">{{ page.description }}</p>
+      </section>
+
+      <section class="status-strip" aria-label="Application status">
+        <div class="status-item">
+          <span class="status-label">Implementation status</span>
+          <strong>{{ page.implementation_status }}</strong>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Operational status</span>
+          <strong>{{ operational_status }}</strong>
+        </div>
+      </section>
+
+      <details class="provenance-guide">
+        <summary>How to read the labels</summary>
+        <ul class="provenance-list">
+          {% for kind, definition in badge_definitions.items() %}
+          <li>
+            {% include "partials/badge.html" %}
+            <span>{{ definition.description }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="guide-note">The text labels carry the meaning; color and icon are supporting cues.</p>
+      </details>
+
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="site-footer">
+      <span>EventHub · teaching prototype</span>
+      <span>Business state remains owned by the existing services.</span>
+    </footer>
+  </body>
+</html>
