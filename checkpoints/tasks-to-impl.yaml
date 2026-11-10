@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 40
+  completed_tasks: 41
   in_progress_tasks: 0
-  pending_tasks: 4
-  completion_percentage: 90.91
+  pending_tasks: 3
+  completion_percentage: 93.18
 
 tasks:
   - task_id: "T001"
@@ -1067,8 +1067,45 @@ tasks:
       requirements: ["RN01", "RN06", "RQ01", "RQ05"]
       full_trace: "RN01/RN06/RQ01/RQ05 -> Phase-6.1 -> T040 -> ≥95% mutation score over documented domain cores"
 
-pending_tasks:
   - task_id: "T041"
+    description: "Criar ensaio de carga repetível com baseline e perfil de até 20× para consultas e inscrições."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "tests/load/load_test.py"
+        - file: "tests/load/run.sh"
+        - file: "tests/load/README.md"
+        - file: "docs/validation/evidence.md"
+        - file: "plan.md"
+        - file: "checkpoints/tasks-to-impl.yaml"
+      notes: "Added a standard-library concurrent HTTP workload and an isolated Compose runner using a unique project, ephemeral host ports, and project-specific cleanup. The workload provisions distinct activities so each registration is new."
+    verification:
+      build_passed: null
+      test_results:
+        command: "PYTHONPATH=.:services/attendance-certification-python/src:services/reporting-python/src:mocks/identity-access/src:mocks/billing/src:mocks/notification/src python -m pytest -x --import-mode=importlib"
+        passed: 179
+        failed: 0
+        skipped: 6
+        failures: []
+      load_test_results:
+        command: "bash tests/load/run.sh"
+        passed: 840
+        failed: 0
+        skipped: 0
+        notes: "All 840 measured requests succeeded. Baseline 2 users; peak 40 users (20×). Published-query throughput: 519.48 to 1,664.10 requests/s (3.20×); registration throughput: 55.65 to 252.57 requests/s (4.54×). Query p95: 10.81 to 33.93 ms; registration p95: 148.27 to 234.93 ms. Evidence records the single-run, local-only limitation and makes no production-capacity or latency-SLA claim."
+      quality_checks:
+        command: "ruff check --no-cache .; lint-imports --no-cache; bash -n tests/load/run.sh; git diff --check"
+        passed: 0
+        failed: 0
+        skipped: 0
+        failures: []
+        notes: "All lint, architecture-boundary, shell-syntax, and whitespace checks passed."
+    upstream_trace:
+      plan_item: "6.1"
+      requirements: ["RQ02"]
+      full_trace: "RQ02 -> Phase-6.1 -> T041 -> repeatable baseline and 20× comparative query/registration workload"
+
+pending_tasks:
   - task_id: "T042"
   - task_id: "T043"
   - task_id: "T044"
@@ -1385,6 +1422,15 @@ traceability_chain:
       - "services/attendance-certification-python/src/attendance_service/domain.py"
       - "services/reporting-python/src/reporting_service/domain.py"
       - "scripts/run_mutation_tests.py"
+    status: "complete"
+  - chain_id: "TRACE-T041"
+    requirement: "RQ02"
+    plan_phase: "Phase-6"
+    plan_item: "6.1"
+    tasks: ["T041"]
+    files:
+      - "tests/load"
+      - "docs/validation/evidence.md"
     status: "complete"
 
 validation:

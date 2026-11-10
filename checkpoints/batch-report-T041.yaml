@@ -1,0 +1,73 @@
+batch_id: "T041"
+completed_tasks: ["T041"]
+blocked_tasks: []
+files_changed:
+  T041:
+    - file: "tests/load/load_test.py"
+      change_type: "created"
+      description: "Added concurrent baseline and peak API measurements with request success, throughput, and latency percentiles."
+    - file: "tests/load/run.sh"
+      change_type: "created"
+      description: "Added isolated Compose startup with ephemeral host ports and project-specific cleanup."
+    - file: "tests/load/README.md"
+      change_type: "created"
+      description: "Documented the repeatable 2-user baseline and 20× peak workload and its limitations."
+    - file: "docs/validation/evidence.md"
+      change_type: "created"
+      description: "Recorded the latest successful comparative load-run metrics and environment."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T041 complete."
+    - file: "checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Recorded T041 implementation, test evidence, traceability, and updated task counts."
+    - file: "checkpoints/batch-report-T041.yaml"
+      change_type: "created"
+      description: "Recorded implementation and validation results."
+upstream_artifacts_consumed:
+  T041:
+    - artifact: "plan.md#T041"
+      used_for: "Required repeatable baseline and up-to-20× query/registration comparison."
+    - artifact: "infra/.env.example"
+      used_for: "Synthetic-only credentials and isolated local Compose workload."
+    - artifact: "services/event-management-java"
+      used_for: "Public event-query API exercised by the load workload."
+    - artifact: "services/registration-java"
+      used_for: "Free-registration API exercised by the load workload."
+traceability:
+  - requirement: "RQ02"
+    plan_item: "6.1"
+    task: "T041"
+    files:
+      - "tests/load"
+      - "docs/validation/evidence.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Evidence is a single local run and comparative baseline, not a production-capacity claim; no latency SLA is specified."
+  - severity: "LOW"
+    message: "The Python suite emitted an existing Starlette/AnyIO BlockingPortal deprecation warning."
+test_results:
+  repository_tests:
+    command: "PYTHONPATH=.:services/attendance-certification-python/src:services/reporting-python/src:mocks/identity-access/src:mocks/billing/src:mocks/notification/src python -m pytest -x --import-mode=importlib"
+    passed: 179
+    failed: 0
+    skipped: 6
+    failures: []
+    notes: "Full repository Python suite passed."
+  live_load_test:
+    command: "bash tests/load/run.sh"
+    passed: 840
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "All measured baseline and peak query/registration requests succeeded; the isolated Compose project was removed on exit."
+  quality_checks:
+    command: "ruff check --no-cache .; lint-imports --no-cache; bash -n tests/load/run.sh; git diff --check"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "All quality checks passed."
