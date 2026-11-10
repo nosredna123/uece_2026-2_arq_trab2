@@ -129,18 +129,52 @@ def test_openapi_exposes_check_in_and_certificate_contracts(attendance):
     ]
 
 
-def test_check_in_is_idempotent_for_confirmed_registration(attendance):
+def test_http_request_log_keeps_correlation_id(attendance, caplog):
+    correlation_id = "90000000-0000-0000-0000-000000000001"
+
+    response = attendance.client.get(
+        "/health",
+        headers={"X-Correlation-ID": correlation_id},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["X-Correlation-ID"] == correlation_id
+    request_log = next(
+        record
+        for record in caplog.records
+        if record.name == "attendance_service.app"
+        and record.getMessage() == "http.request.completed"
+    )
+    assert request_log.correlation_id == correlation_id
+    assert request_log.status_code == 200
+
+
+def test_check_in_is_idempotent_for_confirmed_registration(attendance, caplog):
     project_eligibility_facts(attendance)
     path = f"/registrations/{REGISTRATION_ID}/check-in"
+    correlation_id = "90000000-0000-0000-0000-000000000001"
+    headers = {
+        **participant_headers(),
+        "X-Correlation-ID": correlation_id,
+    }
 
-    first = attendance.client.post(path, headers=participant_headers())
-    retry = attendance.client.post(path, headers=participant_headers())
+    first = attendance.client.post(path, headers=headers)
+    retry = attendance.client.post(path, headers=headers)
 
     assert first.status_code == 200
     assert retry.status_code == 200
     assert first.json() == retry.json()
     assert first.json()["registrationId"] == str(REGISTRATION_ID)
     assert first.json()["participantId"] == str(PARTICIPANT_ID)
+    request_log = next(
+        record
+        for record in reversed(caplog.records)
+        if record.name == "attendance_service.app"
+        and record.getMessage() == "http.request.completed"
+        and record.http_path == path
+    )
+    assert request_log.correlation_id == correlation_id
+    assert request_log.registration_id == str(REGISTRATION_ID)
     with attendance.engine.connect() as connection:
         assert connection.scalar(
             text(
@@ -153,6 +187,7 @@ def test_check_in_is_idempotent_for_confirmed_registration(attendance):
                 message_outbox.c.event_type == "attendance.recorded"
             )
         )
+    assert event["correlationId"] == correlation_id
     assert event["data"]["registrationId"] == str(REGISTRATION_ID)
     assert event["data"]["participantId"] == str(PARTICIPANT_ID)
     assert event["eventType"] == "attendance.recorded"

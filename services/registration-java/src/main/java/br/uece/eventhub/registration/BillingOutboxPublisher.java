@@ -5,13 +5,16 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -67,10 +70,16 @@ class BillingOutboxPublisher {
       if (record == null) {
         return published;
       }
+      Map<String, String> previousContext = MDC.getCopyOfContextMap();
+      MDC.put("correlationId", record.correlationId().toString());
+      MDC.put("registrationId", record.registrationId().toString());
+      MDC.put("eventId", record.eventId().toString());
+      MDC.put("eventType", record.routingKey());
       try {
         publish(record);
         markPublished(record);
         published++;
+        LOGGER.info("message.published");
       } catch (PublishNotConfirmedException
           | AmqpException
           | ExecutionException
@@ -87,11 +96,13 @@ class BillingOutboxPublisher {
         Thread.currentThread().interrupt();
         deferForRetry(record, exception);
         LOGGER.error(
-            "Billing outbox publish interrupted event_id={} attempt={}",
+            "billing.outbox.publish_interrupted event_id={} attempt={}",
             record.eventId(),
             record.attempts(),
             exception);
         return published;
+      } finally {
+        restoreContext(previousContext);
       }
     }
   }
@@ -103,7 +114,7 @@ class BillingOutboxPublisher {
           String lock = postgres ? " FOR UPDATE SKIP LOCKED" : "";
           List<OutboxRecord> candidates =
               jdbc.query(
-                  "SELECT event_id, routing_key, correlation_id, body, attempts "
+                  "SELECT event_id, registration_id, routing_key, correlation_id, body, attempts "
                       + "FROM billing_outbox WHERE published_at IS NULL AND suppressed_at IS NULL "
                       + "AND available_at <= ? "
                       + "AND (claim_expires_at IS NULL OR claim_expires_at <= ?) "
@@ -112,6 +123,7 @@ class BillingOutboxPublisher {
                   (row, rowNumber) ->
                       new OutboxRecord(
                           row.getObject("event_id", UUID.class),
+                          row.getObject("registration_id", UUID.class),
                           row.getString("routing_key"),
                           row.getObject("correlation_id", UUID.class),
                           row.getString("body"),
@@ -218,6 +230,14 @@ class BillingOutboxPublisher {
     return connection.getMetaData().getDatabaseProductName().toLowerCase().contains("postgresql");
   }
 
+  private static void restoreContext(Map<String, String> previousContext) {
+    if (previousContext == null) {
+      MDC.clear();
+    } else {
+      MDC.setContextMap(new HashMap<>(previousContext));
+    }
+  }
+
   private static class PublishNotConfirmedException extends RuntimeException {
     PublishNotConfirmedException(String message) {
       super(message);
@@ -226,13 +246,15 @@ class BillingOutboxPublisher {
 
   private record OutboxRecord(
       UUID eventId,
+      UUID registrationId,
       String routingKey,
       UUID correlationId,
       String body,
       int attempts,
       UUID claimToken) {
     OutboxRecord withClaim(UUID token) {
-      return new OutboxRecord(eventId, routingKey, correlationId, body, attempts + 1, token);
+      return new OutboxRecord(
+          eventId, registrationId, routingKey, correlationId, body, attempts + 1, token);
     }
   }
 }

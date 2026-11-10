@@ -138,13 +138,27 @@ def test_identity_settings_are_required_and_secret_is_not_represented(monkeypatc
     assert SERVICE_KEY not in repr(Settings.from_environment())
 
 
-def test_every_response_has_a_correlation_id_and_invalid_ids_are_rejected(client):
+def test_every_response_has_a_correlation_id_and_invalid_ids_are_rejected(
+    client, caplog
+):
+    correlation_id = "90000000-0000-0000-0000-000000000001"
     valid = client.post(
         IDENTITY_URL,
-        headers={"X-Service-Key": SERVICE_KEY},
+        headers={
+            "X-Service-Key": SERVICE_KEY,
+            "X-Correlation-ID": correlation_id,
+        },
         json={"token": "synthetic-participant-001"},
     )
-    assert valid.headers["X-Correlation-ID"]
+    assert valid.headers["X-Correlation-ID"] == correlation_id
+    request_log = next(
+        record
+        for record in caplog.records
+        if record.name == "identity_access_mock.app"
+        and record.getMessage() == "http.request.completed"
+    )
+    assert request_log.correlation_id == correlation_id
+    assert request_log.status_code == 200
 
     invalid = client.post(
         IDENTITY_URL,

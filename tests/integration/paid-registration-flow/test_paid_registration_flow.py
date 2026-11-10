@@ -41,10 +41,14 @@ def request_json(
     if idempotency_key is not None:
         headers["Idempotency-Key"] = idempotency_key
     response = client.request(method, url, headers=headers, json=body)
+    assert response.headers["X-Correlation-ID"] == correlation_id
     assert response.status_code in expected, (
         f"{method} {url} returned {response.status_code}: {response.text}"
     )
-    return response.json()
+    result = response.json()
+    if response.status_code >= 400:
+        assert result["correlationId"] == correlation_id
+    return result
 
 
 def poll_until(

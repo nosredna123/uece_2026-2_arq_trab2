@@ -3,6 +3,8 @@ package br.uece.eventhub.registration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -10,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -62,17 +65,27 @@ class BillingResultConsumer {
       quarantineAndAcknowledge(message, channel, deliveryTag, "INVALID_BILLING_RESULT");
       return;
     }
+    Map<String, String> previousContext = MDC.getCopyOfContextMap();
+    MDC.put("correlationId", result.correlationId().toString());
+    MDC.put("registrationId", result.data().registrationId().toString());
+    MDC.put("eventId", result.eventId().toString());
+    MDC.put("eventType", result.eventType());
     try {
-      service.applyBillingResult(result);
-    } catch (ApiException exception) {
-      if (exception.status() < 500) {
-        quarantineAndAcknowledge(message, channel, deliveryTag, exception.code());
-        return;
+      try {
+        service.applyBillingResult(result);
+      } catch (ApiException exception) {
+        if (exception.status() < 500) {
+          quarantineAndAcknowledge(message, channel, deliveryTag, exception.code());
+          return;
+        }
+        channel.basicNack(deliveryTag, false, true);
+        throw exception;
       }
-      channel.basicNack(deliveryTag, false, true);
-      throw exception;
+      LOGGER.info("billing.result.processed");
+      channel.basicAck(deliveryTag, false);
+    } finally {
+      restoreContext(previousContext);
     }
-    channel.basicAck(deliveryTag, false);
   }
 
   private void quarantineAndAcknowledge(
@@ -87,11 +100,21 @@ class BillingResultConsumer {
       channel.basicNack(deliveryTag, false, true);
       throw new IOException("Quarantine publication was not confirmed.", exception);
     }
-    LOGGER.warn(
-        "Quarantined Billing result message_id={} error_code={}",
-        source.getMessageProperties().getMessageId(),
-        errorCode);
-    channel.basicAck(deliveryTag, false);
+    Map<String, String> previousContext = MDC.getCopyOfContextMap();
+    String correlationId = source.getMessageProperties().getCorrelationId();
+    if (correlationId != null) {
+      MDC.put("correlationId", correlationId);
+    }
+    if (source.getMessageProperties().getMessageId() != null) {
+      MDC.put("eventId", source.getMessageProperties().getMessageId());
+    }
+    MDC.put("errorCode", errorCode);
+    try {
+      LOGGER.warn("billing.result.quarantined");
+      channel.basicAck(deliveryTag, false);
+    } finally {
+      restoreContext(previousContext);
+    }
   }
 
   private void publishQuarantine(Message source, String errorCode)
@@ -111,6 +134,14 @@ class BillingResultConsumer {
         correlationData.getFuture().get(settings.httpTimeoutSeconds(), TimeUnit.SECONDS);
     if (!confirm.isAck() || correlationData.getReturned() != null) {
       throw new AmqpException("Billing result quarantine publication was not routable.");
+    }
+  }
+
+  private static void restoreContext(Map<String, String> previousContext) {
+    if (previousContext == null) {
+      MDC.clear();
+    } else {
+      MDC.setContextMap(new HashMap<>(previousContext));
     }
   }
 }

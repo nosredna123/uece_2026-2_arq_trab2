@@ -5,13 +5,16 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
@@ -72,10 +75,15 @@ class EventOutboxPublisher {
       if (record == null) {
         return published;
       }
+      Map<String, String> previousContext = MDC.getCopyOfContextMap();
+      MDC.put("correlationId", record.correlationId().toString());
+      MDC.put("eventId", record.eventId().toString());
+      MDC.put("eventType", record.routingKey());
       try {
         publish(record);
         markPublished(record);
         published++;
+        LOGGER.info("message.published");
       } catch (AmqpException | ExecutionException | TimeoutException exception) {
         deferForRetry(record, exception);
         LOGGER.error(
@@ -89,11 +97,13 @@ class EventOutboxPublisher {
         Thread.currentThread().interrupt();
         deferForRetry(record, exception);
         LOGGER.error(
-            "Event outbox publish interrupted event_id={} attempt={}",
+            "event.outbox.publish_interrupted event_id={} attempt={}",
             record.eventId(),
             record.attempts(),
             exception);
         return published;
+      } finally {
+        restoreContext(previousContext);
       }
     }
   }
@@ -213,6 +223,14 @@ class EventOutboxPublisher {
 
   private static boolean isPostgres(Connection connection) throws SQLException {
     return connection.getMetaData().getDatabaseProductName().toLowerCase().contains("postgresql");
+  }
+
+  private static void restoreContext(Map<String, String> previousContext) {
+    if (previousContext == null) {
+      MDC.clear();
+    } else {
+      MDC.setContextMap(new HashMap<>(previousContext));
+    }
   }
 
   private record OutboxRecord(

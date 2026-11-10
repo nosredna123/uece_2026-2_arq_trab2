@@ -82,6 +82,57 @@ class RegistrationContractTest {
   }
 
   @Test
+  void invalidCorrelationIdIsRejectedAndReplacedForTheError() {
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("X-Correlation-ID", "not-a-uuid");
+
+    ResponseEntity<JsonNode> response =
+        client.exchange(
+            "/registrations", HttpMethod.GET, new HttpEntity<>(headers), JsonNode.class);
+
+    assertThat(response.getStatusCode().value()).isEqualTo(400);
+    assertThat(response.getHeaders().getFirst("X-Correlation-ID")).isNotBlank();
+    assertThat(response.getBody().path("correlationId").asText())
+        .isEqualTo(response.getHeaders().getFirst("X-Correlation-ID"));
+  }
+
+  @Test
+  void registrationCorrelationIdReachesDependenciesAndEmittedMessage() throws Exception {
+    UUID correlationId = UUID.fromString("90000000-0000-0000-0000-000000000001");
+    HttpHeaders headers = new HttpHeaders();
+    headers.setBearerAuth("participant-token");
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.set("Idempotency-Key", "correlation-flow");
+    headers.set("X-Correlation-ID", correlationId.toString());
+
+    ResponseEntity<JsonNode> response =
+        client.exchange(
+            "/registrations",
+            HttpMethod.POST,
+            new HttpEntity<>("{\"activityId\":\"" + ACTIVITY_ID + "\"}", headers),
+            JsonNode.class);
+
+    UUID registrationId = UUID.fromString(response.getBody().path("id").asText());
+    String snapshotBody =
+        jdbc.queryForObject(
+            "SELECT body FROM billing_outbox WHERE registration_id = ? "
+                + "AND routing_key = 'registration.changed'",
+            String.class,
+            registrationId);
+    JsonNode snapshot = objectMapper.readTree(snapshotBody);
+
+    assertThat(response.getStatusCode().value()).isEqualTo(201);
+    assertThat(response.getHeaders().getFirst("X-Correlation-ID"))
+        .isEqualTo(correlationId.toString());
+    verify(identityClient).validate("participant-token", correlationId.toString());
+    verify(eventManagementClient)
+        .activateOrValidateAdmission(ACTIVITY_ID, correlationId.toString());
+    assertThat(snapshot.path("correlationId").asText()).isEqualTo(correlationId.toString());
+    assertThat(snapshot.path("data").path("registrationId").asText())
+        .isEqualTo(registrationId.toString());
+  }
+
+  @Test
   void confirmsFreeRegistrationAndReplaysSameIdempotentResponse() throws Exception {
     ResponseEntity<JsonNode> first = create(ACTIVITY_ID, "free-registration", "participant-token");
     ResponseEntity<JsonNode> retry = create(ACTIVITY_ID, "free-registration", "participant-token");

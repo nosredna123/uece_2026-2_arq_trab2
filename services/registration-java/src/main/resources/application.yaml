@@ -18,6 +18,10 @@ spring:
     publisher-returns: true
     template:
       mandatory: true
+logging:
+  structured:
+    format:
+      console: ecs
 management:
   endpoints:
     web:

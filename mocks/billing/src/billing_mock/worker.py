@@ -6,7 +6,12 @@ import pika
 from pika.exceptions import AMQPError
 from pika.spec import BasicProperties
 
-from billing_mock.models import InvalidBillingRequest
+from billing_mock.models import BillingRequest, InvalidBillingRequest
+from billing_mock.observability import (
+    bind_context,
+    configure_logging,
+    reset_context,
+)
 from billing_mock.processor import BillingProcessor, PublishNotConfirmed
 from billing_mock.settings import WorkerSettings
 from billing_mock.store import BillingStore
@@ -95,17 +100,44 @@ def run_worker(settings: WorkerSettings) -> None:
                 properties: BasicProperties,
                 body: bytes,
             ) -> None:
+                context_tokens = bind_context(properties.correlation_id)
                 try:
-                    processor.process_message(
-                        body,
-                        transport_message_id=properties.message_id or "",
-                        transport_correlation_id=properties.correlation_id or "",
-                    )
-                except InvalidBillingRequest as error:
-                    quarantine_message(active_channel, properties, body, error)
-                else:
-                    processor.publish_pending(active_channel)
-                active_channel.basic_ack(delivery_tag=method.delivery_tag)
+                    try:
+                        request = BillingRequest.from_message(body)
+                        reset_context(context_tokens)
+                        context_tokens = bind_context(
+                            str(request.correlation_id),
+                            str(request.data.registration_id),
+                        )
+                        processor.process_message(
+                            body,
+                            transport_message_id=properties.message_id or "",
+                            transport_correlation_id=properties.correlation_id or "",
+                        )
+                    except InvalidBillingRequest as error:
+                        quarantine_message(active_channel, properties, body, error)
+                        LOGGER.warning(
+                            "message.quarantined",
+                            extra={
+                                "event_id": properties.message_id,
+                                "event_type": "billing.requested",
+                                "correlation_id": properties.correlation_id,
+                            },
+                        )
+                    else:
+                        LOGGER.info(
+                            "message.processed",
+                            extra={
+                                "event_id": str(request.event_id),
+                                "event_type": request.event_type,
+                                "correlation_id": str(request.correlation_id),
+                                "registration_id": str(request.data.registration_id),
+                            },
+                        )
+                        processor.publish_pending(active_channel)
+                    active_channel.basic_ack(delivery_tag=method.delivery_tag)
+                finally:
+                    reset_context(context_tokens)
 
             channel.basic_qos(prefetch_count=1)
             channel.basic_consume(
@@ -113,14 +145,16 @@ def run_worker(settings: WorkerSettings) -> None:
                 on_message_callback=on_message,
                 auto_ack=False,
             )
-            LOGGER.info("Billing mock consuming durable requests")
+            LOGGER.info("message_worker.ready")
             channel.start_consuming()
             retry_delay = settings.retry_initial_seconds
         except (AMQPError, OSError, sqlite3.Error, PublishNotConfirmed) as error:
             LOGGER.error(
-                "Billing worker unavailable error_type=%s retry_seconds=%s",
-                type(error).__name__,
-                retry_delay,
+                "message_worker.unavailable",
+                extra={
+                    "error_type": type(error).__name__,
+                    "retry_seconds": retry_delay,
+                },
             )
             if connection is not None and connection.is_open:
                 connection.close()
@@ -132,7 +166,7 @@ def run_worker(settings: WorkerSettings) -> None:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO)
+    configure_logging()
     run_worker(WorkerSettings.from_environment())
 
 

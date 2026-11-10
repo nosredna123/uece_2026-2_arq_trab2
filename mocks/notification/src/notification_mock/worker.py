@@ -7,6 +7,11 @@ from pika.exceptions import AMQPError
 from pika.spec import BasicProperties
 
 from notification_mock.models import InvalidNotificationEvent
+from notification_mock.observability import (
+    bind_context,
+    configure_logging,
+    reset_context,
+)
 from notification_mock.processor import NotificationProcessor
 from notification_mock.settings import NotificationSettings, WorkerSettings
 from notification_mock.store import NotificationStore
@@ -103,50 +108,61 @@ def handle_message(
     processor: NotificationProcessor,
     settings: WorkerSettings,
 ) -> None:
+    context_tokens = bind_context(properties.correlation_id)
     try:
-        result = processor.process_message(
-            body,
-            transport_message_id=properties.message_id or "",
-            transport_correlation_id=properties.correlation_id or "",
-        )
-    except InvalidNotificationEvent as error:
-        quarantine_message(channel, properties, body, error)
-        channel.basic_ack(delivery_tag=method.delivery_tag)
-        LOGGER.warning(
-            "Notification event quarantined event_id=%s correlation_id=%s",
-            properties.message_id,
-            properties.correlation_id,
-        )
-        return
+        try:
+            result = processor.process_message(
+                body,
+                transport_message_id=properties.message_id or "",
+                transport_correlation_id=properties.correlation_id or "",
+            )
+        except InvalidNotificationEvent as error:
+            quarantine_message(channel, properties, body, error)
+            channel.basic_ack(delivery_tag=method.delivery_tag)
+            LOGGER.warning(
+                "message.quarantined",
+                extra={
+                    "event_id": properties.message_id,
+                    "event_type": method.routing_key,
+                    "correlation_id": properties.correlation_id,
+                },
+            )
+            return
 
-    if result.status == "RETRYABLE":
-        delay = retry_delay(
-            settings.retry_initial_seconds,
-            settings.retry_max_seconds,
-            result.attempt_count,
-        )
-        LOGGER.warning(
-            "Notification unavailable event_id=%s correlation_id=%s "
-            "retry_seconds=%s",
-            result.event_id,
+        reset_context(context_tokens)
+        context_tokens = bind_context(
             result.correlation_id,
-            delay,
+            result.registration_id,
         )
-        channel.connection.call_later(
-            delay,
-            lambda: channel.basic_nack(
-                delivery_tag=method.delivery_tag,
-                requeue=True,
-            ),
-        )
-        return
+        fields = {
+            "event_id": result.event_id,
+            "event_type": result.event_type,
+            "correlation_id": result.correlation_id,
+            "registration_id": result.registration_id,
+        }
+        if result.status == "RETRYABLE":
+            delay = retry_delay(
+                settings.retry_initial_seconds,
+                settings.retry_max_seconds,
+                result.attempt_count,
+            )
+            LOGGER.warning(
+                "message.retry_scheduled",
+                extra={**fields, "retry_seconds": delay},
+            )
+            channel.connection.call_later(
+                delay,
+                lambda: channel.basic_nack(
+                    delivery_tag=method.delivery_tag,
+                    requeue=True,
+                ),
+            )
+            return
 
-    channel.basic_ack(delivery_tag=method.delivery_tag)
-    LOGGER.info(
-        "Notification simulated event_id=%s correlation_id=%s",
-        result.event_id,
-        result.correlation_id,
-    )
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        LOGGER.info("message.processed", extra=fields)
+    finally:
+        reset_context(context_tokens)
 
 
 def run_worker(settings: WorkerSettings) -> None:
@@ -176,14 +192,16 @@ def run_worker(settings: WorkerSettings) -> None:
                 ),
                 auto_ack=False,
             )
-            LOGGER.info("Notification mock consuming durable source events")
+            LOGGER.info("message_worker.ready")
             channel.start_consuming()
             retry_backoff = settings.retry_initial_seconds
         except (AMQPError, OSError, sqlite3.Error) as error:
             LOGGER.error(
-                "Notification worker unavailable error_type=%s retry_seconds=%s",
-                type(error).__name__,
-                retry_backoff,
+                "message_worker.unavailable",
+                extra={
+                    "error_type": type(error).__name__,
+                    "retry_seconds": retry_backoff,
+                },
             )
             if connection is not None and connection.is_open:
                 connection.close()
@@ -195,7 +213,7 @@ def run_worker(settings: WorkerSettings) -> None:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO)
+    configure_logging()
     run_worker(WorkerSettings.from_environment())
 
 

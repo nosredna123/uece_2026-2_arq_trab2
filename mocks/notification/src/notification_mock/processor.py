@@ -17,6 +17,8 @@ from notification_mock.store import (
 class ProcessingResult:
     event_id: str
     correlation_id: str
+    event_type: str
+    registration_id: str | None
     status: str
     attempt_count: int
 
@@ -60,6 +62,12 @@ class NotificationProcessor:
         return ProcessingResult(
             event_id=str(event.event_id),
             correlation_id=str(event.correlation_id),
+            event_type=event.event_type,
+            registration_id=(
+                str(event.data.registration_id)
+                if hasattr(event.data, "registration_id")
+                else None
+            ),
             status=state.status,
             attempt_count=state.attempts,
         )

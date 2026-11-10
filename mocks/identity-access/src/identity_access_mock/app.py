@@ -20,6 +20,11 @@ from pydantic import (
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from identity_access_mock.observability import (
+    bind_context,
+    configure_logging,
+    reset_context,
+)
 from identity_access_mock.settings import Settings
 
 
@@ -107,6 +112,7 @@ def error_response(
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    configure_logging()
     runtime_settings = settings or Settings.from_environment()
     fixtures = load_fixtures()
     fixtures_by_token = {
@@ -138,19 +144,46 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         except ValueError:
             request.state.correlation_id = str(uuid4())
-            response = error_response(
-                request,
-                400,
-                "INVALID_CORRELATION_ID",
-                "X-Correlation-ID must be a UUID.",
-            )
-            response.headers["X-Correlation-ID"] = request.state.correlation_id
-            return response
+            context_tokens = bind_context(request.state.correlation_id)
+            try:
+                response = error_response(
+                    request,
+                    400,
+                    "INVALID_CORRELATION_ID",
+                    "X-Correlation-ID must be a UUID.",
+                )
+                LOGGER.info(
+                    "http.request.completed",
+                    extra={
+                        "http_method": request.method,
+                        "http_path": request.url.path,
+                        "correlation_id": request.state.correlation_id,
+                        "status_code": response.status_code,
+                    },
+                )
+                return response
+            finally:
+                reset_context(context_tokens)
 
         request.state.correlation_id = str(correlation_id)
-        response = await call_next(request)
-        response.headers["X-Correlation-ID"] = request.state.correlation_id
-        return response
+        context_tokens = bind_context(request.state.correlation_id)
+        try:
+            response = await call_next(request)
+            response.headers["X-Correlation-ID"] = request.state.correlation_id
+            LOGGER.info(
+                "http.request.completed",
+                extra={
+                    "http_method": request.method,
+                    "http_path": request.url.path,
+                    "correlation_id": request.state.correlation_id,
+                    "registration_id": request.path_params.get("registration_id")
+                    or request.path_params.get("id"),
+                    "status_code": response.status_code,
+                },
+            )
+            return response
+        finally:
+            reset_context(context_tokens)
 
     @app.exception_handler(RequestValidationError)
     async def invalid_request(
@@ -176,9 +209,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(Exception)
     async def internal_error(request: Request, error: Exception) -> JSONResponse:
         LOGGER.error(
-            "Unhandled identity mock error type=%s correlation_id=%s",
-            type(error).__name__,
-            request.state.correlation_id,
+            "request.unhandled_error",
+            extra={
+                "correlation_id": request.state.correlation_id,
+                "error_type": type(error).__name__,
+            },
         )
         return error_response(
             request,

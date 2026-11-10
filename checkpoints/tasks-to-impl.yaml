@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 41
+  completed_tasks: 42
   in_progress_tasks: 0
-  pending_tasks: 3
-  completion_percentage: 93.18
+  pending_tasks: 2
+  completion_percentage: 95.45
 
 tasks:
   - task_id: "T001"
@@ -1105,8 +1105,77 @@ tasks:
       requirements: ["RQ02"]
       full_trace: "RQ02 -> Phase-6.1 -> T041 -> repeatable baseline and 20× comparative query/registration workload"
 
-pending_tasks:
   - task_id: "T042"
+    description: "Propagar correlation/trace ID em APIs, mensagens e logs estruturados nos quatro serviços e mocks, incluindo registrationId para diagnóstico ponta a ponta."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mocks/billing/src/billing_mock/healthcheck.py"
+        - file: "mocks/billing/src/billing_mock/worker.py"
+        - file: "mocks/billing/src/billing_mock/observability.py"
+        - file: "mocks/identity-access/src/identity_access_mock/app.py"
+        - file: "mocks/identity-access/src/identity_access_mock/observability.py"
+        - file: "mocks/identity-access/tests/test_identity_runtime.py"
+        - file: "mocks/notification/src/notification_mock/healthcheck.py"
+        - file: "mocks/notification/src/notification_mock/processor.py"
+        - file: "mocks/notification/src/notification_mock/worker.py"
+        - file: "mocks/notification/src/notification_mock/observability.py"
+        - file: "mocks/notification/tests/test_notification_processor.py"
+        - file: "services/attendance-certification-python/src/attendance_service/app.py"
+        - file: "services/attendance-certification-python/src/attendance_service/worker.py"
+        - file: "services/attendance-certification-python/src/attendance_service/observability.py"
+        - file: "services/attendance-certification-python/tests/test_attendance_contract.py"
+        - file: "services/event-management-java/src/main/java/br/uece/eventhub/events/CorrelationIdFilter.java"
+        - file: "services/event-management-java/src/main/java/br/uece/eventhub/events/EventOutboxPublisher.java"
+        - file: "services/event-management-java/src/main/resources/application.yaml"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/BillingOutboxPublisher.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/BillingResultConsumer.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/CorrelationIdFilter.java"
+        - file: "services/registration-java/src/main/resources/application.yaml"
+        - file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationContractTest.java"
+        - file: "services/reporting-python/src/reporting_service/app.py"
+        - file: "services/reporting-python/src/reporting_service/worker.py"
+        - file: "services/reporting-python/src/reporting_service/observability.py"
+        - file: "services/reporting-python/tests/test_reporting_contract.py"
+        - file: "tests/integration/paid-registration-flow/test_paid_registration_flow.py"
+        - file: "tests/test_observability.py"
+        - file: "docs/validation/observability.md"
+        - file: "plan.md"
+        - file: "checkpoints/tasks-to-impl.yaml"
+        - file: "checkpoints/batch-report-T042.yaml"
+      notes: "Standardized correlation identity across HTTP responses/errors, internal calls, event envelopes and AMQP properties; added structured request/message logs with event and registration context; tested invalid IDs and end-to-end response correlation."
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test python -m pytest -x --import-mode=importlib"
+        passed: 185
+        failed: 0
+        skipped: 6
+        failures: []
+      live_integration_results:
+        command: "bash tests/integration/paid-registration-flow/run.sh"
+        passed: 1
+        failed: 0
+        skipped: 0
+        notes: "Paid registration flow passed with HTTP correlation headers and error-body correlation IDs verified."
+      build_results:
+        command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build"
+        passed: 15
+        failed: 0
+        notes: "All Java service test targets and Python service/test images built successfully."
+      quality_checks:
+        command: "ruff check --no-cache .; lint-imports --no-cache; git diff --check"
+        passed: 0
+        failed: 0
+        skipped: 0
+        failures: []
+        notes: "Ruff, import-boundary validation, and whitespace checks passed after the implementation changes."
+    upstream_trace:
+      plan_item: "6.2"
+      requirements: ["RQ06"]
+      full_trace: "RQ06 -> Phase-6.2 -> T042 -> correlation identity and structured diagnostic context across APIs, messages, and logs"
+
+pending_tasks:
   - task_id: "T043"
   - task_id: "T044"
 
@@ -1431,6 +1500,20 @@ traceability_chain:
     files:
       - "tests/load"
       - "docs/validation/evidence.md"
+    status: "complete"
+  - chain_id: "TRACE-T042"
+    requirement: "RQ06"
+    plan_phase: "Phase-6"
+    plan_item: "6.2"
+    tasks: ["T042"]
+    files:
+      - "docs/validation/observability.md"
+      - "tests/test_observability.py"
+      - "services/event-management-java"
+      - "services/registration-java"
+      - "services/attendance-certification-python"
+      - "services/reporting-python"
+      - "mocks"
     status: "complete"
 
 validation:

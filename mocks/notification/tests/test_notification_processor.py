@@ -66,6 +66,8 @@ def test_successful_delivery_is_correlated_and_idempotent(tmp_path):
 
     assert result.status == "DELIVERED"
     assert replay.status == "DELIVERED"
+    assert result.event_type == "registration.changed"
+    assert result.registration_id == REGISTRATION_ID
     assert store.count_deliveries() == 1
     delivery = store.get_delivery(EVENT_ID)
     assert delivery is not None

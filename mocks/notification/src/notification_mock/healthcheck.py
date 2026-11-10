@@ -4,6 +4,7 @@ import sys
 
 from pika.exceptions import AMQPError
 
+from notification_mock.observability import configure_logging
 from notification_mock.settings import WorkerSettings
 from notification_mock.store import NotificationStore
 from notification_mock.worker import create_connection
@@ -21,13 +22,13 @@ def main() -> int:
         connection.close()
     except (AMQPError, OSError, RuntimeError, sqlite3.Error) as error:
         LOGGER.error(
-            "Notification health check failed error_type=%s",
-            type(error).__name__,
+            "health_check.failed",
+            extra={"error_type": type(error).__name__},
         )
         return 1
     return 0
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.ERROR)
+    configure_logging()
     sys.exit(main())

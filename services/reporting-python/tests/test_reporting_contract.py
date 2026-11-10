@@ -310,7 +310,7 @@ def test_query_uses_reporting_projection_without_upstream_data_sources(
     assert reporting.identity.calls[-1][0] == "organizer-token"
 
 
-def test_correlation_id_is_returned_for_report_queries(reporting):
+def test_correlation_id_is_returned_and_logged_for_report_queries(reporting, caplog):
     correlation_id = "90000000-0000-0000-0000-000000000001"
     response = reporting.client.get(
         f"/organizations/{ORGANIZATION_ID}/reports",
@@ -321,3 +321,12 @@ def test_correlation_id_is_returned_for_report_queries(reporting):
     )
     assert response.status_code == 200
     assert response.headers["X-Correlation-ID"] == correlation_id
+    assert reporting.identity.calls[-1] == ("organizer-token", correlation_id)
+    request_log = next(
+        record
+        for record in caplog.records
+        if record.name == "reporting_service.app"
+        and record.getMessage() == "http.request.completed"
+    )
+    assert request_log.correlation_id == correlation_id
+    assert request_log.status_code == 200

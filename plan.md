@@ -316,7 +316,7 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 - [x] T039 [Plan:6.1] Executar teste de concorrência em `tests/concurrency/` com capacidade controlada e concorrência reproduzível; registrar que reservas confirmadas/ofertadas nunca superam a capacidade.
 - [x] T040 [Plan:6.1] Configurar mutation testing para os quatro serviços executáveis e CI; exigir score ≥95% no núcleo de domínio ou documentar cada exclusão aprovada.
 - [x] T041 [Plan:6.1] Criar ensaio de carga repetível em `tests/load/` e registrar baseline, perfil de até 20× e resultados comparativos de consultas/inscrições em `docs/validation/evidence.md`.
-- [ ] T042 [Plan:6.2] Propagar correlation/trace ID em APIs, mensagens e logs estruturados nos quatro serviços e mocks, incluindo `registrationId` para diagnóstico ponta a ponta.
+- [x] T042 [Plan:6.2] Propagar correlation/trace ID em APIs, mensagens e logs estruturados nos quatro serviços e mocks, incluindo `registrationId` para diagnóstico ponta a ponta.
 - [ ] T043 [Plan:6.2] Completar `README.md` com requisitos, configuração segura, `.env.example`, comandos de build/teste/execução, dados de demonstração, APIs e limites de serviços reais versus mocks.
 - [ ] T044 [Plan:6.2] Consolidar diagramas, ADRs, rationales, evidências de teste e análise dos trade-offs em `docs/validation/`; incluir declaração de uso de IA e roteiro de demonstração/defesa.
 

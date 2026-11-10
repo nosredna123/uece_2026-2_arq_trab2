@@ -1,0 +1,160 @@
+batch_id: "T042"
+completed_tasks: ["T042"]
+blocked_tasks: []
+files_changed:
+  T042:
+    - file: "mocks/billing/src/billing_mock/healthcheck.py"
+      change_type: "modified"
+      description: "Added structured health/request logging and correlation context to Billing mock messages."
+    - file: "mocks/billing/src/billing_mock/worker.py"
+      change_type: "modified"
+      description: "Included correlation and registration context in Billing mock worker logs."
+    - file: "mocks/billing/src/billing_mock/observability.py"
+      change_type: "created"
+      description: "Added standard-library JSON logging helpers."
+    - file: "mocks/identity-access/src/identity_access_mock/app.py"
+      change_type: "modified"
+      description: "Propagated and returned correlation IDs for Identity mock API calls."
+    - file: "mocks/identity-access/src/identity_access_mock/observability.py"
+      change_type: "created"
+      description: "Added structured request logging helpers."
+    - file: "mocks/identity-access/tests/test_identity_runtime.py"
+      change_type: "modified"
+      description: "Covered correlation ID behavior in the Identity mock."
+    - file: "mocks/notification/src/notification_mock/healthcheck.py"
+      change_type: "modified"
+      description: "Added structured health/request logging."
+    - file: "mocks/notification/src/notification_mock/processor.py"
+      change_type: "modified"
+      description: "Retained event type and registration identity in processing results."
+    - file: "mocks/notification/src/notification_mock/worker.py"
+      change_type: "modified"
+      description: "Added correlation, event, registration, and retry context to message logs."
+    - file: "mocks/notification/src/notification_mock/observability.py"
+      change_type: "created"
+      description: "Added standard-library JSON logging helpers."
+    - file: "mocks/notification/tests/test_notification_processor.py"
+      change_type: "modified"
+      description: "Verified notification processing retains diagnostic context."
+    - file: "services/attendance-certification-python/src/attendance_service/app.py"
+      change_type: "modified"
+      description: "Added request correlation and structured completion logs."
+    - file: "services/attendance-certification-python/src/attendance_service/worker.py"
+      change_type: "modified"
+      description: "Added structured event-processing logs with correlation context."
+    - file: "services/attendance-certification-python/src/attendance_service/observability.py"
+      change_type: "created"
+      description: "Added standard-library JSON logging helpers."
+    - file: "services/attendance-certification-python/tests/test_attendance_contract.py"
+      change_type: "modified"
+      description: "Covered correlation identity in Attendance API behavior."
+    - file: "services/event-management-java/src/main/java/br/uece/eventhub/events/CorrelationIdFilter.java"
+      change_type: "modified"
+      description: "Added request correlation and structured diagnostic context."
+    - file: "services/event-management-java/src/main/java/br/uece/eventhub/events/EventOutboxPublisher.java"
+      change_type: "modified"
+      description: "Added event and correlation context to outbox publishing logs."
+    - file: "services/event-management-java/src/main/resources/application.yaml"
+      change_type: "modified"
+      description: "Configured structured ECS console logging."
+    - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/BillingOutboxPublisher.java"
+      change_type: "modified"
+      description: "Included registration identity in outbox records and publishing logs."
+    - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/BillingResultConsumer.java"
+      change_type: "modified"
+      description: "Added correlation and registration context to message processing logs."
+    - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/CorrelationIdFilter.java"
+      change_type: "modified"
+      description: "Validated correlation IDs and returned consistent error correlation context."
+    - file: "services/registration-java/src/main/resources/application.yaml"
+      change_type: "modified"
+      description: "Configured structured ECS console logging."
+    - file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationContractTest.java"
+      change_type: "modified"
+      description: "Covered invalid IDs, dependency/outbox propagation, and registration identity."
+    - file: "services/reporting-python/src/reporting_service/app.py"
+      change_type: "modified"
+      description: "Added request correlation and structured completion logs."
+    - file: "services/reporting-python/src/reporting_service/worker.py"
+      change_type: "modified"
+      description: "Added structured message-processing logs with correlation context."
+    - file: "services/reporting-python/src/reporting_service/observability.py"
+      change_type: "created"
+      description: "Added standard-library JSON logging helpers."
+    - file: "services/reporting-python/tests/test_reporting_contract.py"
+      change_type: "modified"
+      description: "Covered correlation identity in Reporting API behavior."
+    - file: "tests/integration/paid-registration-flow/test_paid_registration_flow.py"
+      change_type: "modified"
+      description: "Asserted correlation IDs on API responses and matching error bodies."
+    - file: "tests/test_observability.py"
+      change_type: "created"
+      description: "Verified structured correlation and registration fields across Python packages."
+    - file: "docs/validation/observability.md"
+      change_type: "created"
+      description: "Documented correlation identity and structured log field conventions."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T042 complete."
+    - file: "checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Recorded T042 traceability, validation, files, and updated task counts."
+    - file: "checkpoints/batch-report-T042.yaml"
+      change_type: "created"
+      description: "Recorded T042 implementation and verification evidence."
+upstream_artifacts_consumed:
+  T042:
+    - artifact: "plan.md#T042"
+      used_for: "Correlation/trace propagation and structured diagnostics across APIs, messages, and logs."
+    - artifact: "plan.md#RQ06"
+      used_for: "End-to-end traceability and diagnostic requirement."
+    - artifact: "services/registration-java"
+      used_for: "Established correlation ID validation and propagation through HTTP and billing messages."
+    - artifact: "tests/integration/paid-registration-flow"
+      used_for: "Verified correlation behavior through the integrated paid registration journey."
+traceability:
+  - requirement: "RQ06"
+    plan_item: "6.2"
+    task: "T042"
+    files:
+      - "docs/validation/observability.md"
+      - "tests/test_observability.py"
+      - "services"
+      - "mocks"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "The host Python 3.11 environment is incompatible with the repository's FastAPI/Pydantic test dependencies and generated mutants tree; the canonical Docker test image passed the full suite."
+  - severity: "LOW"
+    message: "The live integration runner leaves its Compose stack and volumes running, as documented in its README."
+test_results:
+  repository_tests:
+    command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test python -m pytest -x --import-mode=importlib"
+    passed: 185
+    failed: 0
+    skipped: 6
+    failures: []
+    notes: "Full repository Python suite passed in the project test image."
+  live_paid_registration_flow:
+    command: "bash tests/integration/paid-registration-flow/run.sh"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "Live flow verified response correlation headers, matching correlation IDs in error payloads, and successful registration-to-reporting behavior."
+  test_profile_build:
+    command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build"
+    passed: 15
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "All service and test-profile images, including Java test targets, built successfully."
+  quality_checks:
+    command: "ruff check --no-cache .; lint-imports --no-cache; git diff --check"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "Ruff, import-linter, and whitespace validation passed after the code changes."

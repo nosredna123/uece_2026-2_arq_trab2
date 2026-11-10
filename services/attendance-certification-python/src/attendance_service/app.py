@@ -14,6 +14,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from attendance_service.errors import ApiError
 from attendance_service.identity_client import IdentityClient
+from attendance_service.observability import (
+    bind_context,
+    configure_logging,
+    reset_context,
+)
 from attendance_service.repository import AttendanceRepository
 from attendance_service.settings import Settings
 from attendance_service.worker import AttendanceWorker
@@ -68,6 +73,7 @@ def create_app(
     identity_client: IdentityClient | None = None,
     start_worker: bool = True,
 ) -> FastAPI:
+    configure_logging()
     runtime_settings = settings or Settings.from_environment()
     engine = create_engine(
         runtime_settings.database_url.get_secret_value(),
@@ -105,17 +111,46 @@ def create_app(
         except ValueError:
             correlation_id = uuid4()
             request.state.correlation_id = str(correlation_id)
-            return _error_response(
-                request,
-                400,
-                "INVALID_CORRELATION_ID",
-                "X-Correlation-ID must be a UUID.",
-            )
+            context_tokens = bind_context(str(correlation_id))
+            try:
+                response = _error_response(
+                    request,
+                    400,
+                    "INVALID_CORRELATION_ID",
+                    "X-Correlation-ID must be a UUID.",
+                )
+                LOGGER.info(
+                    "http.request.completed",
+                    extra={
+                        "http_method": request.method,
+                        "http_path": request.url.path,
+                        "correlation_id": request.state.correlation_id,
+                        "status_code": response.status_code,
+                    },
+                )
+                return response
+            finally:
+                reset_context(context_tokens)
 
         request.state.correlation_id = str(correlation_id)
-        response = await call_next(request)
-        response.headers["X-Correlation-ID"] = request.state.correlation_id
-        return response
+        context_tokens = bind_context(request.state.correlation_id)
+        try:
+            response = await call_next(request)
+            response.headers["X-Correlation-ID"] = request.state.correlation_id
+            LOGGER.info(
+                "http.request.completed",
+                extra={
+                    "http_method": request.method,
+                    "http_path": request.url.path,
+                    "correlation_id": request.state.correlation_id,
+                    "registration_id": request.path_params.get("registration_id")
+                    or request.path_params.get("id"),
+                    "status_code": response.status_code,
+                },
+            )
+            return response
+        finally:
+            reset_context(context_tokens)
 
     @app.exception_handler(ApiError)
     async def api_error(request: Request, error: ApiError) -> JSONResponse:
@@ -141,9 +176,13 @@ def create_app(
     @app.exception_handler(SQLAlchemyError)
     async def database_error(request: Request, error: SQLAlchemyError) -> JSONResponse:
         LOGGER.error(
-            "Attendance database operation failed error_type=%s correlation_id=%s",
-            type(error).__name__,
-            getattr(request.state, "correlation_id", "unknown"),
+            "database.operation.failed",
+            extra={
+                "correlation_id": getattr(request.state, "correlation_id", None),
+                "error_type": type(error).__name__,
+                "registration_id": request.path_params.get("registration_id")
+                or request.path_params.get("id"),
+            },
         )
         return _error_response(
             request,
@@ -166,9 +205,13 @@ def create_app(
     @app.exception_handler(Exception)
     async def internal_error(request: Request, error: Exception) -> JSONResponse:
         LOGGER.error(
-            "Unhandled Attendance error type=%s correlation_id=%s",
-            type(error).__name__,
-            getattr(request.state, "correlation_id", "unknown"),
+            "request.unhandled_error",
+            extra={
+                "correlation_id": getattr(request.state, "correlation_id", None),
+                "error_type": type(error).__name__,
+                "registration_id": request.path_params.get("registration_id")
+                or request.path_params.get("id"),
+            },
         )
         return _error_response(
             request,
@@ -183,7 +226,10 @@ def create_app(
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
         except SQLAlchemyError as error:
-            LOGGER.error("Database health check failed: %s", type(error).__name__)
+            LOGGER.error(
+                "database.health_check.failed",
+                extra={"error_type": type(error).__name__},
+            )
             raise ApiError(503, "DATABASE_UNAVAILABLE", "Database unavailable.") from error
         return {"status": "UP"}
 

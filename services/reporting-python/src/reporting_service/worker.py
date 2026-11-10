@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from reporting_service.errors import InvalidEvent
 from reporting_service.events import parse_event
+from reporting_service.observability import bind_context, reset_context
 from reporting_service.repository import ReportingRepository
 from reporting_service.settings import Settings
 
@@ -45,7 +46,7 @@ class ReportingWorker:
         if self.thread is not None:
             self.thread.join(timeout=5)
             if self.thread.is_alive():
-                LOGGER.warning("Reporting message worker did not stop before timeout")
+                LOGGER.warning("message_worker.stop_timeout")
 
     def _run(self) -> None:
         retry_delay = self.settings.retry_initial_seconds
@@ -75,24 +76,26 @@ class ReportingWorker:
                     auto_ack=False,
                 )
                 retry_delay = self.settings.retry_initial_seconds
-                LOGGER.info("Reporting worker consuming source events")
+                LOGGER.info("message_worker.ready")
                 while connection.is_open and not self.stop_event.is_set():
                     connection.process_data_events(time_limit=1)
                 if connection.is_open:
                     connection.close()
             except (AMQPError, OSError, SQLAlchemyError) as error:
                 LOGGER.error(
-                    "Reporting worker unavailable error_type=%s retry_seconds=%s",
-                    type(error).__name__,
-                    retry_delay,
+                    "message_worker.unavailable",
+                    extra={
+                        "error_type": type(error).__name__,
+                        "retry_seconds": retry_delay,
+                    },
                 )
                 if connection is not None and connection.is_open:
                     try:
                         connection.close()
                     except (AMQPError, OSError) as close_error:
                         LOGGER.warning(
-                            "Reporting worker connection close failed error_type=%s",
-                            type(close_error).__name__,
+                            "message_worker.connection_close_failed",
+                            extra={"error_type": type(close_error).__name__},
                         )
                 self.stop_event.wait(retry_delay)
                 retry_delay = min(retry_delay * 2, self.settings.retry_max_seconds)
@@ -128,6 +131,7 @@ class ReportingWorker:
         properties: pika.spec.BasicProperties,
         body: bytes,
     ) -> None:
+        context_tokens = bind_context(properties.correlation_id)
         try:
             event = parse_event(body)
             if (
@@ -135,7 +139,21 @@ class ReportingWorker:
                 or properties.correlation_id != event["correlationId"]
             ):
                 raise InvalidEvent("transport identity does not match the event")
+            reset_context(context_tokens)
+            context_tokens = bind_context(
+                event["correlationId"],
+                event["data"].get("registrationId"),
+            )
             self.repository.apply_event(event)
+            LOGGER.info(
+                "message.processed",
+                extra={
+                    "event_id": event["eventId"],
+                    "event_type": event["eventType"],
+                    "correlation_id": event["correlationId"],
+                    "registration_id": event["data"].get("registrationId"),
+                },
+            )
         except InvalidEvent as error:
             try:
                 self._quarantine(channel, properties, body, error)
@@ -143,18 +161,25 @@ class ReportingWorker:
                 channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
                 return
             LOGGER.warning(
-                "Reporting event quarantined event_id=%s correlation_id=%s",
-                properties.message_id,
-                properties.correlation_id,
+                "message.quarantined",
+                extra={
+                    "event_id": properties.message_id,
+                    "event_type": method.routing_key,
+                },
             )
         except SQLAlchemyError as error:
             LOGGER.error(
-                "Reporting event persistence failed event_id=%s error_type=%s",
-                properties.message_id,
-                type(error).__name__,
+                "message.persistence_failed",
+                extra={
+                    "event_id": properties.message_id,
+                    "event_type": method.routing_key,
+                    "error_type": type(error).__name__,
+                },
             )
             channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
             return
+        finally:
+            reset_context(context_tokens)
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
     @staticmethod

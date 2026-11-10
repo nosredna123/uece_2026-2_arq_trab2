@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from attendance_service.database import message_outbox
 from attendance_service.errors import InvalidEvent
 from attendance_service.events import parse_event
+from attendance_service.observability import bind_context, reset_context
 from attendance_service.repository import AttendanceRepository
 from attendance_service.settings import Settings
 
@@ -42,7 +43,7 @@ class AttendanceWorker:
         if self.thread is not None:
             self.thread.join(timeout=5)
             if self.thread.is_alive():
-                LOGGER.warning("Attendance message worker did not stop before timeout")
+                LOGGER.warning("message_worker.stop_timeout")
 
     def _run(self) -> None:
         retry_delay = self.settings.retry_initial_seconds
@@ -72,7 +73,7 @@ class AttendanceWorker:
                     auto_ack=False,
                 )
                 retry_delay = self.settings.retry_initial_seconds
-                LOGGER.info("Attendance worker consuming durable source events")
+                LOGGER.info("message_worker.ready")
                 while connection.is_open and not self.stop_event.is_set():
                     connection.process_data_events(time_limit=1)
                     self._publish_pending(channel)
@@ -80,17 +81,19 @@ class AttendanceWorker:
                     connection.close()
             except (AMQPError, OSError, SQLAlchemyError) as error:
                 LOGGER.error(
-                    "Attendance worker unavailable error_type=%s retry_seconds=%s",
-                    type(error).__name__,
-                    retry_delay,
+                    "message_worker.unavailable",
+                    extra={
+                        "error_type": type(error).__name__,
+                        "retry_seconds": retry_delay,
+                    },
                 )
                 if connection is not None and connection.is_open:
                     try:
                         connection.close()
                     except (AMQPError, OSError) as close_error:
                         LOGGER.warning(
-                            "Attendance worker connection close failed error_type=%s",
-                            type(close_error).__name__,
+                            "message_worker.connection_close_failed",
+                            extra={"error_type": type(close_error).__name__},
                         )
                 self.stop_event.wait(retry_delay)
                 retry_delay = min(retry_delay * 2, self.settings.retry_max_seconds)
@@ -124,6 +127,7 @@ class AttendanceWorker:
         properties: pika.spec.BasicProperties,
         body: bytes,
     ) -> None:
+        context_tokens = bind_context(properties.correlation_id)
         try:
             event = parse_event(body)
             if (
@@ -131,7 +135,24 @@ class AttendanceWorker:
                 or properties.correlation_id != str(event.correlation_id)
             ):
                 raise InvalidEvent("transport identity does not match the event")
+            reset_context(context_tokens)
+            registration_id = getattr(event.data, "registration_id", None)
+            context_tokens = bind_context(
+                str(event.correlation_id),
+                str(registration_id) if registration_id is not None else None,
+            )
             self.repository.apply_event(event)
+            LOGGER.info(
+                "message.processed",
+                extra={
+                    "event_id": str(event.event_id),
+                    "event_type": event.event_type,
+                    "correlation_id": str(event.correlation_id),
+                    "registration_id": (
+                        str(registration_id) if registration_id is not None else None
+                    ),
+                },
+            )
         except InvalidEvent as error:
             try:
                 self._quarantine(channel, properties, body, error)
@@ -139,18 +160,25 @@ class AttendanceWorker:
                 channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
                 return
             LOGGER.warning(
-                "Attendance event quarantined event_id=%s correlation_id=%s",
-                properties.message_id,
-                properties.correlation_id,
+                "message.quarantined",
+                extra={
+                    "event_id": properties.message_id,
+                    "event_type": method.routing_key,
+                },
             )
         except SQLAlchemyError as error:
             LOGGER.error(
-                "Attendance event persistence failed event_id=%s error_type=%s",
-                properties.message_id,
-                type(error).__name__,
+                "message.persistence_failed",
+                extra={
+                    "event_id": properties.message_id,
+                    "event_type": method.routing_key,
+                    "error_type": type(error).__name__,
+                },
             )
             channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
             return
+        finally:
+            reset_context(context_tokens)
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
     @staticmethod
