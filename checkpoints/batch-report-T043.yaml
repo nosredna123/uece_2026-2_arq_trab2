@@ -1,0 +1,60 @@
+batch_id: "T043"
+completed_tasks: ["T043"]
+blocked_tasks: []
+files_changed:
+  T043:
+    - file: "README.md"
+      change_type: "modified"
+      description: "Added requirements, secure configuration guidance, container build/test/run commands, demo flow, API overview, and real-service/mock boundaries."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T043 complete."
+    - file: "checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Recorded T043 requirement traceability, validation, and updated task counts."
+    - file: "checkpoints/batch-report-T043.yaml"
+      change_type: "created"
+      description: "Recorded T043 documentation implementation and verification."
+upstream_artifacts_consumed:
+  T043:
+    - artifact: "plan.md#T043"
+      used_for: "Required README sections and user-facing documentation scope."
+    - artifact: "infra/.env.example"
+      used_for: "Configuration variables, synthetic-only settings, and safe local setup instructions."
+    - artifact: "infra/docker-compose.yml"
+      used_for: "Documented ports, services, profiles, and Compose commands."
+    - artifact: "docs/development/environment-setup.md"
+      used_for: "Host requirements, readiness thresholds, and supported container workflow."
+    - artifact: "services/README.md"
+      used_for: "Service responsibilities, database ownership, and optional host-side testing requirements."
+    - artifact: "tests/integration/paid-registration-flow"
+      used_for: "Documented generated synthetic data and paid-registration demonstration behavior."
+traceability:
+  - requirement: "RQ07/RQ08"
+    plan_item: "6.2"
+    task: "T043"
+    files:
+      - "README.md"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six environment-dependent tests are intentionally skipped in the regular suite; the live paid-registration flow has its own runner."
+  - severity: "LOW"
+    message: "The Python test suite emitted the existing Starlette/AnyIO BlockingPortal deprecation warning."
+test_results:
+  repository_tests:
+    command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test python -m pytest -x --import-mode=importlib"
+    passed: 185
+    failed: 0
+    skipped: 6
+    failures: []
+    notes: "Full repository suite passed, including documentation tests."
+  documentation_checks:
+    command: "git diff --check; manual verification of README links, endpoint routes, and Compose commands"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "All relative links point to existing project artifacts, and the documented routes and commands match the implementation/configuration."

@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 42
+  completed_tasks: 43
   in_progress_tasks: 0
-  pending_tasks: 2
-  completion_percentage: 95.45
+  pending_tasks: 1
+  completion_percentage: 97.73
 
 tasks:
   - task_id: "T001"
@@ -1175,8 +1175,37 @@ tasks:
       requirements: ["RQ06"]
       full_trace: "RQ06 -> Phase-6.2 -> T042 -> correlation identity and structured diagnostic context across APIs, messages, and logs"
 
-pending_tasks:
   - task_id: "T043"
+    description: "Completar README com requisitos, configuração segura, .env.example, comandos de build/teste/execução, dados de demonstração, APIs e limites entre serviços reais e mocks."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "README.md"
+        - file: "plan.md"
+        - file: "checkpoints/tasks-to-impl.yaml"
+        - file: "checkpoints/batch-report-T043.yaml"
+      notes: "Documented host/container requirements, secure local configuration, copyable build/test/run commands, generated paid-flow demo data, public/internal API surfaces, and executable-service versus mock boundaries."
+    verification:
+      build_passed: null
+      test_results:
+        command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test python -m pytest -x --import-mode=importlib"
+        passed: 185
+        failed: 0
+        skipped: 6
+        failures: []
+      quality_checks:
+        command: "git diff --check; manual verification of README local links and documented endpoint/Compose commands"
+        passed: 0
+        failed: 0
+        skipped: 0
+        failures: []
+        notes: "The complete test suite passed; documentation links and commands were checked against project files and Compose configuration."
+    upstream_trace:
+      plan_item: "6.2"
+      requirements: ["RQ07", "RQ08"]
+      full_trace: "RQ07/RQ08 -> Phase-6.2 -> T043 -> secure local configuration and reproducible documented execution"
+
+pending_tasks:
   - task_id: "T044"
 
 untracked_changes: []
@@ -1514,6 +1543,18 @@ traceability_chain:
       - "services/attendance-certification-python"
       - "services/reporting-python"
       - "mocks"
+    status: "complete"
+  - chain_id: "TRACE-T043"
+    requirement: "RQ07/RQ08"
+    plan_phase: "Phase-6"
+    plan_item: "6.2"
+    tasks: ["T043"]
+    files:
+      - "README.md"
+      - "infra/.env.example"
+      - "infra/docker-compose.yml"
+      - "tests/integration/paid-registration-flow"
+      - "services/README.md"
     status: "complete"
 
 validation:
