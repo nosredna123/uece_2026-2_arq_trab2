@@ -6,6 +6,11 @@ architect review for changed invariants, and a semantic review against the
 versioned architecture rationales. The aggregate `gates` job fails if any
 required job fails, is cancelled, or is unavailable.
 
+The Java test targets include ArchUnit rules that prevent Event Management and
+Registration packages from depending on other service or mock domains. The
+Python lint job runs Import Linter's independence contract across Attendance,
+Reporting, and the Identity, Billing, and Notification mocks.
+
 ## Required repository configuration
 
 Before relying on the workflow:

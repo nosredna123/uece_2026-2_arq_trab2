@@ -1,0 +1,19 @@
+[importlinter]
+root_packages =
+    attendance_service
+    reporting_service
+    identity_access_mock
+    billing_mock
+    notification_mock
+include_external_packages = True
+exclude_type_checking_imports = True
+
+[importlinter:contract:service-boundaries]
+name = Services and mocks are independent packages
+type = independence
+modules =
+    attendance_service
+    reporting_service
+    identity_access_mock
+    billing_mock
+    notification_mock

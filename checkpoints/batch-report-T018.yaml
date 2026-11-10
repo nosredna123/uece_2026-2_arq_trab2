@@ -1,0 +1,84 @@
+batch_id: "T018"
+completed_tasks: ["T018"]
+blocked_tasks: []
+files_changed:
+  T018:
+    - file: ".importlinter"
+      change_type: "created"
+      description: "Added an independence contract across the two executable Python services and three Python mocks."
+    - file: "requirements-validation.txt"
+      change_type: "modified"
+      description: "Pinned Import Linter for reproducible local and CI checks."
+    - file: ".github/workflows/ci.yml"
+      change_type: "modified"
+      description: "Runs Import Linter in the required Python lint job."
+    - file: "services/event-management-java/pom.xml"
+      change_type: "modified"
+      description: "Added pinned ArchUnit JUnit 5 test dependency."
+    - file: "services/event-management-java/src/test/java/br/uece/eventhub/events/EventManagementArchitectureTest.java"
+      change_type: "created"
+      description: "Rejects Event Management dependencies on other service and mock domains."
+    - file: "services/registration-java/pom.xml"
+      change_type: "modified"
+      description: "Added pinned ArchUnit JUnit 5 test dependency."
+    - file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationArchitectureTest.java"
+      change_type: "created"
+      description: "Rejects Registration dependencies on other service and mock domains."
+    - file: "docs/development/ci-governance.md"
+      change_type: "modified"
+      description: "Documented the Java and Python architecture boundary gates."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T018 complete."
+    - file: "checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Recorded T018 implementation, validation, and traceability."
+    - file: "checkpoints/batch-report-T018.yaml"
+      change_type: "created"
+      description: "Recorded batch outcomes and validation evidence."
+upstream_artifacts_consumed:
+  T018:
+    - artifact: "plan.md#T018"
+      used_for: "Add Java and Python architecture boundary checks that fail CI for unauthorized dependencies."
+    - artifact: "constitution.md#1.2"
+      used_for: "Enforce independent service data ownership and prohibit coupling through shared domain libraries."
+    - artifact: "services/event-management-java"
+      used_for: "Bound the Event Management Java namespace."
+    - artifact: "services/registration-java"
+      used_for: "Bound the Registration Java namespace."
+    - artifact: "services/attendance-certification-python"
+      used_for: "Add the Attendance package to the Python independence contract."
+    - artifact: "services/reporting-python"
+      used_for: "Add the Reporting package to the Python independence contract."
+    - artifact: "mocks"
+      used_for: "Add Identity, Billing, and Notification mock packages to the Python independence contract."
+evidence_mapping:
+  T018:
+    - upstream: "plan.md#T018"
+      output: "services/event-management-java/src/test/java/br/uece/eventhub/events/EventManagementArchitectureTest.java"
+      evidence: "ArchUnit test discovered and passed in Maven."
+    - upstream: "plan.md#T018"
+      output: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationArchitectureTest.java"
+      evidence: "ArchUnit test discovered and passed in Maven."
+    - upstream: "constitution.md#1.2"
+      output: ".importlinter"
+      evidence: "One independence contract kept with zero broken; a temporary cross-service import probe caused the contract to fail."
+traceability:
+  - requirement: "RQ05"
+    plan_item: "2.3"
+    task: "T018"
+    files:
+      - ".importlinter"
+      - "services/event-management-java/src/test/java/br/uece/eventhub/events/EventManagementArchitectureTest.java"
+      - "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationArchitectureTest.java"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings: []
+test_results:
+  T018:
+    command: "docker compose --profile test build; docker compose run --rm python-suite-test sh -c 'ruff check --no-cache . && lint-imports'; docker run rhysd/actionlint"
+    passed: 117
+    failed: 0
+    skipped: 0
+    failures: []
