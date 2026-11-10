@@ -51,6 +51,20 @@ jobs:
       - name: Enforce Python service and mock boundaries
         run: lint-imports
 
+  mutation-test:
+    name: mutation-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build mutation test images
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build event-management-test registration-test python-suite-test
+      - name: Run Event Management and Registration PIT gates
+        run: |
+          docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm event-management-test mvn -B -ff pitest:mutationCoverage
+          docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm registration-test mvn -B -ff pitest:mutationCoverage
+      - name: Run Attendance and Reporting mutation gates
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test python scripts/run_mutation_tests.py
+
   invariant-review:
     name: invariant-review
     runs-on: ubuntu-latest
@@ -92,6 +106,7 @@ jobs:
     needs:
       - build-test
       - python-lint
+      - mutation-test
       - invariant-review
       - semantic-audit
     runs-on: ubuntu-latest
@@ -100,10 +115,11 @@ jobs:
         env:
           BUILD_TEST: ${{ needs.build-test.result }}
           PYTHON_LINT: ${{ needs.python-lint.result }}
+          MUTATION_TEST: ${{ needs.mutation-test.result }}
           INVARIANT_REVIEW: ${{ needs.invariant-review.result }}
           SEMANTIC_AUDIT: ${{ needs.semantic-audit.result }}
         run: |
-          for result in "$BUILD_TEST" "$PYTHON_LINT" "$INVARIANT_REVIEW" "$SEMANTIC_AUDIT"; do
+          for result in "$BUILD_TEST" "$PYTHON_LINT" "$MUTATION_TEST" "$INVARIANT_REVIEW" "$SEMANTIC_AUDIT"; do
             if [ "$result" != success ]; then
               printf 'Required CI gate did not pass: %s\n' "$result" >&2
               exit 1

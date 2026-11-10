@@ -16,6 +16,12 @@ from attendance_service.database import (
     processed_event,
     registration_projection,
 )
+from attendance_service.domain import (
+    require_activity_ended,
+    require_check_in,
+    require_confirmed_registration,
+    require_published_activity,
+)
 from attendance_service.errors import ApiError, InvalidEvent
 from attendance_service.events import ActivityChanged, RegistrationChanged, parse_event
 
@@ -104,24 +110,14 @@ class AttendanceRepository:
             activity = self._activity_for_update(
                 connection, registration["activity_id"]
             )
-            if registration["snapshot"].get("status") != "CONFIRMED":
-                raise ApiError(
-                    422,
-                    "REGISTRATION_NOT_CONFIRMED",
-                    "Check-in requires a confirmed registration.",
-                )
-            if activity is None:
-                raise ApiError(
-                    409,
-                    "ELIGIBILITY_NOT_READY",
-                    "Activity eligibility facts have not been projected.",
-                )
-            if activity["snapshot"].get("status") != "PUBLISHED":
-                raise ApiError(
-                    422,
-                    "ACTIVITY_NOT_ELIGIBLE",
-                    "Check-in is unavailable for this activity.",
-                )
+            require_confirmed_registration(
+                registration["snapshot"].get("status"),
+                "check-in",
+            )
+            require_published_activity(
+                None if activity is None else activity["snapshot"].get("status"),
+                "check-in",
+            )
 
             checked_in_at = normalize_datetime(
                 connection.scalar(select(func.current_timestamp()))
@@ -172,57 +168,34 @@ class AttendanceRepository:
                     existing.issued_at,
                 )
 
-            if registration["snapshot"].get("status") != "CONFIRMED":
-                raise ApiError(
-                    422,
-                    "REGISTRATION_NOT_CONFIRMED",
-                    "Certificate issuance requires a confirmed registration.",
-                )
+            require_confirmed_registration(
+                registration["snapshot"].get("status"),
+                "certificate",
+            )
 
             activity = self._activity_for_update(
                 connection, registration["activity_id"]
             )
-            if activity is None:
-                raise ApiError(
-                    409,
-                    "ELIGIBILITY_NOT_READY",
-                    "Activity eligibility facts have not been projected.",
-                )
-            if activity["snapshot"].get("status") != "PUBLISHED":
-                raise ApiError(
-                    422,
-                    "ACTIVITY_NOT_ELIGIBLE",
-                    "Certificates are unavailable for this activity.",
-                )
+            require_published_activity(
+                None if activity is None else activity["snapshot"].get("status"),
+                "certificate",
+            )
 
             checked_in_at = connection.scalar(
                 select(check_in.c.checked_in_at).where(
                     check_in.c.registration_id == registration_id
                 )
             )
-            if checked_in_at is None:
-                raise ApiError(
-                    422,
-                    "CHECK_IN_REQUIRED",
-                    "A recorded check-in is required for certificate eligibility.",
-                )
+            require_check_in(checked_in_at)
 
             ends_at = activity["snapshot"].get("endsAt")
-            if ends_at is None:
-                raise ApiError(
-                    409,
-                    "ELIGIBILITY_NOT_READY",
-                    "Activity end time has not been projected.",
-                )
             database_now = normalize_datetime(
                 connection.scalar(select(func.current_timestamp()))
             )
-            if normalize_datetime(ends_at) > database_now:
-                raise ApiError(
-                    422,
-                    "ACTIVITY_NOT_ENDED",
-                    "Certificates are issued only after the activity ends.",
-                )
+            require_activity_ended(
+                None if ends_at is None else normalize_datetime(ends_at),
+                database_now,
+            )
 
             certificate_id = uuid4()
             issued_at = database_now

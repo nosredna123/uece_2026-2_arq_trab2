@@ -20,3 +20,10 @@ test = ["pytest==8.3.5", "httpx==0.28.1", "hypothesis==6.127.8"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.mutmut]
+source_paths = ["src/attendance_service"]
+pytest_add_cli_args_test_selection = ["tests"]
+only_mutate = [
+  "src/attendance_service/domain.py",
+]

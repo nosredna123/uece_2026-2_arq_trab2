@@ -3,6 +3,9 @@
 !.env.example
 __pycache__/
 .pytest_cache/
+.mutmut-cache/
+**/mutants/
+**/.jqwik-database
 .hypothesis/
 *.py[cod]
 *.egg-info/

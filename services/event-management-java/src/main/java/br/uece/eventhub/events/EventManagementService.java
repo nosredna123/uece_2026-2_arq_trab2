@@ -21,7 +21,7 @@ public class EventManagementService {
   }
 
   public List<EventView> listPublishedEvents(String query, int limit, int offset) {
-    validatePage(limit, offset);
+    EventManagementPolicy.validatePage(limit, offset);
     if (query != null && query.length() > 200) {
       throw new ApiException(400, "INVALID_QUERY", "Title search cannot exceed 200 characters.");
     }
@@ -35,7 +35,7 @@ public class EventManagementService {
   }
 
   public List<ActivityView> listPublishedActivities(UUID eventId, int limit, int offset) {
-    validatePage(limit, offset);
+    EventManagementPolicy.validatePage(limit, offset);
     getPublishedEvent(eventId);
     return repository.listActivities(eventId, limit, offset);
   }
@@ -50,8 +50,8 @@ public class EventManagementService {
   }
 
   public CommandResult createEvent(Principal principal, String key, EventInput input) {
-    authorizeCreate(principal, input.organizationId());
-    validateRange(input.startsAt(), input.endsAt(), "Event");
+    EventManagementPolicy.authorizeCreate(principal, input.organizationId());
+    EventManagementPolicy.validateRange(input.startsAt(), input.endsAt(), "Event");
     return idempotency.execute(
         principal.subjectId(),
         "createEvent",
@@ -62,7 +62,7 @@ public class EventManagementService {
 
   public CommandResult updateEvent(
       Principal principal, UUID eventId, String key, EventInput input, UUID correlationId) {
-    validateRange(input.startsAt(), input.endsAt(), "Event");
+    EventManagementPolicy.validateRange(input.startsAt(), input.endsAt(), "Event");
     return idempotency.execute(
         principal.subjectId(),
         "updateEvent:" + eventId,
@@ -147,7 +147,7 @@ public class EventManagementService {
 
   public CommandResult createActivity(
       Principal principal, UUID eventId, String key, ActivityInput input, UUID correlationId) {
-    validateRange(input.startsAt(), input.endsAt(), "Activity");
+    EventManagementPolicy.validateRange(input.startsAt(), input.endsAt(), "Activity");
     return idempotency.execute(
         principal.subjectId(),
         "createActivity:" + eventId,
@@ -157,8 +157,8 @@ public class EventManagementService {
           EventView event = ownedEvent(principal, eventId);
           repository.lockEvent(eventId);
           event = repository.findEvent(eventId).orElseThrow();
-          ensureEventEditable(event);
-          validateActivityPeriod(input, event);
+          EventManagementPolicy.ensureEventEditable(event);
+          EventManagementPolicy.validateActivityPeriod(input, event);
           ActivityView activity = repository.createActivity(eventId, input);
           if ("PUBLISHED".equals(event.status())) {
             repository.enqueueActivityChanged(activity, event.status(), correlationId);
@@ -169,7 +169,7 @@ public class EventManagementService {
 
   public CommandResult updateActivity(
       Principal principal, UUID activityId, String key, ActivityInput input, UUID correlationId) {
-    validateRange(input.startsAt(), input.endsAt(), "Activity");
+    EventManagementPolicy.validateRange(input.startsAt(), input.endsAt(), "Activity");
     return idempotency.execute(
         principal.subjectId(),
         "updateActivity:" + activityId,
@@ -183,8 +183,8 @@ public class EventManagementService {
               repository
                   .findEvent(activity.eventId())
                   .orElseThrow(() -> notFound("EVENT_NOT_FOUND", "Event was not found."));
-          ensureEventEditable(event);
-          validateActivityPeriod(input, event);
+          EventManagementPolicy.ensureEventEditable(event);
+          EventManagementPolicy.validateActivityPeriod(input, event);
           if (activity.capacityFrozen() && activity.capacity() != input.capacity()) {
             throw conflict(
                 "CAPACITY_FROZEN", "Activity capacity cannot change after admission is activated.");
@@ -240,22 +240,22 @@ public class EventManagementService {
   }
 
   private EventView ownedEvent(Principal principal, UUID eventId) {
-    requireManager(principal);
+    EventManagementPolicy.requireManager(principal);
     EventView event =
         repository
             .findEvent(eventId)
             .orElseThrow(() -> notFound("EVENT_NOT_FOUND", "Event was not found."));
-    authorizeOrganization(principal, event.organizationId());
+    EventManagementPolicy.authorizeOrganization(principal, event.organizationId());
     return event;
   }
 
   private ActivityView ownedActivity(Principal principal, UUID activityId) {
-    requireManager(principal);
+    EventManagementPolicy.requireManager(principal);
     ActivityView activity =
         repository
             .findActivity(activityId)
             .orElseThrow(() -> notFound("ACTIVITY_NOT_FOUND", "Activity was not found."));
-    authorizeOrganization(principal, activity.organizationId());
+    EventManagementPolicy.authorizeOrganization(principal, activity.organizationId());
     return activity;
   }
 
@@ -263,54 +263,6 @@ public class EventManagementService {
     repository.incrementActivityVersions(eventId);
     for (ActivityView activity : repository.listActivitiesForEvent(eventId)) {
       repository.enqueueActivityChanged(activity, status, correlationId);
-    }
-  }
-
-  private static void authorizeCreate(Principal principal, UUID organizationId) {
-    requireManager(principal);
-    if (principal.role() == Principal.Role.ORGANIZER
-        && !principal.organizationId().equals(organizationId)) {
-      throw new ApiException(403, "FORBIDDEN", "Organizer cannot manage this organization.");
-    }
-  }
-
-  private static void authorizeOrganization(Principal principal, UUID organizationId) {
-    if (principal.role() == Principal.Role.ORGANIZER
-        && !organizationId.equals(principal.organizationId())) {
-      throw notFound("RESOURCE_NOT_FOUND", "Resource was not found.");
-    }
-  }
-
-  private static void requireManager(Principal principal) {
-    if (principal.role() != Principal.Role.ORGANIZER
-        && principal.role() != Principal.Role.GLOBAL_ADMIN) {
-      throw new ApiException(403, "FORBIDDEN", "This identity cannot manage events or activities.");
-    }
-  }
-
-  private static void ensureEventEditable(EventView event) {
-    if ("CANCELLED".equals(event.status())) {
-      throw conflict("EVENT_CANCELLED", "Activities cannot be changed for a cancelled event.");
-    }
-  }
-
-  private static void validateActivityPeriod(ActivityInput input, EventView event) {
-    if (input.startsAt().isBefore(event.startsAt()) || input.endsAt().isAfter(event.endsAt())) {
-      throw ineligible("ACTIVITY_OUTSIDE_EVENT", "Activity dates must be within the event period.");
-    }
-  }
-
-  private static void validateRange(Instant startsAt, Instant endsAt, String resource) {
-    if (!startsAt.isBefore(endsAt)) {
-      throw ineligible(
-          "INVALID_SCHEDULE", resource + " start time must be earlier than its end time.");
-    }
-  }
-
-  private static void validatePage(int limit, int offset) {
-    if (limit < 1 || limit > 100 || offset < 0) {
-      throw new ApiException(
-          400, "INVALID_PAGINATION", "Limit must be 1-100 and offset must be non-negative.");
     }
   }
 
