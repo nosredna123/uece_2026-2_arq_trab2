@@ -226,3 +226,9 @@ service-key-protected admission check; it is not a participant API.
   credentials and mock scenario controls must remain isolated to local/demo
   use. Do not expose the prototype or reuse its example credentials in a
   deployed environment.
+
+## Architecture and validation
+
+See the [architecture, validation, and defense guide](docs/validation/final-delivery.md)
+for the decision/rationale index, test evidence, trade-offs, AI-use declaration,
+and demonstration walkthrough.

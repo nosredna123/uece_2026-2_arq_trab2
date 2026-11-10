@@ -46,7 +46,7 @@ Registration --> RegistrationData : own registration/outbox data
 Attendance --> AttendanceData : own attendance/certificate data
 Reporting --> ReportingData : own projection data
 
-Registration --> Events : activity/capacity API\n(contract details TBD)
+Registration --> Events : published activity API\nfrozen admission snapshot API
 Registration --> RabbitMQ : publish from outbox
 RabbitMQ --> Billing : payment/refund request
 Billing --> RabbitMQ : configured result
@@ -62,8 +62,8 @@ No service may read another service's tables or credentials.
 end note
 
 note bottom of RabbitMQ
-Exact exchanges, routing keys, schemas, retry and dead-letter policy
-are specified in the contract/ADR tasks; not implied by this diagram.
+Exchanges, routing keys, schemas and quarantine topology are defined in
+the AsyncAPI contract and ADR-004. Retry delays are validated configuration.
 end note
 
 legend right

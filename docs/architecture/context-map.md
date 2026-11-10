@@ -42,7 +42,7 @@ flowchart LR
   Attendance -->|"validate identity and participant scope"| Identity
   Reporting -->|"validate identity and organization scope"| Identity
 
-  Registration -->|"published activity / capacity contract; details TBD"| EventManagement
+  Registration -->|"published activity / frozen admission snapshot APIs"| EventManagement
 
   EventManagement --> EventDB[(Event Management data)]
   Registration --> RegistrationDB[(Registration data)]
@@ -80,8 +80,8 @@ cross-service access.
 |---|---|---|---|
 | Participant / organizer | Event Management | HTTP API | Public published catalog; event/activity management within authorization scope. |
 | Participant | Registration | HTTP API | Request, query, and cancel own registrations; view reservation/offer state. |
-| Registration | Event Management | Explicit API/contract to be finalized | Validate current activity eligibility and obtain the frozen admission-capacity snapshot under [ADR-002](../adr/ADR-002-data-ownership.md). No direct database access. Wire details remain for T010/T012. |
-| Protected domain services | Identity & Access mock | Identity validation contract | Resolve synthetic identity, role, and organization scope; each domain service enforces authorization. Exact token/API shape is T019/T020. |
+| Registration | Event Management | HTTP: `GET /activities/{activityId}` and `POST /internal/activities/{activityId}/admission` | Validate current activity eligibility and obtain the frozen admission-capacity snapshot under [ADR-002](../adr/ADR-002-data-ownership.md). See the [OpenAPI contracts](../contracts/openapi); no direct database access. |
+| Protected domain services | Identity & Access mock | Internal identity validation API | Resolve synthetic identity, role, and organization scope; each domain service enforces authorization. See the [Identity OpenAPI contract](../contracts/openapi/identity-mock.yaml). |
 | Registration | RabbitMQ | Asynchronous event publication | Persist registration/payment intent in its own outbox, then publish; do not make confirmation depend on Notification or Reporting. |
 | Billing mock | RabbitMQ / Registration | Asynchronous request and result | Consume payment requests and publish configured approval, refusal, or timeout; Registration alone applies the corresponding state transition. |
 | Registration | Notification mock | Asynchronous events | Record simulated delivery; notification failures do not undo or block a confirmed registration. |
@@ -89,10 +89,12 @@ cross-service access.
 | Attendance & Certification | RabbitMQ / Reporting | Asynchronous attendance and certificate events | Record idempotent check-in and eligible certificate issuance; publish facts for the independent reporting projection. |
 | Registration / Billing mock / Attendance & Certification | Reporting | Asynchronous events | Maintain Reporting's own eventually consistent read model; scope report queries by authorized organization. |
 
-The approved domain rules are authoritative. Queue/exchange names, exact event
-schemas, identity transport, retry/dead-letter behavior, and activity metadata
-needed for certificate eligibility are contract decisions for the following
-architecture/contract tasks; this map does not invent those wire details.
+The approved domain rules are authoritative. Exact HTTP schemas and error
+responses are documented in the [OpenAPI contracts](../contracts/openapi);
+message names, schemas, queue bindings and quarantine behavior are documented
+in the [AsyncAPI contract](../contracts/asyncapi/eventhub.yaml) and its
+[behavior contract](../contracts/asyncapi/README.md). Retry timing is validated
+configuration, not a value inferred by this high-level map.
 
 The paid-registration sequence, refusal/expiry paths, and dependency-failure
 behavior are detailed in [paid-registration-flow.md](paid-registration-flow.md)

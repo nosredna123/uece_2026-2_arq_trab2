@@ -37,7 +37,9 @@ idempotency keys, migrations and retention for each owner.
 a capacity snapshot frozen by Event Management before Registration opens
 admission. [ADR-003](../adr/ADR-003-registration-consistency.md) selects per-activity
 row locking for Registration's ledger and FIFO transitions. Provisioning details
-and exact event/API contracts remain for T010-T012. Cross-service SQL, shared
+are documented in the Compose configuration. Exact HTTP and message contracts
+are in [OpenAPI](../contracts/openapi) and
+[AsyncAPI](../contracts/asyncapi/eventhub.yaml). Cross-service SQL, shared
 domain tables, and shared credentials are prohibited.
 
 Identity, Billing, and Notification mocks may keep only the minimal synthetic
@@ -51,14 +53,15 @@ the four executable services' domain data.
    an API to a service's database.
 2. **Asynchronous events:** use RabbitMQ contracts for payment/refund requests
    and results, registration facts, attendance, certificates, notifications,
-   and projections. Include the approved correlation and idempotency data in
-   contract design (T010/T011/T042).
+   and projections. The versioned contracts carry the approved correlation and
+   idempotency data; see [AsyncAPI](../contracts/asyncapi/eventhub.yaml) and
+   [observability conventions](../validation/observability.md).
 3. **Registration is the reservation authority:** Event Management owns
    configured activity metadata; Registration owns reservations and occupied
    slots. A request to register must use an explicit, agreed activity/capacity
    contract; no cross-database read is allowed. ADR-002/003 settle snapshot
-   initialization, capacity immutability and local atomic admission; schemas
-   and concrete states remain contract work.
+   initialization, capacity immutability and local atomic admission; see the
+   [service OpenAPI contracts](../contracts/openapi) for the implemented APIs.
 4. **Authentication is not authorization:** the Identity mock supplies
    synthetic identity/role/organization facts; each protected service enforces
    participant ownership, organizer organization scope, or the approved global

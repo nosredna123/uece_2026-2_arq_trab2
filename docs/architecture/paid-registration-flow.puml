@@ -123,7 +123,7 @@ end
 note bottom
   The diagram is business-level. Frozen capacity, row locking,
   and durable recovery follow ADR-002/003/004.
-  Wire schemas and numeric retry settings remain contract/configuration tasks.
+  Wire schemas are defined in AsyncAPI; retry settings are validated configuration.
   No service reads another service's database.
 end note
 @enduml
