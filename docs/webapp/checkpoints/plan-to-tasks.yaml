@@ -1,0 +1,158 @@
+metadata:
+  generated: "2026-11-10"
+  source_plan: "docs/webapp/plan.md"
+  target_tasks: "docs/webapp/plan.md#6-implementation-phases-and-ordered-tasks"
+  status: "planning_only"
+  task_status: "All tasks pending; preserve the completed backend checkpoint."
+
+summary:
+  total_plan_items: 18
+  covered_plan_items: 18
+  missing_plan_items: 0
+  coverage_percentage: 100.0
+  total_tasks_generated: 36
+  orphan_tasks: 0
+
+phases:
+  - phase_id: "Phase-0"
+    phase_name: "Decision and scope gate"
+    items:
+      - item_id: "0.1"
+        description: "Bounded presentation ADR and rationale"
+        tasks:
+          - {task_id: "T045", description: "Record ADR-006 and rationale"}
+          - {task_id: "T046", description: "Validate rationale inventory and governance"}
+  - phase_id: "Phase-1"
+    phase_name: "Blocking foundations"
+    items:
+      - item_id: "1.1"
+        description: "Independent package and validated settings"
+        tasks:
+          - {task_id: "T047", description: "Specify startup/configuration tests"}
+          - {task_id: "T048", description: "Implement package/container/settings"}
+      - item_id: "1.2"
+        description: "Explicit HTTP clients and errors"
+        tasks:
+          - {task_id: "T049", description: "Specify HTTP operation/error contracts"}
+          - {task_id: "T050", description: "Implement typed clients and diagnostics"}
+      - item_id: "1.3"
+        description: "Persona sessions and command reliability"
+        tasks:
+          - {task_id: "T051", description: "Specify isolation/CSRF/idempotency tests"}
+          - {task_id: "T052", description: "Implement sessions and command ledger"}
+  - phase_id: "Phase-2"
+    phase_name: "Didactic shell and labels"
+    items:
+      - item_id: "2.1"
+        description: "Accessible page structure and provenance"
+        tasks:
+          - {task_id: "T053", description: "Specify page/badge contracts"}
+          - {task_id: "T054", description: "Implement shared shell and labels"}
+  - phase_id: "Phase-3"
+    phase_name: "Participant journey"
+    items:
+      - item_id: "3.1"
+        description: "Published catalog and availability"
+        tasks:
+          - {task_id: "T055", description: "Specify catalog and availability tests"}
+          - {task_id: "T056", description: "Implement catalog/detail pages"}
+      - item_id: "3.2"
+        description: "Simulated checkout with actual command"
+        tasks:
+          - {task_id: "T057", description: "Specify checkout side-effect/retry tests"}
+          - {task_id: "T058", description: "Implement pre-registration checkout"}
+      - item_id: "3.3"
+        description: "Registration/waitlist states and refresh"
+        tasks:
+          - {task_id: "T059", description: "Specify registration/polling transitions"}
+          - {task_id: "T060", description: "Implement own registrations and actions"}
+  - phase_id: "Phase-4"
+    phase_name: "Organizer and attendance"
+    items:
+      - item_id: "4.1"
+        description: "Scoped organizer creation"
+        tasks:
+          - {task_id: "T061", description: "Specify organizer workflow tests"}
+          - {task_id: "T062", description: "Implement create/add/publish pages"}
+      - item_id: "4.2"
+        description: "Check-in and real certificate/print"
+        tasks:
+          - {task_id: "T063", description: "Specify attendance/eligibility/print tests"}
+          - {task_id: "T064", description: "Implement Attendance actions and certificate"}
+  - phase_id: "Phase-5"
+    phase_name: "Guided demonstration and reports"
+    items:
+      - item_id: "5.1"
+        description: "Resumable synthetic preparation and guide"
+        tasks:
+          - {task_id: "T065", description: "Specify safe preparation/timing tests"}
+          - {task_id: "T066", description: "Implement guided API-only preparation"}
+      - item_id: "5.2"
+        description: "Eventually consistent organizer reports"
+        tasks:
+          - {task_id: "T067", description: "Specify report scoping/failure tests"}
+          - {task_id: "T068", description: "Implement report observation pages"}
+  - phase_id: "Phase-5B"
+    phase_name: "Scenario Lab"
+    items:
+      - item_id: "5.3"
+        description: "Opt-in finite mock participant pool"
+        tasks:
+          - {task_id: "T069", description: "Specify fixture authorization/limit tests"}
+          - {task_id: "T070", description: "Implement fixture pool and validated opt-in"}
+      - item_id: "5.4"
+        description: "Bounded actual concurrent runner"
+        tasks:
+          - {task_id: "T071", description: "Specify workload/limits/oracle tests"}
+          - {task_id: "T072", description: "Implement supervised scenario runner"}
+      - item_id: "5.5"
+        description: "Visual observation board and browser cases"
+        tasks:
+          - {task_id: "T073", description: "Specify visual and real lab acceptance"}
+          - {task_id: "T074", description: "Implement lab cards/board/timeline"}
+  - phase_id: "Phase-6"
+    phase_name: "Delivery, validation, presentation"
+    items:
+      - item_id: "6.1"
+        description: "Container launch/test and CI wiring"
+        tasks:
+          - {task_id: "T075", description: "Specify Compose/launcher safety tests"}
+          - {task_id: "T076", description: "Wire images/launchers/import boundaries/CI"}
+      - item_id: "6.2"
+        description: "Real browser validation and evidence"
+        tasks:
+          - {task_id: "T077", description: "Complete isolated browser integration suite"}
+          - {task_id: "T078", description: "Execute gates and record evidence"}
+      - item_id: "6.3"
+        description: "Detailed Markdown plot and rehearsal"
+        tasks:
+          - {task_id: "T079", description: "Write presentation plot and recovery branches"}
+          - {task_id: "T080", description: "Rehearse and close verified requirements"}
+
+missing_plan_items: []
+orphan_tasks: []
+upstream_trace:
+  - {plan_item: "0.1", source_requirements: ["REQ-001", "REQ-002", "REQ-015", "REQ-017", "REQ-019", "REQ-021"], tasks: ["T045", "T046"]}
+  - {plan_item: "1.1", source_requirements: ["REQ-001", "REQ-015", "REQ-016", "REQ-017"], tasks: ["T047", "T048"]}
+  - {plan_item: "1.2", source_requirements: ["REQ-004", "REQ-006", "REQ-008", "REQ-010", "REQ-011", "REQ-014", "REQ-015"], tasks: ["T049", "T050"]}
+  - {plan_item: "1.3", source_requirements: ["REQ-003", "REQ-005", "REQ-007", "REQ-013", "REQ-014", "REQ-015"], tasks: ["T051", "T052"]}
+  - {plan_item: "2.1", source_requirements: ["REQ-002", "REQ-003", "REQ-014", "REQ-015", "REQ-017"], tasks: ["T053", "T054"]}
+  - {plan_item: "3.1", source_requirements: ["REQ-002", "REQ-004", "REQ-014", "REQ-017"], tasks: ["T055", "T056"]}
+  - {plan_item: "3.2", source_requirements: ["REQ-002", "REQ-003", "REQ-005", "REQ-006", "REQ-013"], tasks: ["T057", "T058"]}
+  - {plan_item: "3.3", source_requirements: ["REQ-003", "REQ-006", "REQ-007", "REQ-013", "REQ-014", "REQ-017"], tasks: ["T059", "T060"]}
+  - {plan_item: "4.1", source_requirements: ["REQ-003", "REQ-010", "REQ-012", "REQ-013"], tasks: ["T061", "T062"]}
+  - {plan_item: "4.2", source_requirements: ["REQ-002", "REQ-008", "REQ-009", "REQ-013", "REQ-017"], tasks: ["T063", "T064"]}
+  - {plan_item: "5.1", source_requirements: ["REQ-002", "REQ-005", "REQ-007", "REQ-010", "REQ-012", "REQ-013", "REQ-014"], tasks: ["T065", "T066"]}
+  - {plan_item: "5.2", source_requirements: ["REQ-002", "REQ-003", "REQ-011", "REQ-014", "REQ-017"], tasks: ["T067", "T068"]}
+  - {plan_item: "5.3", source_requirements: ["REQ-003", "REQ-015", "REQ-019", "REQ-021"], tasks: ["T069", "T070"]}
+  - {plan_item: "5.4", source_requirements: ["REQ-013", "REQ-014", "REQ-015", "REQ-019", "REQ-020", "REQ-021"], tasks: ["T071", "T072"]}
+  - {plan_item: "5.5", source_requirements: ["REQ-002", "REQ-017", "REQ-019", "REQ-020", "REQ-021"], tasks: ["T073", "T074"]}
+  - {plan_item: "6.1", source_requirements: ["REQ-001", "REQ-015", "REQ-016", "REQ-017", "REQ-021"], tasks: ["T075", "T076"]}
+  - {plan_item: "6.2", source_requirements: ["REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006", "REQ-007", "REQ-008", "REQ-009", "REQ-010", "REQ-011", "REQ-012", "REQ-013", "REQ-014", "REQ-015", "REQ-016", "REQ-017", "REQ-019", "REQ-020", "REQ-021"], tasks: ["T077", "T078"]}
+  - {plan_item: "6.3", source_requirements: ["REQ-002", "REQ-012", "REQ-014", "REQ-016", "REQ-017", "REQ-018", "REQ-019", "REQ-020", "REQ-021"], tasks: ["T079", "T080"]}
+
+validation:
+  passed: true
+  errors: []
+  warnings: []
+  scope: "Planning traceability only; tasks remain pending."
