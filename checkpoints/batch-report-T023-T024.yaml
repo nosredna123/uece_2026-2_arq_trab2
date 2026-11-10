@@ -1,0 +1,74 @@
+batch_id: "T023-T024"
+completed_tasks: ["T023", "T024"]
+blocked_tasks: []
+required_endpoints:
+  - {method: "POST", path: "/registrations", source: "docs/contracts/openapi/registration.yaml", status: "implemented"}
+  - {method: "GET", path: "/registrations", source: "docs/contracts/openapi/registration.yaml", status: "implemented"}
+  - {method: "GET", path: "/registrations/{id}", source: "docs/contracts/openapi/registration.yaml", status: "implemented"}
+  - {method: "POST", path: "/registrations/{id}/cancel", source: "docs/contracts/openapi/registration.yaml", status: "implemented"}
+  - {method: "GET", path: "/activities/{activityId}/availability", source: "docs/contracts/openapi/registration.yaml", status: "implemented"}
+files_changed:
+  T023:
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationContractTest.java", change_type: "created", description: "Added HTTP contract coverage for reservation, free and paid registration, cancellation, idempotency, state access, capacity rejection and availability."}
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/CapacityPolicyPropertyTest.java", change_type: "created", description: "Added jqwik properties for bounded allocation and nonnegative release."}
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationApplicationTest.java", change_type: "modified", description: "Asserted that protected registration routes reject anonymous access."}
+    - {file: "services/registration-java/src/test/resources/application-test.yaml", change_type: "modified", description: "Configured isolated H2 persistence and synthetic service credentials."}
+    - {file: "services/registration-java/src/test/resources/schema-test.sql", change_type: "created", description: "Added an isolated H2 schema matching the Registration ledger and command receipts."}
+    - {file: "services/registration-java/pom.xml", change_type: "modified", description: "Added test-scoped H2."}
+  T024:
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration", change_type: "created", description: "Implemented trusted participant authentication, Event Management admission integration, capacity locking, durable idempotency, registration reads, cancellation and availability."}
+    - {file: "services/registration-java/src/main/resources/db/migration/V2__registration_command_receipts.sql", change_type: "created", description: "Added durable actor-scoped idempotency receipts without editing V1."}
+    - {file: "services/registration-java/src/main/resources/application.yaml", change_type: "modified", description: "Configured the dedicated Registration-to-Event-Management service credential."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/IntegrationSettings.java", change_type: "modified", description: "Validated the dedicated Registration service key."}
+    - {file: "infra/docker-compose.yml", change_type: "modified", description: "Passed REGISTRATION_SERVICE_KEY to the Registration service."}
+    - {file: "services/README.md", change_type: "modified", description: "Documented the implemented Registration API and migration."}
+    - {file: "plan.md", change_type: "modified", description: "Marked T023 and T024 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Recorded completion, verification and requirement traceability."}
+evidence_mapping:
+  T023:
+    - upstream: "plan.md T023"
+      output: "JUnit and jqwik Registration contract/invariant tests"
+      evidence: "Seven HTTP tests passed; both jqwik properties passed 1,000 generated checks each."
+  T024:
+    - upstream: "plan.md T024 and docs/adr/ADR-003-registration-consistency.md"
+      output: "Atomic, idempotent Registration API using PostgreSQL activity-row locks"
+      evidence: "The service test suite and live PostgreSQL startup/probes passed; Flyway applied Registration V1-V2 and the full repository test profile succeeded."
+upstream_artifacts_consumed:
+  - {artifact: "docs/contracts/openapi/registration.yaml", used_for: "Registration routes, participant scoping, admission, cancellation, idempotency and availability response shapes."}
+  - {artifact: "docs/contracts/openapi/common.yaml", used_for: "Bearer identity, service authentication, correlation IDs, idempotency keys and error response semantics."}
+  - {artifact: "docs/contracts/openapi/identity-mock.yaml", used_for: "Trusted synthetic principal validation without caller-supplied role or organization."}
+  - {artifact: "docs/contracts/openapi/event-management.yaml", used_for: "Dedicated internal admission snapshot and public activity lookup."}
+  - {artifact: "docs/adr/ADR-003-registration-consistency.md", used_for: "READ COMMITTED activity-row locking, lock order, post-lock database time and occupancy invariant."}
+  - {artifact: "docs/architecture/data-ownership.md", used_for: "Registration-owned ledger and no cross-database reads."}
+traceability:
+  - {requirement: "RF05-RF06, RN01, RN04, RQ02, RQ04", plan_item: "4.1", task: "T023-T024", files: ["services/registration-java/src", "infra/docker-compose.yml"], status: "completed"}
+endpoint_probes:
+  - {method: "POST", path: "/registrations", status: 201, result: "PASS (free and paid H2 contract cases)"}
+  - {method: "GET", path: "/registrations", status: 200, result: "PASS (participant-scoped H2 contract case and live PostgreSQL probe)"}
+  - {method: "GET", path: "/registrations/{id}", status: 200, result: "PASS (owned H2 contract case)"}
+  - {method: "POST", path: "/registrations/{id}/cancel", status: 200, result: "PASS (free cancellation/replay H2 contract case)"}
+  - {method: "GET", path: "/activities/{activityId}/availability", status: 200, result: "PASS (non-activating H2 contract case)"}
+runtime_probes:
+  - {method: "GET", path: "/actuator/health", status: 200, result: "PASS"}
+  - {method: "GET", path: "/registrations", status: 200, result: "PASS"}
+  - {method: "POST", path: "/registrations", status: 404, result: "PASS (unknown activity; dedicated service credential accepted)"}
+  - {method: "GET", path: "/activities/{activityId}/availability", status: 404, result: "PASS (unknown activity concealed by Event Management)"}
+test_results:
+  T023:
+    command: "docker run maven:3.9.9-eclipse-temurin-21 mvn -B -ff spotless:apply test"
+    passed: 9
+    failed: 0
+    skipped: 0
+    property_checks: 2000
+    failures: []
+  T024:
+    command: "Registration Maven suite; docker compose --profile test build; live Registration/PostgreSQL probes"
+    passed: 132
+    failed: 0
+    skipped: 0
+    breakdown: {registration_java: 13, event_management_java: 8, repository_python: 111}
+    failures: []
+    notes: "The complete test-profile image build succeeded. PostgreSQL applied Registration Flyway V1-V2. Live Registration health, own-registration listing, service-to-service admission error mapping and availability dependency mapping behaved as expected."
+protocol_violation: false
+errors: []
+warnings: []

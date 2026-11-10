@@ -23,15 +23,18 @@ Event Management exposes the event/activity lifecycle, public published catalog,
 and Registration-only admission snapshot endpoints. Its tests use an isolated
 H2 database; the runtime uses PostgreSQL and Flyway. `REGISTRATION_SERVICE_KEY`
 is a dedicated credential for the internal admission endpoint and must not be
-replaced with the shared Identity mock credential. Runtime requires explicit
-database, migration and RabbitMQ credentials and checks dependency health.
-T023-T030 implement Registration's real domain APIs and messaging. Typed
-settings validate required business/integration configuration before startup;
-see the root README.
+replaced with the shared Identity mock credential. Registration currently
+supports atomic free confirmation, paid reservations, participant-scoped state
+and cancellation, durable command replay, and non-activating availability
+reads. T025-T030 extend it with FIFO waitlisting, outbox publishing and payment
+result/expiry processing. Runtime requires explicit database, migration and
+RabbitMQ credentials and checks dependency health. Typed settings validate
+required business/integration configuration before startup; see the root README.
 
 Flyway V1 creates owner-local event/activity or capacity/enrollment tables.
 Event Management V2 adds frozen-capacity state and durable command receipts;
-V3 adds bounded database locks for concurrent idempotent commands.
+V3 adds bounded database locks for concurrent idempotent commands. Registration
+V2 adds durable command receipts for idempotent enrollment and cancellation.
 Later migrations must be new versions, never edits to already applied SQL.
 Runtime credentials differ from migration credentials; provisioning/grants are
 the responsibility of the Compose foundation.

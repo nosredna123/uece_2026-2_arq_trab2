@@ -1,11 +1,30 @@
-IDENTITY_BASE_URL: http://identity-mock:8080
-EVENT_MANAGEMENT_BASE_URL: http://event-management:8080
-INTERNAL_SERVICE_KEY: synthetic-unit-only
-HTTP_TIMEOUT_SECONDS: 5
-MESSAGE_RETRY_INITIAL_SECONDS: 1
-MESSAGE_RETRY_MAX_SECONDS: 60
-RESERVATION_EXPIRY_MINUTES: 30
-WAITLIST_ENABLED: true
-WAITLIST_OFFER_EXPIRY_MINUTES: 30
-CANCELLATION_WINDOW_DAYS: 7
-REFUND_PERCENTAGE: 90
+spring:
+  datasource:
+    url: jdbc:h2:mem:registration;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+integration:
+  identity-base-url: http://identity-mock:8080
+  event-management-base-url: http://event-management:8080
+  internal-service-key: synthetic-unit-only
+  registration-service-key: synthetic-registration-unit-only
+  http-timeout-seconds: 5
+  retry-initial-seconds: 1
+  retry-max-seconds: 60
+
+policy:
+  reservation-expiry-minutes: 30
+  waitlist-enabled: true
+  waitlist-offer-expiry-minutes: 30
+  cancellation-window-days: 7
+  refund-percentage: 90

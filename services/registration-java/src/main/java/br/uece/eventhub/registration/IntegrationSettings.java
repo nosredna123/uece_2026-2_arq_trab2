@@ -14,6 +14,7 @@ public record IntegrationSettings(
     @NotBlank @URL String identityBaseUrl,
     @NotBlank @URL String eventManagementBaseUrl,
     @NotBlank String internalServiceKey,
+    @NotBlank String registrationServiceKey,
     @NotNull @Positive Integer httpTimeoutSeconds,
     @NotNull @Positive Integer retryInitialSeconds,
     @NotNull @Positive Integer retryMaxSeconds) {

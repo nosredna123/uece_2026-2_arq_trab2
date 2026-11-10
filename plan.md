@@ -291,8 +291,8 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 
 ### Fase 4 — US2: Inscrições, capacidade e dependências simuladas
 
-- [ ] T023 [US2] [Plan:4.1] Escrever testes JUnit/jqwik para reserva, cancelamento, inscrição gratuita, idempotência e invariantes de capacidade em `services/registration-java/src/test/`.
-- [ ] T024 [US2] [Plan:4.1] Implementar reserva atômica/idempotente, consulta de estado, cancelamento e atividade gratuita conforme os testes em `services/registration-java/src/`, aplicando o mecanismo decidido no ADR-003.
+- [x] T023 [US2] [Plan:4.1] Escrever testes JUnit/jqwik para reserva, cancelamento, inscrição gratuita, idempotência e invariantes de capacidade em `services/registration-java/src/test/`.
+- [x] T024 [US2] [Plan:4.1] Implementar reserva atômica/idempotente, consulta de estado, cancelamento e atividade gratuita conforme os testes em `services/registration-java/src/`, aplicando o mecanismo decidido no ADR-003.
 - [ ] T025 [US2] [Plan:4.2] Escrever testes property-based e concorrentes para ordenação da fila, cancelamento, expiração e oferta de vaga em `services/registration-java/src/test/`.
 - [ ] T026 [US2] [Plan:4.2] Implementar lista de espera ordenada, promoção automática e prazo configurável para aceitar oferta em `services/registration-java/src/`, conforme os testes.
 - [ ] T027 [US2] [Plan:4.3] Escrever testes para outbox, Billing fake, resultados aprovados/recusados/timeout, duplicidade, expiração e transições em `services/registration-java/src/test/` e `mocks/billing/tests/`.

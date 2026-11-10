@@ -8,14 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {
-      "spring.autoconfigure.exclude="
-          + "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration"
-    })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class RegistrationApplicationTest {
   @Autowired private TestRestTemplate client;
@@ -26,6 +19,6 @@ class RegistrationApplicationTest {
     assertThat(response.getStatusCode().value()).isEqualTo(200);
     assertThat(response.getBody()).contains("\"status\":\"UP\"");
     assertThat(client.getForEntity("/registrations", String.class).getStatusCode().value())
-        .isEqualTo(404);
+        .isEqualTo(401);
   }
 }
