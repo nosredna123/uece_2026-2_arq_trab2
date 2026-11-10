@@ -14,12 +14,18 @@ def test_synthetic_fixtures_cover_approved_scopes():
             / "mocks/identity-access/src/identity_access_mock/fixtures.json"
         ).read_text()
     )
-    assert set(fixtures) == {"participant", "organizer", "globalAdmin"}
+    assert set(fixtures) == {
+        "participant",
+        "participantTwo",
+        "organizer",
+        "globalAdmin",
+    }
     tokens = [fixture["token"] for fixture in fixtures.values()]
     assert len(set(tokens)) == len(tokens)
     assert all(token.startswith("synthetic-") for token in tokens)
-    assert fixtures["participant"]["role"] == "PARTICIPANT"
-    assert "organizationId" not in fixtures["participant"]
+    for participant in ("participant", "participantTwo"):
+        assert fixtures[participant]["role"] == "PARTICIPANT"
+        assert "organizationId" not in fixtures[participant]
     assert fixtures["organizer"]["role"] == "ORGANIZER"
     assert fixtures["organizer"]["organizationId"]
     assert fixtures["globalAdmin"]["role"] == "GLOBAL_ADMIN"

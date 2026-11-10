@@ -12,6 +12,8 @@ user-management, or organization-management behavior.
 `ORGANIZER` principals require one. Domain services remain responsible for
 enforcing role and ownership rules, including concealing another participant's
 resources.
+Two synthetic participant fixtures are provided for multi-participant flows
+such as waitlist integration tests.
 
 The service requires `INTERNAL_SERVICE_KEY` and
 `IDENTITY_MOCK_AVAILABLE=true|false`; configuration is rejected when either

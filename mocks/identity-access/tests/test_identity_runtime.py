@@ -30,6 +30,7 @@ def test_health_is_available_without_exposing_identity_configuration(client):
     ("name", "role", "organization_id"),
     [
         ("participant", "PARTICIPANT", None),
+        ("participantTwo", "PARTICIPANT", None),
         (
             "organizer",
             "ORGANIZER",
@@ -56,6 +57,7 @@ def test_valid_synthetic_token_returns_trusted_principal_only(
     assert response.json() == {
         "subjectId": {
             "participant": "10000000-0000-4000-8000-000000000001",
+            "participantTwo": "10000000-0000-4000-8000-000000000002",
             "organizer": "20000000-0000-4000-8000-000000000001",
             "globalAdmin": "40000000-0000-4000-8000-000000000001",
         }[name],

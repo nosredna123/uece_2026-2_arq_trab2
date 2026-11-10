@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 37
+  completed_tasks: 38
   in_progress_tasks: 0
-  pending_tasks: 7
-  completion_percentage: 84.09
+  pending_tasks: 6
+  completion_percentage: 86.36
 
 tasks:
   - task_id: "T001"
@@ -966,8 +966,31 @@ tasks:
       requirements: ["RF04", "RF05", "RF07", "RF09", "RF10", "RF11", "RN02", "RN06", "RQ03", "RQ04", "RQ05"]
       full_trace: "RF04/RF05/RF07/RF09/RF10/RF11 -> Phase-6.1 -> T037 -> live paid-registration-to-reporting integration"
 
-pending_tasks:
   - task_id: "T038"
+    description: "Criar cenários integrados de recusa, expiração, promoção da lista de espera e indisponibilidade de Notification e Reporting."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "tests/integration/failure-scenarios"
+        - file: "mocks/identity-access"
+        - file: "tests/contracts/identity-mock/test_identity_contract.py"
+        - file: "plan.md"
+      notes: "Added live Compose scenarios for Billing refusal and waitlist promotion, timeout expiry and capacity release, Notification outage independence, and Reporting outage/recovery. Added a second synthetic participant fixture to exercise a real waitlist."
+    verification:
+      build_passed: true
+      test_results:
+        command: "failure-scenarios/run.sh; Python repository suite with -x; Compose --profile test build"
+        passed: 4
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "All four live Compose failure scenarios passed. The Python repository suite passed 131 with five integration tests skipped outside their live runners; all Compose test targets built successfully, including the updated Identity mock suite."
+    upstream_trace:
+      plan_item: "6.1"
+      requirements: ["RF06", "RF07", "RF08", "RN02", "RN03", "RN04", "RN05", "RQ03", "RQ04", "RQ05"]
+      full_trace: "RF06/RF07/RF08/RN02-RN05/RQ03-RQ05 -> Phase-6.1 -> T038 -> live failure and recovery scenarios"
+
+pending_tasks:
   - task_id: "T039"
   - task_id: "T040"
   - task_id: "T041"
@@ -1257,6 +1280,15 @@ traceability_chain:
       - "tests/integration/paid-registration-flow"
       - "services/event-management-java/src/main"
       - "services/registration-java/src/main"
+    status: "complete"
+  - chain_id: "TRACE-T038"
+    requirement: "RF06/RF07/RF08/RN02/RN03/RN04/RN05/RQ03/RQ04/RQ05"
+    plan_phase: "Phase-6"
+    plan_item: "6.1"
+    tasks: ["T038"]
+    files:
+      - "tests/integration/failure-scenarios"
+      - "mocks/identity-access"
     status: "complete"
 
 validation:

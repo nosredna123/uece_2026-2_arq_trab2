@@ -25,6 +25,7 @@ from identity_access_mock.settings import Settings
 
 EXPECTED_ROLES = {
     "participant": "PARTICIPANT",
+    "participantTwo": "PARTICIPANT",
     "organizer": "ORGANIZER",
     "globalAdmin": "GLOBAL_ADMIN",
 }

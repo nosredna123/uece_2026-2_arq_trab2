@@ -1,0 +1,89 @@
+batch_id: "T038"
+completed_tasks: ["T038"]
+blocked_tasks: []
+files_changed:
+  T038:
+    - file: "tests/integration/failure-scenarios/test_failure_scenarios.py"
+      change_type: "created"
+      description: "Added four live integration cases for refusal/waitlist promotion, timeout expiry, Notification outage, and Reporting outage/recovery."
+    - file: "tests/integration/failure-scenarios/run.sh"
+      change_type: "created"
+      description: "Added the Compose runner with temporary Billing/expiry/Notification settings and default-setting restoration."
+    - file: "tests/integration/failure-scenarios/README.md"
+      change_type: "created"
+      description: "Documented the scenarios, prerequisites, invocation, and expected runtime."
+    - file: "mocks/identity-access/src/identity_access_mock/app.py"
+      change_type: "modified"
+      description: "Allowed one additional synthetic PARTICIPANT fixture for multi-participant waitlist testing."
+    - file: "mocks/identity-access/src/identity_access_mock/fixtures.json"
+      change_type: "modified"
+      description: "Added a second synthetic participant with a unique subject ID."
+    - file: "mocks/identity-access/tests/test_identity_runtime.py"
+      change_type: "modified"
+      description: "Added coverage that the second participant token resolves to its trusted fixture principal."
+    - file: "mocks/identity-access/README.md"
+      change_type: "modified"
+      description: "Documented the two synthetic participants used by multi-participant scenarios."
+    - file: "tests/contracts/identity-mock/test_identity_contract.py"
+      change_type: "modified"
+      description: "Updated fixture contract assertions for the additional participant."
+    - file: "plan.md"
+      change_type: "modified"
+      description: "Marked T038 complete."
+    - file: "checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Recorded T038 completion, traceability, and validation status."
+upstream_artifacts_consumed:
+  T038:
+    - artifact: "plan.md#T038"
+      used_for: "Failure-scenario scope and integration path."
+    - artifact: "docs/architecture/domain-scenarios.md#Invariantes aprovados"
+      used_for: "Capacity, payment timeout/refusal, waitlist, Notification, and Reporting invariants."
+    - artifact: "docs/adr/ADR-004-messaging-and-resilience.md"
+      used_for: "Durable event recovery expectations during Reporting outage."
+    - artifact: "tests/integration/paid-registration-flow"
+      used_for: "Compose invocation, HTTP client, event setup, and integration-test conventions."
+traceability:
+  - requirement: "RF06/RF07/RF08/RN02/RN03/RN04/RN05/RQ03/RQ04/RQ05"
+    plan_item: "6.1"
+    task: "T038"
+    files:
+      - "tests/integration/failure-scenarios"
+      - "mocks/identity-access"
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "The repository Python suite reports one existing Starlette/AnyIO BlockingPortal deprecation warning."
+  - severity: "LOW"
+    message: "Docker Compose used its default builder because buildx is unavailable; all requested builds passed."
+test_results:
+  T038_live_scenarios:
+    command: "PYTHON=/path/to/validation-venv/bin/python bash tests/integration/failure-scenarios/run.sh"
+    passed: 4
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "All live refusal/waitlist, timeout-expiry, Notification-unavailable, and Reporting-unavailable/recovery scenarios passed."
+  repository_python:
+    command: "PYTHONPATH=.:services/attendance-certification-python/src:services/reporting-python/src:mocks/identity-access/src:mocks/billing/src:mocks/notification/src python -m pytest -x --import-mode=importlib"
+    passed: 131
+    failed: 0
+    skipped: 5
+    failures: []
+    notes: "Five live integration tests were skipped because their dedicated Compose runners were not enabled."
+  changed_python_lint:
+    command: "python -m ruff check --no-cache <changed Python files>"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "Ruff reported all checks passed."
+  compose_test_targets:
+    command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build"
+    passed: 0
+    failed: 0
+    skipped: 0
+    failures: []
+    notes: "All test targets built successfully; the updated Identity mock suite reported 13 passed and the repository Python suite reported 131 passed, 5 skipped."
