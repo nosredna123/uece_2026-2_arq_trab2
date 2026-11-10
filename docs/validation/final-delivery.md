@@ -24,10 +24,10 @@ shows the success path and failure behavior; the
 [service-boundary inventory](../architecture/service-boundaries.md) explain
 ownership and prototype scope.
 
-The PlantUML files are the editable sources for the diagrams. The existing
-`services.png` is an earlier generated export and is not the authoritative
-as-built view; use the linked sources and contracts when reviewing current
-behavior.
+The PlantUML files are the editable sources for the diagrams. The
+[`services.png` export](../architecture/services.png) is generated from
+`containers.puml`; regenerate it after changing that source so the visual
+summary stays aligned.
 
 - HTTP routes and schemas: [OpenAPI contract index](../contracts/README.md)
   and [OpenAPI specifications](../contracts/openapi).

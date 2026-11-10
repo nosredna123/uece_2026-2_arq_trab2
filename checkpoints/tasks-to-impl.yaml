@@ -1235,7 +1235,7 @@ tasks:
         failed: 0
         skipped: 0
         failures: []
-        notes: "Repository tests and documentation checks passed. Editable PlantUML/Mermaid sources are indexed; the pre-existing raster export was not regenerated."
+        notes: "Repository tests and documentation checks passed. Editable PlantUML/Mermaid sources and the generated container-diagram PNG are indexed."
     upstream_trace:
       plan_item: "6.2"
       requirements: ["RQ01", "RQ02", "RQ03", "RQ04", "RQ05", "RQ06", "RQ07", "RQ08"]

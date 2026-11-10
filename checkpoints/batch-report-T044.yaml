@@ -9,6 +9,9 @@ files_changed:
     - file: "docs/architecture/containers.puml"
       change_type: "modified"
       description: "Replaced stale TBD API/message notes with links to the implemented contract sources."
+    - file: "docs/architecture/services.png"
+      change_type: "modified"
+      description: "Regenerated the container-architecture export from containers.puml after Graphviz became available."
     - file: "docs/architecture/paid-registration-flow.puml"
       change_type: "modified"
       description: "Aligned diagram notes with the published AsyncAPI contract and validated retry configuration."
@@ -64,10 +67,6 @@ traceability:
 protocol_violation: false
 errors: []
 warnings:
-  - severity: "LOW"
-    message: "The existing docs/architecture/services.png export was not regenerated; the editable PlantUML and Mermaid sources are identified as authoritative in the final guide."
-  - severity: "LOW"
-    message: "PlantUML rendering could not be completed because the host lacks Graphviz; only the editable source diagrams were updated."
   - severity: "LOW"
     message: "Six environment-dependent tests are intentionally skipped in the regular Python suite and use dedicated runners."
 test_results:
