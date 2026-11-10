@@ -284,7 +284,7 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 
 ### Fase 3 — US1: Identidade simulada e catálogo
 
-- [ ] T019 [US1] [Plan:3.1] Especificar contrato e regras de Identity & Access e escrever testes para token, papéis, organização e acesso por participante em `mocks/identity-access/tests/` e `tests/contracts/identity-mock/`.
+- [x] T019 [US1] [Plan:3.1] Especificar contrato e regras de Identity & Access e escrever testes para token, papéis, organização e acesso por participante em `mocks/identity-access/tests/` e `tests/contracts/identity-mock/`.
 - [ ] T020 [US1] [Plan:3.1] Implementar fake determinístico de identidade/autorização com perfis e organizações sintéticos em `mocks/identity-access/`; rejeitar token inválido e não substituir falha de autenticação por acesso anônimo.
 - [ ] T021 [US1] [Plan:3.2] Escrever testes de contrato e domínio para ciclo de vida de eventos/atividades e consulta pública em `services/event-management-java/src/test/`.
 - [ ] T022 [US1] [Plan:3.2] Implementar persistência, migrações e endpoints de evento/atividade conforme os testes em `services/event-management-java/src/`.

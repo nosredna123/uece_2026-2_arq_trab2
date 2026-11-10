@@ -1,0 +1,18 @@
+{
+  "participant": {
+    "token": "synthetic-participant-001",
+    "subjectId": "10000000-0000-4000-8000-000000000001",
+    "role": "PARTICIPANT"
+  },
+  "organizer": {
+    "token": "synthetic-organizer-org-a",
+    "subjectId": "20000000-0000-4000-8000-000000000001",
+    "role": "ORGANIZER",
+    "organizationId": "30000000-0000-4000-8000-000000000001"
+  },
+  "globalAdmin": {
+    "token": "synthetic-global-admin",
+    "subjectId": "40000000-0000-4000-8000-000000000001",
+    "role": "GLOBAL_ADMIN"
+  }
+}

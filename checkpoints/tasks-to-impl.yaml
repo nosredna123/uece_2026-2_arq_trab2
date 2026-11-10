@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 15
+  completed_tasks: 16
   in_progress_tasks: 0
-  pending_tasks: 29
-  completion_percentage: 34.09
+  pending_tasks: 28
+  completion_percentage: 36.36
 
 tasks:
   - task_id: "T001"
@@ -435,11 +435,27 @@ tasks:
       requirements: ["RN01-RN07", "RQ07", "RQ08"]
       full_trace: "RN/RQ -> Phase-2.2 -> T016 -> safe environment template, schema and typed startup settings"
 
+  - task_id: "T019"
+    description: "Especificar contrato e regras de Identity & Access e testar token, papéis, organização e acesso por participante."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mocks/identity-access/fixtures.json"
+        - file: "mocks/identity-access/tests/test_authorization_contract.py"
+        - file: "tests/contracts/identity-mock/test_identity_contract.py"
+    verification:
+      build_passed: null
+      test_results: {command: "python -m pytest -x --import-mode=importlib", passed: 47, failed: 0, skipped: 0}
+      notes: "Contract tests assert synthetic distinct role fixtures, required organizer organization scope, token-only internal validation and fail-closed behavior, plus participant-derived ownership and foreign-resource concealment. No runtime is claimed; T020 implements it."
+    upstream_trace:
+      plan_item: "3.1"
+      requirements: ["RF01", "RN07", "RQ07"]
+      full_trace: "RF/RN/RQ -> Phase-3.1 -> T019 -> Identity contract, synthetic fixtures and authorization contract tests"
+
 pending_tasks:
   - task_id: "T013"
   - task_id: "T017"
   - task_id: "T018"
-  - task_id: "T019"
   - task_id: "T020"
   - task_id: "T021"
   - task_id: "T022"
@@ -609,6 +625,14 @@ traceability_chain:
     plan_item: "2.2"
     tasks: ["T016"]
     files: ["infra/.env.example", "infra/environment.schema.json", "scripts/validate-environment.py"]
+    status: "complete"
+
+  - chain_id: "TRACE-T019"
+    requirement: "RF01/RN07/RQ07"
+    plan_phase: "Phase-3"
+    plan_item: "3.1"
+    tasks: ["T019"]
+    files: ["mocks/identity-access/fixtures.json", "mocks/identity-access/tests/test_authorization_contract.py", "tests/contracts/identity-mock/test_identity_contract.py"]
     status: "complete"
 
 validation:

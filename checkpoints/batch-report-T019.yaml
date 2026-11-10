@@ -1,0 +1,34 @@
+batch_id: "T019"
+completed_tasks: ["T019"]
+blocked_tasks: []
+files_changed:
+  T019:
+    - {file: "mocks/identity-access/fixtures.json", change_type: "created", description: "Synthetic participant, organization-scoped organizer and global-admin identity fixtures with distinct non-production tokens."}
+    - {file: "mocks/identity-access/tests/test_authorization_contract.py", change_type: "created", description: "Checks internal identity fail-closed contract and participant-derived ownership/access rules."}
+    - {file: "tests/contracts/identity-mock/test_identity_contract.py", change_type: "created", description: "Checks fixture roles and scope, token-only identity validation request, and principal contract."}
+    - {file: "plan.md", change_type: "modified", description: "Marked T019 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Recorded T019 completion, evidence and traceability."}
+upstream_artifacts_consumed:
+  T019:
+    - {artifact: "docs/contracts/openapi/identity-mock.yaml", used_for: "Internal token validation shape, service authentication, failure handling and no credential logging."}
+    - {artifact: "docs/contracts/openapi/common.yaml", used_for: "Principal role and organization scope rules."}
+    - {artifact: "docs/contracts/openapi/registration.yaml", used_for: "Participant identity derivation and own-resource authorization."}
+    - {artifact: "docs/architecture/service-boundaries.md", used_for: "Identity mock boundaries and approved global-admin scope."}
+evidence_mapping:
+  T019:
+    - upstream: "plan.md T019"
+      output: "Identity contract test fixtures and authorization contract tests"
+      evidence: "All 47 repository tests passed with pytest fail-fast."
+traceability:
+  - {requirement: "RF01, RN07, RQ07", plan_item: "3.1", task: "T019", files: ["mocks/identity-access/fixtures.json", "mocks/identity-access/tests/test_authorization_contract.py", "tests/contracts/identity-mock/test_identity_contract.py"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "Identity mock runtime is intentionally not claimed; it is implemented by T020."
+test_results:
+  T019:
+    command: "python -m pytest -x --import-mode=importlib; git diff --check"
+    passed: 47
+    failed: 0
+    skipped: 0
+    failures: []
