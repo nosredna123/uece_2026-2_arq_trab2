@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 6
+  completed_tasks: 8
   in_progress_tasks: 0
-  pending_tasks: 30
-  completion_percentage: 16.7
+  pending_tasks: 28
+  completion_percentage: 22.2
 
 tasks:
   - task_id: "T045"
@@ -169,10 +169,56 @@ tasks:
       plan_item: "1.2"
       requirements: ["REQ-004", "REQ-006", "REQ-008", "REQ-010", "REQ-011", "REQ-014", "REQ-015"]
       full_trace: "REQ-004/006/008/010/011/014/015 → Phase-1.2 → T050 → typed service client adapter"
+  - task_id: "T051"
+    description: "Specify session, CSRF, and idempotency behavior with tests."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_sessions.py"
+          changes: ["Verify browser-session isolation, opaque cookies, CSRF/origin enforcement, persona restrictions, expiry, capacity eviction, and restart isolation."]
+        - file: "web/demo-python/tests/test_commands.py"
+          changes: ["Verify retained idempotency/correlation across uncertainty, concurrent deduplication, payload conflicts, persona invalidation, and bounded capacity."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 244
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "The test-first contract was completed together with T052; route tests verify POST/Redirect/GET."
+    upstream_trace:
+      plan_item: "1.3"
+      requirements: ["REQ-003", "REQ-005", "REQ-007", "REQ-013", "REQ-014", "REQ-015"]
+      full_trace: "REQ-003/005/007/013/014/015 → Phase-1.3 → T051 → session and command safety tests"
+  - task_id: "T052"
+    description: "Implement isolated persona sessions and a bounded command ledger."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/sessions.py"
+          changes: ["Create opaque, expiring, capacity-bounded browser sessions with server-side persona fixture lookup."]
+        - file: "web/demo-python/src/demo_web/commands.py"
+          changes: ["Deduplicate concurrent intents, retain payload/key/correlation identity, and require same-key retries after unknown outcomes."]
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add no-store session bootstrap and CSRF/origin-protected persona selection with PRG."]
+        - file: "web/demo-python/src/demo_web/app.py"
+          changes: ["Initialize the in-memory session store from validated fixture configuration."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 244
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "Ruff lint/format checks passed; no persona credential is returned to the browser."
+    upstream_trace:
+      plan_item: "1.3"
+      requirements: ["REQ-003", "REQ-005", "REQ-007", "REQ-013", "REQ-014", "REQ-015"]
+      full_trace: "REQ-003/005/007/013/014/015 → Phase-1.3 → T052 → session store, command ledger, and persona routes"
 
 pending_tasks:
-  - {task_id: "T051", description: "Specify session, CSRF, and idempotency tests", blocked_by: [], priority: "P1"}
-  - {task_id: "T052", description: "Implement sessions and command ledger", blocked_by: ["T051"], priority: "P1"}
   - {task_id: "T053", description: "Specify page and badge contracts", blocked_by: ["T052"], priority: "P1"}
   - {task_id: "T054", description: "Implement shared shell and labels", blocked_by: ["T053"], priority: "P1"}
   - {task_id: "T055", description: "Specify catalog and availability tests", blocked_by: ["T054"], priority: "P1"}

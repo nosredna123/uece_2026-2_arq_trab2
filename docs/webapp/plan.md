@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Planning deliverable; web-app implementation has not begun.  
+**Status:** Implementation in progress; T045-T052 are complete.
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T050 are complete; T051-T080 remain unimplemented. Tests belong before the
+T045-T052 are complete; T053-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -425,8 +425,8 @@ failures remain explicit; history contains no bearer/service keys or request bod
 
 **Requirements:** REQ-003, REQ-005, REQ-007, REQ-013, REQ-014, REQ-015.
 
-- [ ] T051 [Plan:1.3] Write `web/demo-python/tests/test_sessions.py` and `test_commands.py` for separate browser sessions, CSRF rejection/origin checks, invalid personas, expiry/restart, bounded eviction, same-command retry after timeout, concurrent duplicate POSTs, changed payload, persona invalidation, and PRG.
-- [ ] T052 [Plan:1.3] Implement `src/demo_web/sessions.py`, `commands.py`, and persona POST routes in `routes.py`: opaque cookies, server-side fixture lookup, bounded locked command records, safe CSRF validation, retained key/correlation per intent, explicit uncertainty, and persona-specific isolation. Use server-side command targets/payloads, not trusted hidden role/owner fields.
+- [x] T051 [Plan:1.3] Write `web/demo-python/tests/test_sessions.py` and `test_commands.py` for separate browser sessions, CSRF rejection/origin checks, invalid personas, expiry/restart, bounded eviction, same-command retry after timeout, concurrent duplicate POSTs, changed payload, persona invalidation, and PRG.
+- [x] T052 [Plan:1.3] Implement `src/demo_web/sessions.py`, `commands.py`, and persona POST routes in `routes.py`: opaque cookies, server-side fixture lookup, bounded locked command records, safe CSRF validation, retained key/correlation per intent, explicit uncertainty, and persona-specific isolation. Use server-side command targets/payloads, not trusted hidden role/owner fields.
 
 **Done when:** duplicate/uncertain submissions cannot cause a fresh-key retry;
 cross-session/persona requests are denied; no backend effects on a GET or refresh.
