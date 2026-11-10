@@ -1,6 +1,6 @@
 # EventHub
 
-EventHub is a locally runnable event-management prototype. The planned
+EventHub is a locally runnable event-management prototype. The
 application uses four executable services and three dependency mocks, backed
 by PostgreSQL and RabbitMQ. Execution and acceptance tests are intended to run
 in containers; host Java/Python runtimes and host databases are optional.
@@ -12,9 +12,11 @@ in containers; host Java/Python runtimes and host databases are optional.
 2. From the repository root, run `./scripts/check-environment.sh` to verify
    Docker access, resources, required host ports, and temporary container,
    network, and volume operations.
-3. Follow [service build/test instructions](services/README.md) for the four
-   independent scaffolds. The complete Compose stack and domain acceptance
-   flows remain pending; scaffold health is not proof of domain functionality.
+3. Create and validate the ignored local environment file as described below.
+4. Use the Compose commands in [the environment setup guide](docs/development/environment-setup.md)
+   to build/test containers and run the health acceptance check. Domain
+   acceptance flows remain pending; scaffold health is not proof of domain
+   functionality.
 
 ## Local environment variables and secrets
 
@@ -85,6 +87,8 @@ deliveries at `NOTIFICATION_STORE_PATH` on its own dedicated volume.
   requires and strictly validates its key and availability setting; remaining
   mocks must enforce the same template contract.
 
-The template's host ports are 8081-8085 for the four services and Identity mock;
-database/broker ports are 5432, 5672 and 15672. Set different available ports
-explicitly if needed. No real local environment file is created by tests.
+The host ports are 8081-8084 for the four services, 5432 for PostgreSQL, 5672
+for RabbitMQ AMQP and 15672 for RabbitMQ management. Set different available
+host ports explicitly if needed; RabbitMQ's in-network port remains 5672.
+Identity is reachable only from the Compose network and is not published to the
+host. No real local environment file is created by tests.

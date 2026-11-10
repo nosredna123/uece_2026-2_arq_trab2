@@ -41,9 +41,9 @@ def validate(path: Path) -> list[str]:
     if initial.isdigit() and maximum.isdigit() and int(initial) > int(maximum):
         errors.append("MESSAGE_RETRY_MAX_SECONDS: less than initial retry delay")
     host_port_keys = (
-        "POSTGRES_PORT", "RABBITMQ_PORT", "RABBITMQ_MANAGEMENT_PORT",
+        "POSTGRES_PORT", "RABBITMQ_HOST_PORT", "RABBITMQ_MANAGEMENT_PORT",
         "EVENT_MANAGEMENT_PORT", "REGISTRATION_PORT", "ATTENDANCE_PORT",
-        "REPORTING_PORT", "IDENTITY_MOCK_PORT",
+        "REPORTING_PORT",
     )
     ports = [values[key] for key in host_port_keys if key in values]
     if len(ports) != len(set(ports)):

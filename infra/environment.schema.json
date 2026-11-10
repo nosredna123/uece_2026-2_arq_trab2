@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": [
     "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_PORT", "RABBITMQ_HOST", "RABBITMQ_PORT",
-    "RABBITMQ_MANAGEMENT_PORT", "RABBITMQ_USER", "RABBITMQ_PASSWORD",
+    "RABBITMQ_HOST_PORT", "RABBITMQ_MANAGEMENT_PORT", "RABBITMQ_USER", "RABBITMQ_PASSWORD",
     "EVENT_DATABASE_URL", "EVENT_DATABASE_USER", "EVENT_DATABASE_PASSWORD", "EVENT_MIGRATION_USER", "EVENT_MIGRATION_PASSWORD",
     "REGISTRATION_DATABASE_URL", "REGISTRATION_DATABASE_USER", "REGISTRATION_DATABASE_PASSWORD", "REGISTRATION_MIGRATION_USER", "REGISTRATION_MIGRATION_PASSWORD",
     "ATTENDANCE_DATABASE_URL", "ATTENDANCE_MIGRATION_DATABASE_URL", "REPORTING_DATABASE_URL", "REPORTING_MIGRATION_DATABASE_URL",
@@ -13,35 +13,36 @@
     "RESERVATION_EXPIRY_MINUTES", "WAITLIST_ENABLED", "WAITLIST_OFFER_EXPIRY_MINUTES", "CANCELLATION_WINDOW_DAYS", "REFUND_PERCENTAGE",
     "CERTIFICATE_ELIGIBILITY_POLICY", "CERTIFICATE_ISSUANCE_AFTER_EVENT", "BILLING_MOCK_SCENARIO", "BILLING_MOCK_REFUND_SCENARIO", "BILLING_STORE_PATH",
     "NOTIFICATION_MOCK_AVAILABLE", "NOTIFICATION_STORE_PATH", "MESSAGE_RETRY_INITIAL_SECONDS", "MESSAGE_RETRY_MAX_SECONDS",
-    "EVENT_MANAGEMENT_PORT", "REGISTRATION_PORT", "ATTENDANCE_PORT", "REPORTING_PORT", "IDENTITY_MOCK_PORT"
+    "EVENT_MANAGEMENT_PORT", "REGISTRATION_PORT", "ATTENDANCE_PORT", "REPORTING_PORT"
   ],
   "properties": {
     "POSTGRES_USER": {"type": "string", "minLength": 1},
     "POSTGRES_PASSWORD": {"type": "string", "minLength": 1},
     "POSTGRES_PORT": {"$ref": "#/definitions/port"},
-    "RABBITMQ_HOST": {"type": "string", "minLength": 1},
-    "RABBITMQ_PORT": {"$ref": "#/definitions/port"},
+    "RABBITMQ_HOST": {"const": "rabbitmq"},
+    "RABBITMQ_PORT": {"const": "5672"},
+    "RABBITMQ_HOST_PORT": {"$ref": "#/definitions/port"},
     "RABBITMQ_MANAGEMENT_PORT": {"$ref": "#/definitions/port"},
     "RABBITMQ_USER": {"type": "string", "minLength": 1},
     "RABBITMQ_PASSWORD": {"type": "string", "minLength": 1},
-    "EVENT_DATABASE_URL": {"type": "string", "pattern": "^jdbc:postgresql://[^/]+/[^/]+$"},
+    "EVENT_DATABASE_URL": {"type": "string", "pattern": "^jdbc:postgresql://postgres:5432/event_management$"},
     "EVENT_DATABASE_USER": {"type": "string", "minLength": 1},
     "EVENT_DATABASE_PASSWORD": {"type": "string", "minLength": 1},
     "EVENT_MIGRATION_USER": {"type": "string", "minLength": 1},
     "EVENT_MIGRATION_PASSWORD": {"type": "string", "minLength": 1},
-    "REGISTRATION_DATABASE_URL": {"type": "string", "pattern": "^jdbc:postgresql://[^/]+/[^/]+$"},
+    "REGISTRATION_DATABASE_URL": {"type": "string", "pattern": "^jdbc:postgresql://postgres:5432/registration$"},
     "REGISTRATION_DATABASE_USER": {"type": "string", "minLength": 1},
     "REGISTRATION_DATABASE_PASSWORD": {"type": "string", "minLength": 1},
     "REGISTRATION_MIGRATION_USER": {"type": "string", "minLength": 1},
     "REGISTRATION_MIGRATION_PASSWORD": {"type": "string", "minLength": 1},
-    "ATTENDANCE_DATABASE_URL": {"$ref": "#/definitions/postgres"},
-    "ATTENDANCE_MIGRATION_DATABASE_URL": {"$ref": "#/definitions/postgres"},
-    "REPORTING_DATABASE_URL": {"$ref": "#/definitions/postgres"},
-    "REPORTING_MIGRATION_DATABASE_URL": {"$ref": "#/definitions/postgres"},
-    "IDENTITY_BASE_URL": {"$ref": "#/definitions/http"},
+    "ATTENDANCE_DATABASE_URL": {"type": "string", "pattern": "^postgresql\\+psycopg://[^:@/]+:[^@/]+@postgres:5432/attendance_certification$"},
+    "ATTENDANCE_MIGRATION_DATABASE_URL": {"type": "string", "pattern": "^postgresql\\+psycopg://[^:@/]+:[^@/]+@postgres:5432/attendance_certification$"},
+    "REPORTING_DATABASE_URL": {"type": "string", "pattern": "^postgresql\\+psycopg://[^:@/]+:[^@/]+@postgres:5432/reporting$"},
+    "REPORTING_MIGRATION_DATABASE_URL": {"type": "string", "pattern": "^postgresql\\+psycopg://[^:@/]+:[^@/]+@postgres:5432/reporting$"},
+    "IDENTITY_BASE_URL": {"const": "http://identity-mock:8080"},
     "IDENTITY_MOCK_AVAILABLE": {"enum": ["true", "false"]},
-    "EVENT_MANAGEMENT_BASE_URL": {"$ref": "#/definitions/http"},
-    "REGISTRATION_BASE_URL": {"$ref": "#/definitions/http"},
+    "EVENT_MANAGEMENT_BASE_URL": {"const": "http://event-management:8080"},
+    "REGISTRATION_BASE_URL": {"const": "http://registration:8080"},
     "INTERNAL_SERVICE_KEY": {"type": "string", "minLength": 1},
     "HTTP_TIMEOUT_SECONDS": {"$ref": "#/definitions/positive"},
     "RESERVATION_EXPIRY_MINUTES": {"$ref": "#/definitions/positive"},
@@ -61,13 +62,10 @@
     "EVENT_MANAGEMENT_PORT": {"$ref": "#/definitions/port"},
     "REGISTRATION_PORT": {"$ref": "#/definitions/port"},
     "ATTENDANCE_PORT": {"$ref": "#/definitions/port"},
-    "REPORTING_PORT": {"$ref": "#/definitions/port"},
-    "IDENTITY_MOCK_PORT": {"$ref": "#/definitions/port"}
+    "REPORTING_PORT": {"$ref": "#/definitions/port"}
   },
   "definitions": {
     "positive": {"type": "string", "pattern": "^[1-9][0-9]*$"},
-    "port": {"type": "string", "pattern": "^[1-9][0-9]{0,4}$"},
-    "postgres": {"type": "string", "pattern": "^postgresql\\+psycopg://[^/]+/[^/]+$"},
-    "http": {"type": "string", "pattern": "^https?://[^/]+(:[0-9]+)?/?$"}
+    "port": {"type": "string", "pattern": "^[1-9][0-9]{0,4}$"}
   }
 }

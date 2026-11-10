@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 20
+  completed_tasks: 21
   in_progress_tasks: 0
-  pending_tasks: 24
-  completion_percentage: 45.45
+  pending_tasks: 23
+  completion_percentage: 47.73
 
 tasks:
   - task_id: "T001"
@@ -435,6 +435,39 @@ tasks:
       requirements: ["RN01-RN07", "RQ07", "RQ08"]
       full_trace: "RN/RQ -> Phase-2.2 -> T016 -> safe environment template, schema and typed startup settings"
 
+  - task_id: "T013"
+    description: "Criar Compose para serviços, mocks, dependências, healthchecks, volumes e testes containerizados."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "infra/docker-compose.yml"
+        - file: "infra/postgres/initialize.sql"
+        - file: "infra/rabbitmq"
+        - file: "infra/Dockerfile.python-tests"
+        - file: "infra/Dockerfile.smoke"
+        - file: "infra/smoke-check.py"
+        - file: ".dockerignore"
+        - file: "infra/.env.example"
+        - file: "infra/environment.schema.json"
+        - file: "scripts/validate-environment.py"
+        - file: "tests/configuration/test_environment.py"
+        - file: "README.md"
+        - file: "docs/development/environment-setup.md"
+        - file: "plan.md"
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker compose --profile test build; docker compose --profile acceptance up --build --abort-on-container-exit --exit-code-from acceptance; docker compose up -d --wait; restart and persistence probes; environment validation"
+        passed: 99
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The containerized repository suite passed 99 tests. Individual test targets also passed: Event Management 1, Registration 3, Attendance 2, Reporting 2, Identity 12, Billing 18 and Notification 13. Full Compose health acceptance passed; migrations, durable RabbitMQ queues/bindings and both mock SQLite stores remained present after stop/start. Identity has no host port mapping. Health acceptance does not claim pending domain flows."
+    upstream_trace:
+      plan_item: "2.2"
+      requirements: ["RQ01", "RQ05", "RQ06", "RQ07", "RQ08"]
+      full_trace: "RQ01/RQ05-RQ08 -> Phase-2.2 -> T013 -> Compose-backed local services, persistent dependencies and containerized test/health acceptance workflow"
+
   - task_id: "T019"
     description: "Especificar contrato e regras de Identity & Access e testar token, papéis, organização e acesso por participante."
     status: "completed"
@@ -530,7 +563,6 @@ tasks:
       full_trace: "RF08/RN05/RQ -> Phase-4.4 -> T032 -> durable async Notification mock and capped retry recovery"
 
 pending_tasks:
-  - task_id: "T013"
   - task_id: "T017"
   - task_id: "T018"
   - task_id: "T021"
@@ -676,6 +708,19 @@ traceability_chain:
     files: ["docs/architecture/data-ownership.md"]
     status: "complete"
 
+  - chain_id: "TRACE-T013"
+    requirement: "RQ01/RQ05-RQ08"
+    plan_phase: "Phase-2"
+    plan_item: "2.2"
+    tasks: ["T013"]
+    files:
+      - "infra/docker-compose.yml"
+      - "infra/postgres/initialize.sql"
+      - "infra/rabbitmq"
+      - "infra/Dockerfile.python-tests"
+      - "infra/Dockerfile.smoke"
+    status: "complete"
+
   - chain_id: "TRACE-T014"
     requirement: "RQ01/RQ05-RQ08"
     plan_phase: "Phase-2"
@@ -737,5 +782,5 @@ validation:
   errors: []
   warnings:
     - "Documentation/rationale checks are not runtime evidence. T003/T004 readiness checks passed."
-    - "T013 Compose wiring and full-stack acceptance tests remain pending."
+    - "Business-domain end-to-end acceptance flows remain pending with T021 and subsequent domain tasks; T013 validates container startup and health only."
   blocking_issues: []

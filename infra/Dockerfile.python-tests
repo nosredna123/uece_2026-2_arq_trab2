@@ -1,0 +1,14 @@
+FROM python:3.12.9-slim-bookworm AS test
+WORKDIR /workspace
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+COPY . .
+RUN python -m pip install --no-cache-dir -r requirements-validation.txt \
+    -e "services/attendance-certification-python[test]" \
+    -e "services/reporting-python[test]" \
+    -e "mocks/identity-access[test]" \
+    -e "mocks/billing[test]" \
+    -e "mocks/notification[test]"
+RUN git init -q && python -m pytest -x --import-mode=importlib
+CMD ["python", "-m", "pytest", "-x", "--import-mode=importlib"]

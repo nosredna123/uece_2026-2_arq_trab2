@@ -1,0 +1,11 @@
+.git
+.pytest_cache
+.hypothesis
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/target
+**/build
+**/dist
+**/node_modules
+infra/.env

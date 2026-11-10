@@ -1,0 +1,42 @@
+{
+  "rabbit_version": "3.13.7",
+  "rabbitmq_version": "3.13.7",
+  "vhosts": [
+    {"name": "/"}
+  ],
+  "queues": [
+    {"name": "billing.v1", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "billing.v1.quarantine", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "registration.v1", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "registration.v1.quarantine", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "attendance.v1", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "attendance.v1.quarantine", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "reporting.v1", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "reporting.v1.quarantine", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "notification.v1", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}},
+    {"name": "notification.v1.quarantine", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {}}
+  ],
+  "exchanges": [
+    {"name": "eventhub.v1", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {}}
+  ],
+  "bindings": [
+    {"source": "eventhub.v1", "vhost": "/", "destination": "billing.v1", "destination_type": "queue", "routing_key": "billing.requested", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "billing.v1.quarantine", "destination_type": "queue", "routing_key": "billing.v1.quarantine", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "registration.v1", "destination_type": "queue", "routing_key": "billing.result", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "registration.v1.quarantine", "destination_type": "queue", "routing_key": "registration.v1.quarantine", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "attendance.v1", "destination_type": "queue", "routing_key": "registration.changed", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "attendance.v1", "destination_type": "queue", "routing_key": "activity.changed", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "attendance.v1.quarantine", "destination_type": "queue", "routing_key": "attendance.v1.quarantine", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "reporting.v1", "destination_type": "queue", "routing_key": "billing.result", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "reporting.v1", "destination_type": "queue", "routing_key": "registration.changed", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "reporting.v1", "destination_type": "queue", "routing_key": "activity.changed", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "reporting.v1", "destination_type": "queue", "routing_key": "attendance.recorded", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "reporting.v1", "destination_type": "queue", "routing_key": "certificate.issued", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "reporting.v1.quarantine", "destination_type": "queue", "routing_key": "reporting.v1.quarantine", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "notification.v1", "destination_type": "queue", "routing_key": "registration.changed", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "notification.v1", "destination_type": "queue", "routing_key": "activity.changed", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "notification.v1", "destination_type": "queue", "routing_key": "attendance.recorded", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "notification.v1", "destination_type": "queue", "routing_key": "certificate.issued", "arguments": {}},
+    {"source": "eventhub.v1", "vhost": "/", "destination": "notification.v1.quarantine", "destination_type": "queue", "routing_key": "notification.v1.quarantine", "arguments": {}}
+  ]
+}

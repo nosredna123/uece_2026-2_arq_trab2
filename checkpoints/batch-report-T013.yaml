@@ -1,0 +1,47 @@
+batch_id: "T013"
+completed_tasks: ["T013"]
+blocked_tasks: []
+files_changed:
+  T013:
+    - {file: "infra/docker-compose.yml", change_type: "created", description: "Defines PostgreSQL, RabbitMQ, four executable services and three mocks with local-only published ports, health-gated dependencies, and named persistent volumes."}
+    - {file: "infra/postgres/initialize.sql", change_type: "created", description: "Creates separate runtime/migration roles and databases, decodes Python SQLAlchemy URL credentials safely, and grants runtime access to migration-owned objects."}
+    - {file: "infra/rabbitmq", change_type: "created", description: "Loads durable exchange/queue/binding topology and provisions the configured broker user and permissions at startup."}
+    - {file: "infra/Dockerfile.python-tests", change_type: "created", description: "Provides the complete Python test suite in a Python 3.12.9 container."}
+    - {file: "infra/Dockerfile.smoke", change_type: "created", description: "Builds a minimal container-only health acceptance probe."}
+    - {file: "infra/smoke-check.py", change_type: "created", description: "Checks health responses from all four services and the internal Identity mock."}
+    - {file: ".dockerignore", change_type: "created", description: "Excludes local secrets, Git metadata and generated files from repository-wide image contexts."}
+    - {file: "infra/.env.example", change_type: "modified", description: "Separates RabbitMQ's host-published port from its fixed internal service port and removes the unused Identity host port."}
+    - {file: "infra/environment.schema.json", change_type: "modified", description: "Validates Compose service hostnames, database URL locations, broker ports and service configuration."}
+    - {file: "scripts/validate-environment.py", change_type: "modified", description: "Checks uniqueness of host-published ports without treating RabbitMQ's internal port as a host port."}
+    - {file: "tests/configuration/test_environment.py", change_type: "modified", description: "Covers invalid Compose hostnames and port collisions."}
+    - {file: "README.md", change_type: "modified", description: "Documents the Compose workflow, local-only ports and internal Identity boundary."}
+    - {file: "docs/development/environment-setup.md", change_type: "modified", description: "Documents runtime/test builds, health acceptance, volume retention and application port checks."}
+    - {file: "plan.md", change_type: "modified", description: "Marks T013 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Updates task status, verification counts, pending tasks and Phase-2 traceability."}
+upstream_artifacts_consumed:
+  T013:
+    - {artifact: "docs/contracts/asyncapi/eventhub.yaml", used_for: "Exchange, durable queue, routing-key subscription and quarantine topology."}
+    - {artifact: "docs/contracts/asyncapi/README.md", used_for: "Message persistence, broker credentials, queue ownership and routing expectations."}
+    - {artifact: "docs/architecture/data-ownership.md", used_for: "Separate logical databases, distinct runtime/migration identities and owner-local data."}
+    - {artifact: "infra/.env.example", used_for: "Compose service settings, policy values, runtime credentials, availability scenarios and persistent store paths."}
+    - {artifact: "services/*/Dockerfile and mocks/*/Dockerfile", used_for: "Pinned runtime/test build stages and container startup commands."}
+evidence_mapping:
+  T013:
+    - {upstream: "Phase-2 local execution and dependency ownership", output: "infra/docker-compose.yml; infra/postgres/initialize.sql", evidence: "All services started healthy; four migrations applied with distinct service databases and credentials."}
+    - {upstream: "AsyncAPI durable event topology", output: "infra/rabbitmq/definitions.json", evidence: "All queues and bindings were present and remained durable after stack restart."}
+    - {upstream: "Container-only build and test requirements", output: "infra/Dockerfile.python-tests; Compose test profile", evidence: "All service test stages passed and the repository Python suite passed 99 tests."}
+    - {upstream: "Local runtime acceptance requirement", output: "infra/Dockerfile.smoke; infra/smoke-check.py", evidence: "Full stack health acceptance passed for all four services and internal Identity; Billing and Notification were healthy dependencies."}
+traceability:
+  - {requirement: "RQ01, RQ05-RQ08", plan_item: "2.2", task: "T013", files: ["infra/docker-compose.yml", "infra/postgres/initialize.sql", "infra/rabbitmq", "infra/Dockerfile.python-tests", "infra/Dockerfile.smoke"], status: "completed"}
+protocol_violation: false
+errors: []
+warnings:
+  - "Compose build emitted a non-blocking warning that Buildx is absent; the Docker driver completed all builds successfully."
+  - "The full-stack acceptance probe verifies service health and startup, not the domain flows implemented in later tasks."
+test_results:
+  T013:
+    command: "docker compose --profile test build; docker compose --profile acceptance up --build --abort-on-container-exit --exit-code-from acceptance; docker compose up -d --wait; stop/start persistence checks; python scripts/validate-environment.py infra/.env.example; git diff --check"
+    passed: 99
+    failed: 0
+    skipped: 0
+    failures: []

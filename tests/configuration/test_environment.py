@@ -31,6 +31,9 @@ def test_example_is_valid_and_real_env_is_ignored():
     ("BILLING_STORE_PATH=/data/billing.sqlite3", "BILLING_STORE_PATH="),
     ("NOTIFICATION_STORE_PATH=/data/notification.sqlite3", "NOTIFICATION_STORE_PATH="),
     ("REPORTING_PORT=8084", "REPORTING_PORT=8081"),
+    ("RABBITMQ_HOST_PORT=5672", "RABBITMQ_HOST_PORT=8081"),
+    ("RABBITMQ_HOST=rabbitmq", "RABBITMQ_HOST=localhost"),
+    ("IDENTITY_BASE_URL=http://identity-mock:8080", "IDENTITY_BASE_URL=http://localhost:8085"),
 ])
 def test_invalid_configuration_fails_without_exposing_values(tmp_path, old, new):
     example = (ROOT / "infra/.env.example").read_text()

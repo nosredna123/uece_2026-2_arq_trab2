@@ -1,0 +1,5 @@
+FROM python:3.12.9-slim-bookworm
+WORKDIR /app
+COPY infra/smoke-check.py .
+USER 10001:10001
+CMD ["python", "smoke-check.py"]

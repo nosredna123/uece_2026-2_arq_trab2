@@ -146,31 +146,40 @@ Install Git and a working Docker Engine/Desktop with Compose v2; a host JDK,
 Maven installation, Python installation, PostgreSQL, and RabbitMQ are not
 required for application builds or acceptance tests.
 
-The planned Compose application is `infra/docker-compose.yml`. Once it is
-provided by Phase 2, the container workflow is:
+The Compose application is `infra/docker-compose.yml`. Create the ignored local
+configuration first (see the root README), then validate and build:
 
 ```sh
-# Build the service and mock images using their container build stages.
-docker compose -f infra/docker-compose.yml build
+# Validate without printing configuration values.
+docker run --rm -v "$PWD:/workspace:ro" -w /workspace python:3.12.9-slim-bookworm \
+  sh -c 'pip install --no-cache-dir jsonschema==4.23.0 && python scripts/validate-environment.py infra/.env'
 
-# Start the full local system, including PostgreSQL, RabbitMQ, and mocks.
-docker compose -f infra/docker-compose.yml up
+# Build the runtime images.
+docker compose --env-file infra/.env -f infra/docker-compose.yml build
+
+# Build all isolated service test images and the complete Python test suite.
+# The Dockerfiles run their tests with fail-fast behavior during the build.
+docker compose --env-file infra/.env -f infra/docker-compose.yml --profile test build
+
+# Start the full local system.
+docker compose --env-file infra/.env -f infra/docker-compose.yml up -d --wait
+
+# Run the health-based Compose acceptance check; this is not domain-flow coverage.
+docker compose --env-file infra/.env -f infra/docker-compose.yml --profile acceptance \
+  up --build --abort-on-container-exit --exit-code-from acceptance
+
+# Stop the stack without deleting persistent data.
+docker compose --env-file infra/.env -f infra/docker-compose.yml down
 ```
 
-Run the project acceptance/test command through the Compose configuration or
-its documented containerized test runner; exact service names and test commands
-will be recorded with that configuration and in the project README. Do not
-replace a failing containerized build or test with a host-only run and report it
-as acceptance evidence. To stop the stack without deleting persistent data:
-
-```sh
-docker compose -f infra/docker-compose.yml down
-```
-
-The Compose file and service images are planned deliverables, not available in
-this initial setup guide. Their healthchecks, build/test stages, environment
-configuration, and executable test commands are added in Phase 2. Run these
-commands after those files exist.
+All application build and test dependencies run in containers; host Java,
+Maven, and Python are not required. The test profile builds both the Java and
+Python service/mock test stages and the repository-wide Python suite. The
+acceptance profile verifies that PostgreSQL, RabbitMQ, all services and all
+mocks start healthy. It does not claim that domain acceptance flows are
+implemented. PostgreSQL, RabbitMQ, Billing and Notification use named volumes;
+`down` preserves them. Use `down --volumes` only when intentionally deleting
+the local prototype data.
 
 ## Machine-readiness check
 
@@ -188,11 +197,11 @@ available TCP host ports **5432** (PostgreSQL), **5672** (RabbitMQ AMQP), and
 **15672** (RabbitMQ management, when exposed), then runs a disposable container
 and verifies temporary bridge-network and volume operations.
 
-The plan does not yet assign host ports to application services. When Phase 2
-defines those mappings, include them in the port check, for example:
+The Compose stack also publishes application ports 8081-8084 on localhost.
+Include those mappings in the port check when starting the full stack:
 
 ```sh
-EVENTHUB_CHECK_PORTS="5432 5672 15672 8080 8081" ./scripts/check-environment.sh
+EVENTHUB_CHECK_PORTS="5432 5672 15672 8081 8082 8083 8084" ./scripts/check-environment.sh
 ```
 
 `EVENTHUB_CHECK_PORTS` accepts a whitespace-separated list of TCP ports from 1

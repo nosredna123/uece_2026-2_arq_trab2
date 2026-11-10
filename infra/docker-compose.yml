@@ -1,0 +1,368 @@
+name: eventhub
+
+services:
+  postgres:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_DB: eventhub_bootstrap
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in infra/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/.env}
+      EVENT_DATABASE_URL: ${EVENT_DATABASE_URL:?Set EVENT_DATABASE_URL in infra/.env}
+      EVENT_DATABASE_USER: ${EVENT_DATABASE_USER:?Set EVENT_DATABASE_USER in infra/.env}
+      EVENT_DATABASE_PASSWORD: ${EVENT_DATABASE_PASSWORD:?Set EVENT_DATABASE_PASSWORD in infra/.env}
+      EVENT_MIGRATION_USER: ${EVENT_MIGRATION_USER:?Set EVENT_MIGRATION_USER in infra/.env}
+      EVENT_MIGRATION_PASSWORD: ${EVENT_MIGRATION_PASSWORD:?Set EVENT_MIGRATION_PASSWORD in infra/.env}
+      REGISTRATION_DATABASE_URL: ${REGISTRATION_DATABASE_URL:?Set REGISTRATION_DATABASE_URL in infra/.env}
+      REGISTRATION_DATABASE_USER: ${REGISTRATION_DATABASE_USER:?Set REGISTRATION_DATABASE_USER in infra/.env}
+      REGISTRATION_DATABASE_PASSWORD: ${REGISTRATION_DATABASE_PASSWORD:?Set REGISTRATION_DATABASE_PASSWORD in infra/.env}
+      REGISTRATION_MIGRATION_USER: ${REGISTRATION_MIGRATION_USER:?Set REGISTRATION_MIGRATION_USER in infra/.env}
+      REGISTRATION_MIGRATION_PASSWORD: ${REGISTRATION_MIGRATION_PASSWORD:?Set REGISTRATION_MIGRATION_PASSWORD in infra/.env}
+      ATTENDANCE_DATABASE_URL: ${ATTENDANCE_DATABASE_URL:?Set ATTENDANCE_DATABASE_URL in infra/.env}
+      ATTENDANCE_MIGRATION_DATABASE_URL: ${ATTENDANCE_MIGRATION_DATABASE_URL:?Set ATTENDANCE_MIGRATION_DATABASE_URL in infra/.env}
+      REPORTING_DATABASE_URL: ${REPORTING_DATABASE_URL:?Set REPORTING_DATABASE_URL in infra/.env}
+      REPORTING_MIGRATION_DATABASE_URL: ${REPORTING_MIGRATION_DATABASE_URL:?Set REPORTING_MIGRATION_DATABASE_URL in infra/.env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:?Set POSTGRES_PORT in infra/.env}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/initialize.sql:/docker-entrypoint-initdb.d/10-eventhub-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --host=127.0.0.1 --port=5432 --username=$$POSTGRES_USER --dbname=eventhub_bootstrap"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13.7-management-alpine
+    user: rabbitmq
+    entrypoint: ["/bin/bash", "/usr/local/bin/eventhub-rabbitmq-start.sh"]
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER:?Set RABBITMQ_USER in infra/.env}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in infra/.env}
+    ports:
+      - "127.0.0.1:${RABBITMQ_HOST_PORT:?Set RABBITMQ_HOST_PORT in infra/.env}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:?Set RABBITMQ_MANAGEMENT_PORT in infra/.env}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./rabbitmq/start.sh:/usr/local/bin/eventhub-rabbitmq-start.sh:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          rabbitmq-diagnostics -q check_running &&
+          rabbitmqctl list_users | awk -v username="$$RABBITMQ_USER" '$$1 == username {found=1} END {exit !found}'
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped
+
+  identity-mock:
+    build:
+      context: ../mocks/identity-access
+      target: runtime
+    environment:
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in infra/.env}
+      IDENTITY_MOCK_AVAILABLE: ${IDENTITY_MOCK_AVAILABLE:?Set IDENTITY_MOCK_AVAILABLE in infra/.env}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2).read()"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  event-management:
+    build:
+      context: ../services/event-management-java
+      target: runtime
+    environment:
+      DATABASE_URL: ${EVENT_DATABASE_URL:?Set EVENT_DATABASE_URL in infra/.env}
+      DATABASE_USER: ${EVENT_DATABASE_USER:?Set EVENT_DATABASE_USER in infra/.env}
+      DATABASE_PASSWORD: ${EVENT_DATABASE_PASSWORD:?Set EVENT_DATABASE_PASSWORD in infra/.env}
+      MIGRATION_USER: ${EVENT_MIGRATION_USER:?Set EVENT_MIGRATION_USER in infra/.env}
+      MIGRATION_PASSWORD: ${EVENT_MIGRATION_PASSWORD:?Set EVENT_MIGRATION_PASSWORD in infra/.env}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:?Set RABBITMQ_HOST in infra/.env}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:?Set RABBITMQ_PORT in infra/.env}
+      RABBITMQ_USER: ${RABBITMQ_USER:?Set RABBITMQ_USER in infra/.env}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in infra/.env}
+      IDENTITY_BASE_URL: ${IDENTITY_BASE_URL:?Set IDENTITY_BASE_URL in infra/.env}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in infra/.env}
+      HTTP_TIMEOUT_SECONDS: ${HTTP_TIMEOUT_SECONDS:?Set HTTP_TIMEOUT_SECONDS in infra/.env}
+      MESSAGE_RETRY_INITIAL_SECONDS: ${MESSAGE_RETRY_INITIAL_SECONDS:?Set MESSAGE_RETRY_INITIAL_SECONDS in infra/.env}
+      MESSAGE_RETRY_MAX_SECONDS: ${MESSAGE_RETRY_MAX_SECONDS:?Set MESSAGE_RETRY_MAX_SECONDS in infra/.env}
+    ports:
+      - "127.0.0.1:${EVENT_MANAGEMENT_PORT:?Set EVENT_MANAGEMENT_PORT in infra/.env}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-mock:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          bash -ec '
+            exec 3<>/dev/tcp/127.0.0.1/8080
+            printf "GET /actuator/health HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3
+            IFS= read -r status <&3
+            [[ "$$status" == *" 200 "* ]]
+          '
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  registration:
+    build:
+      context: ../services/registration-java
+      target: runtime
+    environment:
+      DATABASE_URL: ${REGISTRATION_DATABASE_URL:?Set REGISTRATION_DATABASE_URL in infra/.env}
+      DATABASE_USER: ${REGISTRATION_DATABASE_USER:?Set REGISTRATION_DATABASE_USER in infra/.env}
+      DATABASE_PASSWORD: ${REGISTRATION_DATABASE_PASSWORD:?Set REGISTRATION_DATABASE_PASSWORD in infra/.env}
+      MIGRATION_USER: ${REGISTRATION_MIGRATION_USER:?Set REGISTRATION_MIGRATION_USER in infra/.env}
+      MIGRATION_PASSWORD: ${REGISTRATION_MIGRATION_PASSWORD:?Set REGISTRATION_MIGRATION_PASSWORD in infra/.env}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:?Set RABBITMQ_HOST in infra/.env}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:?Set RABBITMQ_PORT in infra/.env}
+      RABBITMQ_USER: ${RABBITMQ_USER:?Set RABBITMQ_USER in infra/.env}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in infra/.env}
+      IDENTITY_BASE_URL: ${IDENTITY_BASE_URL:?Set IDENTITY_BASE_URL in infra/.env}
+      EVENT_MANAGEMENT_BASE_URL: ${EVENT_MANAGEMENT_BASE_URL:?Set EVENT_MANAGEMENT_BASE_URL in infra/.env}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in infra/.env}
+      HTTP_TIMEOUT_SECONDS: ${HTTP_TIMEOUT_SECONDS:?Set HTTP_TIMEOUT_SECONDS in infra/.env}
+      RESERVATION_EXPIRY_MINUTES: ${RESERVATION_EXPIRY_MINUTES:?Set RESERVATION_EXPIRY_MINUTES in infra/.env}
+      WAITLIST_ENABLED: ${WAITLIST_ENABLED:?Set WAITLIST_ENABLED in infra/.env}
+      WAITLIST_OFFER_EXPIRY_MINUTES: ${WAITLIST_OFFER_EXPIRY_MINUTES:?Set WAITLIST_OFFER_EXPIRY_MINUTES in infra/.env}
+      CANCELLATION_WINDOW_DAYS: ${CANCELLATION_WINDOW_DAYS:?Set CANCELLATION_WINDOW_DAYS in infra/.env}
+      REFUND_PERCENTAGE: ${REFUND_PERCENTAGE:?Set REFUND_PERCENTAGE in infra/.env}
+      MESSAGE_RETRY_INITIAL_SECONDS: ${MESSAGE_RETRY_INITIAL_SECONDS:?Set MESSAGE_RETRY_INITIAL_SECONDS in infra/.env}
+      MESSAGE_RETRY_MAX_SECONDS: ${MESSAGE_RETRY_MAX_SECONDS:?Set MESSAGE_RETRY_MAX_SECONDS in infra/.env}
+    ports:
+      - "127.0.0.1:${REGISTRATION_PORT:?Set REGISTRATION_PORT in infra/.env}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-mock:
+        condition: service_healthy
+      event-management:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          bash -ec '
+            exec 3<>/dev/tcp/127.0.0.1/8080
+            printf "GET /actuator/health HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3
+            IFS= read -r status <&3
+            [[ "$$status" == *" 200 "* ]]
+          '
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  attendance:
+    build:
+      context: ../services/attendance-certification-python
+      target: runtime
+    environment:
+      DATABASE_URL: ${ATTENDANCE_DATABASE_URL:?Set ATTENDANCE_DATABASE_URL in infra/.env}
+      MIGRATION_DATABASE_URL: ${ATTENDANCE_MIGRATION_DATABASE_URL:?Set ATTENDANCE_MIGRATION_DATABASE_URL in infra/.env}
+      IDENTITY_BASE_URL: ${IDENTITY_BASE_URL:?Set IDENTITY_BASE_URL in infra/.env}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in infra/.env}
+      HTTP_TIMEOUT_SECONDS: ${HTTP_TIMEOUT_SECONDS:?Set HTTP_TIMEOUT_SECONDS in infra/.env}
+      MESSAGE_RETRY_INITIAL_SECONDS: ${MESSAGE_RETRY_INITIAL_SECONDS:?Set MESSAGE_RETRY_INITIAL_SECONDS in infra/.env}
+      MESSAGE_RETRY_MAX_SECONDS: ${MESSAGE_RETRY_MAX_SECONDS:?Set MESSAGE_RETRY_MAX_SECONDS in infra/.env}
+      CERTIFICATE_ELIGIBILITY_POLICY: ${CERTIFICATE_ELIGIBILITY_POLICY:?Set CERTIFICATE_ELIGIBILITY_POLICY in infra/.env}
+      CERTIFICATE_ISSUANCE_AFTER_EVENT: ${CERTIFICATE_ISSUANCE_AFTER_EVENT:?Set CERTIFICATE_ISSUANCE_AFTER_EVENT in infra/.env}
+    ports:
+      - "127.0.0.1:${ATTENDANCE_PORT:?Set ATTENDANCE_PORT in infra/.env}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-mock:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2).read()"
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  reporting:
+    build:
+      context: ../services/reporting-python
+      target: runtime
+    environment:
+      DATABASE_URL: ${REPORTING_DATABASE_URL:?Set REPORTING_DATABASE_URL in infra/.env}
+      MIGRATION_DATABASE_URL: ${REPORTING_MIGRATION_DATABASE_URL:?Set REPORTING_MIGRATION_DATABASE_URL in infra/.env}
+      IDENTITY_BASE_URL: ${IDENTITY_BASE_URL:?Set IDENTITY_BASE_URL in infra/.env}
+      INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in infra/.env}
+      HTTP_TIMEOUT_SECONDS: ${HTTP_TIMEOUT_SECONDS:?Set HTTP_TIMEOUT_SECONDS in infra/.env}
+      MESSAGE_RETRY_INITIAL_SECONDS: ${MESSAGE_RETRY_INITIAL_SECONDS:?Set MESSAGE_RETRY_INITIAL_SECONDS in infra/.env}
+      MESSAGE_RETRY_MAX_SECONDS: ${MESSAGE_RETRY_MAX_SECONDS:?Set MESSAGE_RETRY_MAX_SECONDS in infra/.env}
+    ports:
+      - "127.0.0.1:${REPORTING_PORT:?Set REPORTING_PORT in infra/.env}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      identity-mock:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2).read()"
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  billing-mock:
+    build:
+      context: ../mocks/billing
+      target: runtime
+    environment:
+      RABBITMQ_HOST: ${RABBITMQ_HOST:?Set RABBITMQ_HOST in infra/.env}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:?Set RABBITMQ_PORT in infra/.env}
+      RABBITMQ_USER: ${RABBITMQ_USER:?Set RABBITMQ_USER in infra/.env}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in infra/.env}
+      BILLING_MOCK_SCENARIO: ${BILLING_MOCK_SCENARIO:?Set BILLING_MOCK_SCENARIO in infra/.env}
+      BILLING_MOCK_REFUND_SCENARIO: ${BILLING_MOCK_REFUND_SCENARIO:?Set BILLING_MOCK_REFUND_SCENARIO in infra/.env}
+      REFUND_PERCENTAGE: ${REFUND_PERCENTAGE:?Set REFUND_PERCENTAGE in infra/.env}
+      BILLING_STORE_PATH: ${BILLING_STORE_PATH:?Set BILLING_STORE_PATH in infra/.env}
+      MESSAGE_RETRY_INITIAL_SECONDS: ${MESSAGE_RETRY_INITIAL_SECONDS:?Set MESSAGE_RETRY_INITIAL_SECONDS in infra/.env}
+      MESSAGE_RETRY_MAX_SECONDS: ${MESSAGE_RETRY_MAX_SECONDS:?Set MESSAGE_RETRY_MAX_SECONDS in infra/.env}
+    volumes:
+      - billing-data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notification-mock:
+    build:
+      context: ../mocks/notification
+      target: runtime
+    environment:
+      NOTIFICATION_MOCK_AVAILABLE: ${NOTIFICATION_MOCK_AVAILABLE:?Set NOTIFICATION_MOCK_AVAILABLE in infra/.env}
+      NOTIFICATION_STORE_PATH: ${NOTIFICATION_STORE_PATH:?Set NOTIFICATION_STORE_PATH in infra/.env}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:?Set RABBITMQ_HOST in infra/.env}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:?Set RABBITMQ_PORT in infra/.env}
+      RABBITMQ_USER: ${RABBITMQ_USER:?Set RABBITMQ_USER in infra/.env}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in infra/.env}
+      MESSAGE_RETRY_INITIAL_SECONDS: ${MESSAGE_RETRY_INITIAL_SECONDS:?Set MESSAGE_RETRY_INITIAL_SECONDS in infra/.env}
+      MESSAGE_RETRY_MAX_SECONDS: ${MESSAGE_RETRY_MAX_SECONDS:?Set MESSAGE_RETRY_MAX_SECONDS in infra/.env}
+    volumes:
+      - notification-data:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  event-management-test:
+    profiles: [test]
+    build:
+      context: ../services/event-management-java
+      target: test
+
+  registration-test:
+    profiles: [test]
+    build:
+      context: ../services/registration-java
+      target: test
+
+  attendance-test:
+    profiles: [test]
+    build:
+      context: ../services/attendance-certification-python
+      target: test
+
+  reporting-test:
+    profiles: [test]
+    build:
+      context: ../services/reporting-python
+      target: test
+
+  identity-mock-test:
+    profiles: [test]
+    build:
+      context: ../mocks/identity-access
+      target: test
+
+  billing-mock-test:
+    profiles: [test]
+    build:
+      context: ../mocks/billing
+      target: test
+
+  notification-mock-test:
+    profiles: [test]
+    build:
+      context: ../mocks/notification
+      target: test
+
+  python-suite-test:
+    profiles: [test]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.python-tests
+      target: test
+
+  acceptance:
+    profiles: [acceptance]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.smoke
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      event-management:
+        condition: service_healthy
+      registration:
+        condition: service_healthy
+      attendance:
+        condition: service_healthy
+      reporting:
+        condition: service_healthy
+      identity-mock:
+        condition: service_healthy
+      billing-mock:
+        condition: service_healthy
+      notification-mock:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+  billing-data:
+  notification-data:
