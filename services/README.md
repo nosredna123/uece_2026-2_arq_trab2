@@ -71,7 +71,12 @@ check-in/certificate routes, and uses an outbox to publish attendance and
 certificate events. A certificate requires a confirmed registration, check-in,
 a published activity, and a database time after the projected activity end.
 Attendance migrations 0001-0002 own these projections and message ledgers.
-Reporting remains a health-only scaffold pending T035-T036.
+Reporting consumes registration, activity, billing, attendance, and certificate
+events into version-aware projections, deduplicates source events and billing
+operations, and exposes organization-authorized activity reports with
+eventual-consistency timestamps. It validates callers through Identity and reads
+no other domain service's database. Migration 0001 owns Reporting's projection
+and inbox tables.
 Attendance tests use isolated SQLite databases; Alembic DDL targets PostgreSQL
 and is validated separately against it.
 

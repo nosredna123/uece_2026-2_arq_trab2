@@ -1,0 +1,85 @@
+batch_id: "T035-T036"
+completed_tasks: ["T035", "T036"]
+blocked_tasks: []
+required_endpoints:
+  - method: GET
+    path: /organizations/{organizationId}/reports
+    source: docs/contracts/openapi/reporting.yaml
+    status: implemented
+endpoint_probes:
+  - method: GET
+    path: /health
+    status: 200
+    result: "PASS (live Reporting runtime backed by its PostgreSQL database)"
+  - method: GET
+    path: /organizations/{organizationId}/reports
+    status: 200
+    result: "PASS (live organizer authorization, local projection query and empty-array response)"
+database_probes:
+  - check: "Reporting Alembic migration history"
+    result: "PASS (revision 0001 is head)"
+  - check: "Reporting RabbitMQ consumer"
+    result: "PASS (durable reporting.v1 queue has one active consumer)"
+implementation:
+  T035:
+    files:
+      - "services/reporting-python/tests/conftest.py"
+      - "services/reporting-python/tests/test_reporting_contract.py"
+      - "services/reporting-python/tests/test_startup.py"
+    notes: "Added OpenAPI contract, eventual projection, counts, operation/event deduplication, version ordering, authorization, pagination, correlation ID and no-upstream-read tests."
+  T036:
+    files:
+      - "services/reporting-python/src/reporting_service"
+      - "services/reporting-python/pyproject.toml"
+      - "services/reporting-python/constraints.txt"
+      - "services/reporting-python/README.md"
+      - "services/README.md"
+      - "infra/docker-compose.yml"
+      - "tests/configuration/test_service_settings.py"
+    notes: "Implemented strict five-event consumption, durable inbox and versioned event projections, deduplicated payment/refund counts, organization-scoped report queries, Identity authorization, RabbitMQ quarantine/retry behavior and required settings."
+upstream_artifacts_consumed:
+  - {artifact: "plan.md", used_for: "T035/T036 scope and Phase 5.2 acceptance criteria."}
+  - {artifact: "docs/contracts/openapi/reporting.yaml", used_for: "Report endpoint, pagination, response fields and authorization contract."}
+  - {artifact: "docs/contracts/asyncapi/eventhub.yaml", used_for: "Reporting event routing and eventual projection boundaries."}
+  - {artifact: "docs/contracts/schemas/activity-changed.json", used_for: "Activity projection validation."}
+  - {artifact: "docs/contracts/schemas/registration-changed.json", used_for: "Registration status and reservation projection validation."}
+  - {artifact: "docs/contracts/schemas/billing-result.json", used_for: "Billing operation deduplication and outcome counts."}
+  - {artifact: "docs/contracts/schemas/attendance-recorded.json", used_for: "Check-in projection validation."}
+  - {artifact: "docs/contracts/schemas/certificate-issued.json", used_for: "Certificate projection validation."}
+  - {artifact: "docs/adr/ADR-002-data-ownership.md", used_for: "Reporting-owned projection; no cross-service database reads."}
+  - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "Durable event processing, deduplication and quarantine."}
+traceability:
+  - {requirement: "RF11/RN07/RQ01/RQ03/RQ05/RQ06/RQ07", plan_item: "5.2", task: "T035-T036", files: ["services/reporting-python", "infra/docker-compose.yml"], status: "completed"}
+test_results:
+  reporting_python:
+    command: "python -m pytest -x --import-mode=importlib services/reporting-python/tests"
+    passed: 12
+    failed: 0
+    skipped: 0
+  repository_python:
+    command: "python -m pytest -x --import-mode=importlib"
+    passed: 130
+    failed: 0
+    skipped: 0
+  compose:
+    command: "docker compose --env-file infra/.env -f infra/docker-compose.yml --profile test config --quiet && docker compose --env-file infra/.env -f infra/docker-compose.yml --profile test build"
+    passed: 130
+    failed: 0
+    skipped: 0
+    result: "PASS (Compose configuration valid; all test/runtime images built, Reporting's 12-test image and the 130-test repository Python suite passed)"
+live_reporting:
+  result: "PASS (Reporting container health returned 200; authorized organization report returned 200 and []; migration 0001 is head; reporting.v1 has one active consumer)"
+validation:
+  compose_config: "PASS"
+  reporting_test_image: "PASS (12 tests)"
+  repository_python_test_image: "PASS (130 tests)"
+  reporting_runtime_image: "PASS"
+  reporting_migration_0001: "PASS"
+  reporting_runtime_health: "PASS (200)"
+  authorized_reporting_query: "PASS (200)"
+  rabbitmq_consumer: "PASS (1 active consumer)"
+warnings:
+  - severity: LOW
+    message: "Repository Python tests passed with one existing Starlette/AnyIO BlockingPortal deprecation warning."
+  - severity: LOW
+    message: "Docker Compose warned that buildx is unavailable and used its default Docker builder; requested Reporting builds completed successfully."

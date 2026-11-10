@@ -27,7 +27,7 @@ def test_typed_settings_require_explicit_values(settings):
     assert "synthetic-secret-never-log" not in repr(configured)
     assert "synthetic-password-never-log" not in repr(configured)
     required_fields = ["DATABASE_URL", "INTERNAL_SERVICE_KEY", "HTTP_TIMEOUT_SECONDS"]
-    if settings is AttendanceSettings:
+    if settings in (AttendanceSettings, ReportingSettings):
         required_fields.extend(["RABBITMQ_HOST", "RABBITMQ_PASSWORD"])
     for field in required_fields:
         invalid = dict(VALUES)

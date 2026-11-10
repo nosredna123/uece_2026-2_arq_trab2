@@ -19,8 +19,12 @@ def test_health_and_no_domain_placeholders(monkeypatch, tmp_path):
         "HTTP_TIMEOUT_SECONDS": "5",
         "MESSAGE_RETRY_INITIAL_SECONDS": "1",
         "MESSAGE_RETRY_MAX_SECONDS": "60",
+        "RABBITMQ_HOST": "localhost",
+        "RABBITMQ_PORT": "5672",
+        "RABBITMQ_USER": "synthetic",
+        "RABBITMQ_PASSWORD": "synthetic",
     }.items():
         monkeypatch.setenv(key, value)
-    with TestClient(create_app()) as client:
+    with TestClient(create_app(start_worker=False)) as client:
         assert client.get("/health").json() == {"status": "UP"}
-        assert client.get("/organizations/unknown/reports").status_code == 404
+        assert client.get("/organizations/unknown/reports").status_code == 400

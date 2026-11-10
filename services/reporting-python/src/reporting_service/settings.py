@@ -2,7 +2,12 @@ import os
 from typing import Self
 
 from pydantic import (
-    AnyHttpUrl, BaseModel, ConfigDict, Field, PositiveInt, SecretStr,
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveInt,
+    SecretStr,
     model_validator,
 )
 
@@ -16,6 +21,13 @@ class Settings(BaseModel):
     http_timeout_seconds: PositiveInt = Field(validation_alias="HTTP_TIMEOUT_SECONDS")
     retry_initial_seconds: PositiveInt = Field(validation_alias="MESSAGE_RETRY_INITIAL_SECONDS")
     retry_max_seconds: PositiveInt = Field(validation_alias="MESSAGE_RETRY_MAX_SECONDS")
+    rabbitmq_host: str = Field(validation_alias="RABBITMQ_HOST", min_length=1)
+    rabbitmq_port: PositiveInt = Field(validation_alias="RABBITMQ_PORT")
+    rabbitmq_user: str = Field(validation_alias="RABBITMQ_USER", min_length=1)
+    rabbitmq_password: SecretStr = Field(
+        validation_alias="RABBITMQ_PASSWORD",
+        min_length=1,
+    )
 
     @model_validator(mode="after")
     def validate_retry_order(self) -> Self:

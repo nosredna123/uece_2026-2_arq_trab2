@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 34
+  completed_tasks: 36
   in_progress_tasks: 0
-  pending_tasks: 10
-  completion_percentage: 77.27
+  pending_tasks: 8
+  completion_percentage: 81.82
 
 tasks:
   - task_id: "T001"
@@ -895,9 +895,53 @@ tasks:
       requirements: ["RF09", "RF10", "RN06", "RQ01", "RQ05"]
       full_trace: "RF09/RF10/RN06 -> Phase-5.1 -> T034 -> isolated Attendance projections, check-in and post-completion certificate"
 
-pending_tasks:
   - task_id: "T035"
+    description: "Escrever testes de contrato, projeção eventual, autorização de organizador e isolamento de falha para Reporting."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/reporting-python/tests/conftest.py"
+        - file: "services/reporting-python/tests/test_reporting_contract.py"
+        - file: "services/reporting-python/tests/test_startup.py"
+    verification:
+      build_passed: true
+      test_results:
+        command: "python -m pytest -x --import-mode=importlib services/reporting-python/tests"
+        passed: 12
+        failed: 0
+        skipped: 0
+      notes: "Contract tests cover generated OpenAPI, event-fed reporting counts, eventual visibility, duplicate event and operation handling, stale snapshots, organizer/global-admin authorization, pagination, correlation IDs, and no upstream data reads."
+    upstream_trace:
+      plan_item: "5.2"
+      requirements: ["RF11", "RN07", "RQ03", "RQ05", "RQ06", "RQ07"]
+      full_trace: "RF11/RN07/RQ03/RQ05/RQ06/RQ07 -> Phase-5.2 -> T035 -> Reporting contract, projection, access-control and isolation tests"
+
   - task_id: "T036"
+    description: "Implementar Reporting com projeções locais alimentadas por eventos e consulta autorizada sem acesso a bancos alheios."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/reporting-python/src/reporting_service"
+        - file: "services/reporting-python/pyproject.toml"
+        - file: "services/reporting-python/constraints.txt"
+        - file: "services/reporting-python/README.md"
+        - file: "services/README.md"
+        - file: "infra/docker-compose.yml"
+        - file: "tests/configuration/test_service_settings.py"
+    verification:
+      build_passed: true
+      test_results:
+        command: "python -m pytest -x --import-mode=importlib"
+        passed: 130
+        failed: 0
+        skipped: 0
+      notes: "The service consumes five event types into its own version-aware projection/inbox, deduplicates Billing operations, paginates reports in its own DB and enforces organizer/global-admin scope. Compose config and Reporting runtime/test builds passed; live health and authorized report queries returned 200, Alembic reports 0001 (head), and RabbitMQ reports one reporting.v1 consumer."
+    upstream_trace:
+      plan_item: "5.2"
+      requirements: ["RF11", "RN07", "RQ01", "RQ03", "RQ05", "RQ06", "RQ07"]
+      full_trace: "RF11/RN07/RQ01/RQ03/RQ05/RQ06/RQ07 -> Phase-5.2 -> T036 -> event-fed Reporting projection and authorized API with no cross-service database reads"
+
+pending_tasks:
   - task_id: "T037"
   - task_id: "T038"
   - task_id: "T039"
@@ -1170,12 +1214,22 @@ traceability_chain:
       - "infra/docker-compose.yml"
       - "docs/contracts/openapi/attendance-certification.yaml"
     status: "complete"
+  - chain_id: "TRACE-T035-T036"
+    requirement: "RF11/RN07/RQ01/RQ03/RQ05/RQ06/RQ07"
+    plan_phase: "Phase-5"
+    plan_item: "5.2"
+    tasks: ["T035", "T036"]
+    files:
+      - "services/reporting-python"
+      - "infra/docker-compose.yml"
+      - "docs/contracts/openapi/reporting.yaml"
+    status: "complete"
 
 validation:
   passed: true
   errors: []
   warnings:
     - "Documentation/rationale checks are not runtime evidence. T003/T004 readiness checks passed."
-    - "Reporting business flows remain pending in subsequent domain tasks; T013 validates container startup and health only."
+    - "The full paid-registration-to-reporting flow is scheduled for T037; T036 separately verified Reporting's live authorized query, database migration and RabbitMQ consumer."
     - "GitHub branch rules and protected CI secrets/variables require administrator configuration; semantic and invariant-review gates fail closed until configured."
   blocking_issues: []
