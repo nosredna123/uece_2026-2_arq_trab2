@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 10
+  completed_tasks: 12
   in_progress_tasks: 0
-  pending_tasks: 26
-  completion_percentage: 27.8
+  pending_tasks: 24
+  completion_percentage: 33.3
 
 tasks:
   - task_id: "T045"
@@ -277,10 +277,60 @@ tasks:
       plan_item: "2.1"
       requirements: ["REQ-002", "REQ-003", "REQ-014", "REQ-015", "REQ-017"]
       full_trace: "REQ-002/003/014/015/017 → Phase-2.1 → T054 → shared page shell and local presentation assets"
+  - task_id: "T055"
+    description: "Specify catalog, pagination, schedule, price, and availability tests."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_catalog.py"
+          changes: ["Verify bounded search/pagination, unpublished 404, escaped content, integer minor-unit formatting, stale/unavailable availability, partial failure, and GET-only behavior."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 265
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "HTTPX MockTransport verifies exact service paths/query parameters and that no registration command is issued."
+    upstream_trace:
+      plan_item: "3.1"
+      requirements: ["REQ-002", "REQ-004", "REQ-014", "REQ-017"]
+      full_trace: "REQ-002/004/014/017 → Phase-3.1 → T055 → catalog and availability contract tests"
+  - task_id: "T056"
+    description: "Implement bounded published catalog and event/activity detail pages."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add bounded search/pagination, published-event filtering, per-displayed-activity availability reads, and explicit partial-failure states."]
+        - file: "web/demo-python/src/demo_web/presentation.py"
+          changes: ["Format UTC schedules, integer minor-unit prices, observation ages, and sanitized backend failure metadata."]
+        - file: "web/demo-python/src/demo_web/templates/events.html"
+          changes: ["Render the searchable published-event catalog with pagination and explicit unavailable/empty states."]
+        - file: "web/demo-python/src/demo_web/templates/event_detail.html"
+          changes: ["Render event and activity schedules, prices, observed availability, stale timestamps, and partial dependency errors."]
+        - file: "web/demo-python/src/demo_web/templates/base.html"
+          changes: ["Add catalog navigation."]
+        - file: "web/demo-python/src/demo_web/templates/error.html"
+          changes: ["Display sanitized service status/code/correlation for catalog-detail failures."]
+        - file: "web/demo-python/src/demo_web/static/app.css"
+          changes: ["Style catalog search, pagination, activity cards, and availability states responsively."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+        passed: 71
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The complete root suite passed; wheel-based Docker tests verify the new templates are packaged."
+    upstream_trace:
+      plan_item: "3.1"
+      requirements: ["REQ-002", "REQ-004", "REQ-014", "REQ-017"]
+      full_trace: "REQ-002/004/014/017 → Phase-3.1 → T056 → published catalog and detail pages"
 
 pending_tasks:
-  - {task_id: "T055", description: "Specify catalog and availability tests", blocked_by: ["T054"], priority: "P1"}
-  - {task_id: "T056", description: "Implement catalog and detail pages", blocked_by: ["T055"], priority: "P1"}
   - {task_id: "T057", description: "Specify checkout side-effect and retry tests", blocked_by: ["T056"], priority: "P1"}
   - {task_id: "T058", description: "Implement pre-registration checkout", blocked_by: ["T057"], priority: "P1"}
   - {task_id: "T059", description: "Specify registration state and polling transitions", blocked_by: ["T058"], priority: "P1"}

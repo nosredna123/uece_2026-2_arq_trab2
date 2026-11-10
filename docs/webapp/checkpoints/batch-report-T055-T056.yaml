@@ -1,0 +1,105 @@
+batch_id: "B06"
+completed_tasks: ["T055", "T056"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T055:
+    - file: "web/demo-python/tests/test_catalog.py"
+      change_type: "created"
+      description: "Specify catalog/detail search, pagination, published visibility, schedule/price formatting, availability states, partial failures, and GET-only behavior."
+  T056:
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Add bounded published event catalog and detail pages with activity pagination, session-scoped request history, and partial service failure handling."
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "modified"
+      description: "Add page metadata and UTC schedule, integer minor-unit price, availability-age, and sanitized service-error presentation helpers."
+    - file: "web/demo-python/src/demo_web/templates/events.html"
+      change_type: "created"
+      description: "Render the searchable published-event catalog with bounded pagination and explicit unavailable/empty states."
+    - file: "web/demo-python/src/demo_web/templates/event_detail.html"
+      change_type: "created"
+      description: "Render event/activity schedules, prices, observed availability, stale observations, and partial dependency errors."
+    - file: "web/demo-python/src/demo_web/templates/base.html"
+      change_type: "modified"
+      description: "Add event catalog navigation."
+    - file: "web/demo-python/src/demo_web/templates/error.html"
+      change_type: "modified"
+      description: "Expose sanitized service status/code/correlation details on HTML errors."
+    - file: "web/demo-python/src/demo_web/static/app.css"
+      change_type: "modified"
+      description: "Style catalog search, pagination, activity cards, and availability states responsively."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T055-T056 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T055-T056 traceability and update completion counts."
+    - file: "docs/webapp/checkpoints/batch-report-T055-T056.yaml"
+      change_type: "created"
+      description: "Record batch scope, verification, endpoint probes, and skip explanation."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "T055-T056 acceptance criteria, bounded catalog query limits, and requirement traceability."
+  - artifact: "docs/contracts/openapi/event-management.yaml"
+    used_for: "Published-event search, event details, activity pagination, schedules, and prices."
+  - artifact: "docs/contracts/openapi/registration.yaml"
+    used_for: "Availability lookup as a non-mutating observation, not a reservation."
+  - artifact: "docs/contracts/openapi/common.yaml"
+    used_for: "Sanitized service status/code/correlation handling."
+evidence_mapping:
+  T055:
+    - upstream: "docs/webapp/plan.md#Plan-3.1"
+      output: "web/demo-python/tests/test_catalog.py"
+      evidence: "HTTPX MockTransport checks bounded requests, search/filter behavior, escaped rendering, availability freshness/failure states, partial failures, and absence of registration mutations on GET."
+  T056:
+    - upstream: "docs/webapp/plan.md#Plan-3.1"
+      output: "web/demo-python/src/demo_web/routes.py and catalog templates"
+      evidence: "The root HTTP suite exercises catalog and detail routes; the Docker runtime target confirms packaged templates and assets."
+traceability:
+  - requirement: "REQ-004"
+    plan_item: "3.1"
+    task: "T055-T056"
+    files: ["web/demo-python/tests/test_catalog.py", "web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/events.html", "web/demo-python/src/demo_web/templates/event_detail.html"]
+    status: "completed"
+  - requirement: "REQ-014"
+    plan_item: "3.1"
+    task: "T056"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/presentation.py"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "3.1"
+    task: "T055"
+    files: ["web/demo-python/tests/test_catalog.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six existing backend integration/concurrency tests were skipped because their external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 265
+    failed: 0
+    skipped: 6
+    failures: []
+  docker_runtime:
+    command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+    passed: 71
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/events"
+    status: 200
+    result: "PASS (route contract tests verify bounded search, filtering, and pagination)"
+  - method: "GET"
+    path: "/events/{event_id}"
+    status: 200
+    result: "PASS (route contract tests verify event detail, activity pagination, and availability observations)"
+  - method: "GET"
+    path: "/events/{unpublished_event_id}"
+    status: 404
+    result: "PASS (unpublished events are not exposed)"

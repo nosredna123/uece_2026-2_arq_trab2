@@ -6,6 +6,13 @@
   {% include "partials/badge.html" %}
   <p class="eyebrow">HTTP {{ status_code }}</p>
   <h2 id="error-heading">{{ message }}</h2>
+  {% if error_detail %}
+  <div class="service-error-details">
+    <p><strong>{{ error_detail.service }}</strong>
+      {% if error_detail.status_code %}returned HTTP {{ error_detail.status_code }}{% else %}could not be reached{% endif %}.</p>
+    <p>Error code <code>{{ error_detail.code }}</code> · correlation <code>{{ error_detail.correlation_id }}</code></p>
+  </div>
+  {% endif %}
   <p class="card-copy">Use the page status above to distinguish implementation state from this request's outcome.</p>
   <a class="text-link" href="/">Return to the demonstration home <span aria-hidden="true">→</span></a>
 </section>

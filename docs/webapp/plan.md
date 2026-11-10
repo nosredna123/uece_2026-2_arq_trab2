@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Implementation in progress; T045-T054 are complete.
+**Status:** Implementation in progress; T045-T056 are complete.
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T054 are complete; T055-T080 remain unimplemented. Tests belong before the
+T045-T056 are complete; T057-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -449,8 +449,8 @@ without color; partial dependency failure cannot become an unlabelled empty page
 
 **Requirements:** REQ-002, REQ-004, REQ-014, REQ-017.
 
-- [ ] T055 [Plan:3.1] Write `web/demo-python/tests/test_catalog.py`: search, pagination, unpublished 404, activity schedule/minor-unit price formatting, unavailable availability, stale observations, and no registration on page load.
-- [ ] T056 [Plan:3.1] Implement catalog/detail routes in `routes.py` and `templates/events.html`, `templates/event_detail.html` using explicit Event/Registration clients. Fetch only the displayed activity page, label availability age and non-guarantee, and show partial failures without hiding valid catalog data.
+- [x] T055 [Plan:3.1] Write `web/demo-python/tests/test_catalog.py`: search, pagination, unpublished 404, activity schedule/minor-unit price formatting, unavailable availability, stale observations, and no registration on page load.
+- [x] T056 [Plan:3.1] Implement catalog/detail routes in `routes.py` and `templates/events.html`, `templates/event_detail.html` using explicit Event/Registration clients. Fetch only the displayed activity page, label availability age and non-guarantee, and show partial failures without hiding valid catalog data.
 
 **Done when:** visitor can browse without credentials; no fabricated availability
 or unbounded catalog fetch; backend content is escaped and amounts are not floats.
