@@ -161,6 +161,18 @@ def test_timeout_persists_no_result_and_only_a_new_attempt_uses_new_scenario(tmp
     assert store.count_attempts() == 2
 
 
+def test_expired_payment_can_emit_a_late_approval_for_registration_to_reconcile(tmp_path):
+    worker, _ = processor(tmp_path)
+    request = payment_request()
+    request["occurredAt"] = "2000-01-01T00:00:00Z"
+    request["data"]["expiresAt"] = "2000-01-01T00:30:00Z"
+
+    result = process(worker, request)
+
+    assert result["data"]["status"] == "APPROVED"
+    assert result["data"]["attemptId"] == request["data"]["attemptId"]
+
+
 def test_refund_timeout_can_be_retried_with_a_new_attempt(tmp_path):
     payment_worker, store = processor(tmp_path)
     process(payment_worker, payment_request())

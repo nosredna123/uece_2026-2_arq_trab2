@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataAccessException;
@@ -96,7 +97,11 @@ class RegistrationService {
   }
 
   CommandResult create(
-      Principal principal, String key, UUID activityId, AdmissionSnapshot snapshot) {
+      Principal principal,
+      String key,
+      UUID activityId,
+      AdmissionSnapshot snapshot,
+      UUID correlationId) {
     String requestHash = hash("create:" + activityId);
     try {
       return transaction.execute(
@@ -189,6 +194,9 @@ class RegistrationService {
                   waitlistSequence);
             } else {
               updateOccupied(activityId, ledger.occupied(), occupied);
+              if (paid) {
+                insertBillingRequest(registration, correlationId);
+              }
             }
             CommandResult result = new CommandResult(201, registration);
             saveReceipt(principal.subjectId(), "CREATE", key, requestHash, result);
@@ -318,7 +326,11 @@ class RegistrationService {
   }
 
   CommandResult acceptOffer(
-      Principal principal, String key, UUID registrationId, AdmissionSnapshot snapshot) {
+      Principal principal,
+      String key,
+      UUID registrationId,
+      AdmissionSnapshot snapshot,
+      UUID correlationId) {
     String requestHash = hash("accept-offer:" + registrationId);
     OfferOutcome outcome;
     try {
@@ -397,6 +409,9 @@ class RegistrationService {
                       503, "WAITLIST_INTEGRITY_ERROR", "The active offer changed unexpectedly.");
                 }
                 RegistrationView accepted = findRegistration(registrationId);
+                if (paid) {
+                  insertBillingRequest(accepted, correlationId);
+                }
                 CommandResult result = new CommandResult(200, accepted);
                 saveReceipt(principal.subjectId(), "ACCEPT_OFFER", key, requestHash, result);
                 return new OfferOutcome(result, null);
@@ -422,6 +437,102 @@ class RegistrationService {
               (row, rowNumber) -> row.getObject("id", UUID.class),
               now);
       expiredCandidates.forEach(this::expireOffer);
+    } catch (DataAccessException exception) {
+      throw storageUnavailable();
+    }
+  }
+
+  void expireReservations() {
+    try {
+      OffsetDateTime now = databaseNow();
+      List<UUID> expiredCandidates =
+          jdbc.query(
+              "SELECT id FROM registration WHERE status = 'PENDING_PAYMENT' "
+                  + "AND expires_at <= ? ORDER BY expires_at, id",
+              (row, rowNumber) -> row.getObject("id", UUID.class),
+              now);
+      expiredCandidates.forEach(this::expireReservation);
+    } catch (DataAccessException exception) {
+      throw storageUnavailable();
+    }
+  }
+
+  void applyBillingResult(BillingResult result) {
+    String payload;
+    String payloadHash;
+    try {
+      payload = objectMapper.writeValueAsString(result);
+      payloadHash = hash(payload);
+    } catch (JsonProcessingException exception) {
+      throw new ApiException(
+          400, "INVALID_BILLING_RESULT", "Billing result could not be validated.");
+    }
+    try {
+      transaction.execute(
+          status -> {
+            UUID registrationId =
+                result == null || result.data() == null ? null : result.data().registrationId();
+            if (registrationId == null) {
+              throw new ApiException(
+                  400, "INVALID_BILLING_RESULT", "Billing result is missing its registration.");
+            }
+            UUID activityId =
+                jdbc.query(
+                    "SELECT activity_id FROM registration WHERE id = ?",
+                    resultSet ->
+                        resultSet.next() ? resultSet.getObject("activity_id", UUID.class) : null,
+                    registrationId);
+            if (activityId == null) {
+              throw notFound();
+            }
+            Ledger ledger = lockLedger(activityId);
+            RegistrationView current =
+                jdbc
+                    .query(
+                        "SELECT * FROM registration WHERE id = ? FOR UPDATE",
+                        REGISTRATION_LOCK_MAPPER,
+                        registrationId)
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(RegistrationService::notFound);
+            validateBillingResult(result, current);
+            if (!recordBillingResult(result, payload, payloadHash)) {
+              return null;
+            }
+
+            String disposition;
+            if (current.status().equals("PENDING_PAYMENT")) {
+              if (current.expiresAt() == null) {
+                throw new ApiException(
+                    503, "REGISTRATION_INTEGRITY_ERROR", "Pending payment has no expiry deadline.");
+              }
+              if (!databaseNow().isBefore(current.expiresAt())) {
+                expirePaymentLocked(current, ledger);
+                disposition =
+                    result.data().status().equals("APPROVED")
+                        ? "LATE_APPROVAL"
+                        : "EXPIRED_BEFORE_RESULT";
+              } else if (result.data().status().equals("APPROVED")) {
+                int changed =
+                    jdbc.update(
+                        "UPDATE registration SET status = 'CONFIRMED', "
+                            + "version = version + 1 WHERE id = ? AND status = 'PENDING_PAYMENT'",
+                        registrationId);
+                requirePaymentTransition(changed);
+                disposition = "APPLIED_APPROVAL";
+              } else {
+                refusePaymentLocked(current, ledger);
+                disposition = "APPLIED_REFUSAL";
+              }
+            } else if (current.status().equals("EXPIRED")
+                && result.data().status().equals("APPROVED")) {
+              disposition = "LATE_APPROVAL";
+            } else {
+              disposition = "IGNORED_TERMINAL";
+            }
+            updateBillingResultDisposition(result.eventId(), disposition);
+            return null;
+          });
     } catch (DataAccessException exception) {
       throw storageUnavailable();
     }
@@ -465,6 +576,203 @@ class RegistrationService {
           });
     } catch (DataAccessException exception) {
       throw storageUnavailable();
+    }
+  }
+
+  private void expireReservation(UUID registrationId) {
+    try {
+      transaction.execute(
+          status -> {
+            UUID activityId =
+                jdbc.query(
+                    "SELECT activity_id FROM registration WHERE id = ?",
+                    resultSet ->
+                        resultSet.next() ? resultSet.getObject("activity_id", UUID.class) : null,
+                    registrationId);
+            if (activityId == null) {
+              return null;
+            }
+            Ledger ledger = lockLedger(activityId);
+            RegistrationView current =
+                jdbc
+                    .query(
+                        "SELECT * FROM registration WHERE id = ? FOR UPDATE",
+                        REGISTRATION_LOCK_MAPPER,
+                        registrationId)
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+            if (current == null
+                || !current.status().equals("PENDING_PAYMENT")
+                || current.expiresAt() == null
+                || databaseNow().isBefore(current.expiresAt())) {
+              return null;
+            }
+            expirePaymentLocked(current, ledger);
+            return null;
+          });
+    } catch (DataAccessException exception) {
+      throw storageUnavailable();
+    }
+  }
+
+  private void validateBillingResult(BillingResult result, RegistrationView registration) {
+    if (result == null
+        || result.data() == null
+        || result.eventId() == null
+        || result.correlationId() == null
+        || result.occurredAt() == null
+        || result.aggregateId() == null
+        || result.aggregateVersion() < 1
+        || !Objects.equals(result.eventType(), "billing.result")
+        || !Objects.equals(result.schemaVersion(), "1.0.0")
+        || !Objects.equals(result.producer(), "billing-mock")
+        || !Objects.equals(result.data().kind(), "PAYMENT")
+        || !Objects.equals(result.data().status(), "APPROVED")
+            && !Objects.equals(result.data().status(), "REFUSED")
+        || result.data().operationId() == null
+        || result.data().attemptId() == null
+        || !Objects.equals(result.aggregateId(), result.data().operationId())
+        || !Objects.equals(result.data().operationId(), registration.id())
+        || !Objects.equals(result.data().registrationId(), registration.id())
+        || !Objects.equals(result.data().activityId(), registration.activityId())
+        || !Objects.equals(result.data().organizationId(), registration.organizationId())
+        || result.data().amountMinor() != registration.price().amountMinor()
+        || !Objects.equals(result.data().currency(), registration.price().currency())) {
+      throw new ApiException(
+          400, "INVALID_BILLING_RESULT", "Billing result does not match payment.");
+    }
+    UUID expectedCorrelation =
+        jdbc.query(
+            "SELECT correlation_id FROM billing_outbox WHERE registration_id = ? "
+                + "AND routing_key = 'billing.requested'",
+            resultSet ->
+                resultSet.next() ? resultSet.getObject("correlation_id", UUID.class) : null,
+            registration.id());
+    if (!Objects.equals(expectedCorrelation, result.correlationId())) {
+      throw new ApiException(
+          400, "INVALID_BILLING_RESULT", "Billing result correlation does not match payment.");
+    }
+    String requestBody =
+        jdbc.query(
+            "SELECT body FROM billing_outbox WHERE registration_id = ? "
+                + "AND routing_key = 'billing.requested'",
+            resultSet -> resultSet.next() ? resultSet.getString("body") : null,
+            registration.id());
+    try {
+      String expectedAttemptId =
+          objectMapper.readTree(requestBody).path("data").path("attemptId").asText();
+      if (!Objects.equals(expectedAttemptId, result.data().attemptId().toString())) {
+        throw new ApiException(
+            400, "INVALID_BILLING_RESULT", "Billing result attempt does not match payment.");
+      }
+    } catch (JsonProcessingException exception) {
+      throw new ApiException(
+          503, "BILLING_OUTBOX_INVALID", "Stored Billing request could not be validated.");
+    }
+  }
+
+  private boolean recordBillingResult(BillingResult result, String payload, String payloadHash) {
+    List<String> existing =
+        jdbc.query(
+            "SELECT payload_hash FROM billing_result_inbox WHERE event_id = ?",
+            (row, rowNumber) -> row.getString("payload_hash"),
+            result.eventId());
+    if (!existing.isEmpty()) {
+      verifyBillingResultHash(existing.getFirst(), payloadHash);
+      return false;
+    }
+    String insert =
+        "INSERT INTO billing_result_inbox (event_id, operation_id, attempt_id, registration_id, "
+            + "payload_hash, body, disposition, received_at) "
+            + "VALUES (?, ?, ?, ?, ?, ?, 'PROCESSING', ?)";
+    int changed =
+        postgres
+            ? jdbc.update(
+                insert + " ON CONFLICT (event_id) DO NOTHING",
+                result.eventId(),
+                result.data().operationId(),
+                result.data().attemptId(),
+                result.data().registrationId(),
+                payloadHash,
+                payload,
+                databaseNow())
+            : jdbc.update(
+                insert,
+                result.eventId(),
+                result.data().operationId(),
+                result.data().attemptId(),
+                result.data().registrationId(),
+                payloadHash,
+                payload,
+                databaseNow());
+    if (changed == 1) {
+      return true;
+    }
+    String existingHash =
+        jdbc.queryForObject(
+            "SELECT payload_hash FROM billing_result_inbox WHERE event_id = ?",
+            String.class,
+            result.eventId());
+    verifyBillingResultHash(existingHash, payloadHash);
+    return false;
+  }
+
+  private void verifyBillingResultHash(String existingHash, String payloadHash) {
+    if (!existingHash.equals(payloadHash)) {
+      throw new ApiException(
+          409, "BILLING_EVENT_ID_CONFLICT", "Billing event ID was reused with different content.");
+    }
+  }
+
+  private void updateBillingResultDisposition(UUID eventId, String disposition) {
+    int changed =
+        jdbc.update(
+            "UPDATE billing_result_inbox SET disposition = ? WHERE event_id = ?",
+            disposition,
+            eventId);
+    if (changed != 1) {
+      throw new ApiException(
+          503,
+          "BILLING_INBOX_INTEGRITY_ERROR",
+          "Billing result disposition could not be recorded.");
+    }
+  }
+
+  private void refusePaymentLocked(RegistrationView current, Ledger ledger) {
+    int changed =
+        jdbc.update(
+            "UPDATE registration SET status = 'REFUSED', version = version + 1 "
+                + "WHERE id = ? AND status = 'PENDING_PAYMENT'",
+            current.id());
+    requirePaymentTransition(changed);
+    int occupied = release(ledger);
+    updateOccupied(current.activityId(), ledger.occupied(), occupied);
+    promoteNext(current.activityId(), ledger.capacity(), occupied);
+  }
+
+  private void expirePaymentLocked(RegistrationView current, Ledger ledger) {
+    int changed =
+        jdbc.update(
+            "UPDATE registration SET status = 'EXPIRED', version = version + 1 "
+                + "WHERE id = ? AND status = 'PENDING_PAYMENT'",
+            current.id());
+    requirePaymentTransition(changed);
+    int occupied = release(ledger);
+    updateOccupied(current.activityId(), ledger.occupied(), occupied);
+    jdbc.update(
+        "UPDATE billing_outbox SET suppressed_at = COALESCE(suppressed_at, ?) "
+            + "WHERE registration_id = ? AND routing_key = 'billing.requested' "
+            + "AND published_at IS NULL",
+        databaseNow(),
+        current.id());
+    promoteNext(current.activityId(), ledger.capacity(), occupied);
+  }
+
+  private void requirePaymentTransition(int changed) {
+    if (changed != 1) {
+      throw new ApiException(
+          503, "REGISTRATION_INTEGRITY_ERROR", "Pending payment changed unexpectedly.");
     }
   }
 
@@ -577,6 +885,46 @@ class RegistrationService {
       return waitlistPolicy.nextSequence(highest == null ? 0 : highest);
     } catch (IllegalStateException exception) {
       throw new ApiException(503, "WAITLIST_INTEGRITY_ERROR", "Waitlist sequence is inconsistent.");
+    }
+  }
+
+  private void insertBillingRequest(RegistrationView registration, UUID correlationId) {
+    UUID eventId = UUID.randomUUID();
+    BillingRequest request =
+        new BillingRequest(
+            eventId,
+            "billing.requested",
+            "1.0.0",
+            registration.id(),
+            1,
+            correlationId,
+            registration.createdAt(),
+            "registration",
+            new BillingRequestData(
+                registration.id(),
+                UUID.randomUUID(),
+                "PAYMENT",
+                registration.id(),
+                registration.activityId(),
+                registration.organizationId(),
+                registration.participantId(),
+                registration.price().amountMinor(),
+                registration.price().currency(),
+                registration.expiresAt()));
+    try {
+      jdbc.update(
+          "INSERT INTO billing_outbox (event_id, registration_id, routing_key, correlation_id, "
+              + "body, created_at, available_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          eventId,
+          registration.id(),
+          "billing.requested",
+          correlationId,
+          objectMapper.writeValueAsString(request),
+          registration.createdAt(),
+          registration.createdAt());
+    } catch (JsonProcessingException exception) {
+      throw new ApiException(
+          500, "EVENT_SERIALIZATION_FAILED", "Billing request could not be persisted.");
     }
   }
 

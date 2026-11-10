@@ -1,0 +1,100 @@
+batch_id: "T027-T028-T030"
+completed_tasks: ["T027", "T028", "T030"]
+blocked_tasks: []
+required_endpoints:
+  - method: POST
+    path: /registrations
+    source: docs/contracts/openapi/registration.yaml
+    status: implemented
+  - method: POST
+    path: /registrations/{id}/accept-offer
+    source: docs/contracts/openapi/registration.yaml
+    status: implemented
+  - method: GET
+    path: /registrations/{id}
+    source: docs/contracts/openapi/registration.yaml
+    status: implemented
+endpoint_probes:
+  - method: POST
+    path: /registrations
+    status: 201
+    result: "PASS (live paid registration persisted as PENDING_PAYMENT)"
+  - method: GET
+    path: /registrations/{id}
+    status: 200
+    result: "PASS (live Billing approval transitioned the registration to CONFIRMED)"
+runtime_probes:
+  - method: GET
+    path: /actuator/health
+    status: 200
+    result: "PASS (Registration runtime backed by PostgreSQL)"
+database_probes:
+  - check: "Registration Flyway migration history"
+    result: "PASS (V4 billing outbox, V5 result inbox/suppression, and V6 result-payload retention applied; schema at v6)"
+files_changed:
+  T027:
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationContractTest.java", change_type: "modified", description: "Added outbox, publisher confirmation/NACK, Billing result approval/refusal, attempt correlation, duplicate, expiry, late approval and quarantine identity/acknowledgment tests."}
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/WaitlistContractTest.java", change_type: "modified", description: "Verified paid-offer acceptance creates one idempotent Billing request."}
+    - {file: "services/registration-java/src/test/resources/schema-test.sql", change_type: "modified", description: "Added Billing outbox suppression and result inbox test schema."}
+    - {file: "mocks/billing/tests/test_billing_processor.py", change_type: "modified", description: "Added late-approval behavior coverage for the Billing mock."}
+  T028:
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationService.java", change_type: "modified", description: "Persists Billing requests atomically with paid registration and paid-offer transitions."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationController.java", change_type: "modified", description: "Propagates request correlation IDs into paid offer acceptance."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationModels.java", change_type: "modified", description: "Defines versioned Billing request and result envelopes."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/BillingOutboxPublisher.java", change_type: "added", description: "Claims durable outbox rows, sends persistent messages with stable identity, waits for confirms/returns and records capped retries."}
+    - {file: "services/registration-java/src/main/resources/application.yaml", change_type: "modified", description: "Enables correlated publisher confirms, mandatory returns and routability checks."}
+    - {file: "services/registration-java/src/main/resources/db/migration/V4__registration_billing_outbox.sql", change_type: "added", description: "Creates the transactional Billing request outbox."}
+  T030:
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/BillingResultConsumer.java", change_type: "added", description: "Consumes result messages, quarantines invalid results with confirms and acknowledges only after durable processing."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationExpiryScheduler.java", change_type: "modified", description: "Schedules pending-payment expiry alongside offer expiry."}
+    - {file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationService.java", change_type: "modified", description: "Applies correlated results under activity locks, deduplicates inbox events, releases/promotes once, and records late approvals."}
+    - {file: "services/registration-java/src/main/resources/db/migration/V5__registration_billing_results.sql", change_type: "added", description: "Adds unpublished-request suppression and the durable Billing result inbox."}
+    - {file: "services/registration-java/src/main/resources/db/migration/V6__retain_billing_result_payload.sql", change_type: "added", description: "Retains complete Billing result payloads for audit and manual compensation."}
+    - {file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationApplicationTest.java", change_type: "modified", description: "Provides the RabbitTemplate mock required by the outbox and result-consumer beans."}
+    - {file: "services/README.md", change_type: "modified", description: "Documents Billing outbox, inbox, expiry and migration behavior."}
+    - {file: "docs/architecture/paid-registration-flow.md", change_type: "modified", description: "Documents result correlation, inbox deduplication and database-clock expiry behavior."}
+    - {file: "plan.md", change_type: "modified", description: "Marked T027, T028 and T030 complete."}
+    - {file: "checkpoints/tasks-to-impl.yaml", change_type: "modified", description: "Updated task traceability, completion totals and verification evidence."}
+    - {file: "checkpoints/batch-report-T027-T028-T030.yaml", change_type: "added", description: "Recorded batch scope, requirement mapping and validation results."}
+upstream_artifacts_consumed:
+  - {artifact: "plan.md", used_for: "T027/T028/T030 scope and Phase 4.3 order; completed T029 Billing mock prerequisite."}
+  - {artifact: "docs/contracts/asyncapi/eventhub.yaml", used_for: "Billing request/result routing, envelope and versioned message shapes."}
+  - {artifact: "docs/contracts/schemas/billing-request.json", used_for: "Persisted request payload fields and operation/attempt identity."}
+  - {artifact: "docs/contracts/schemas/billing-result.json", used_for: "Result validation and payment result fields."}
+  - {artifact: "docs/adr/ADR-003-registration-consistency.md", used_for: "Activity-lock order, database-time deadlines and atomic transitions."}
+  - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "Outbox confirms, inbox deduplication, manual acknowledgment, quarantine and expiry suppression."}
+traceability:
+  - {requirement: "RF07, RN02, RN03, RQ03, RQ04, RQ05", plan_item: "4.3", task: "T027-T028-T030", files: ["services/registration-java/src", "mocks/billing/tests"], status: "completed"}
+test_results:
+  registration_java:
+    command: "docker run --rm --network=host -v \"$PWD/services/registration-java:/workspace\" -v /tmp/registration-m2:/root/.m2 -w /workspace maven:3.9.9-eclipse-temurin-21 mvn -B -ff spotless:apply test"
+    passed: 26
+    failed: 0
+    skipped: 0
+  repository_python:
+    command: "python -m pytest -x --import-mode=importlib (in isolated project test environment)"
+    passed: 112
+    failed: 0
+    skipped: 0
+  compose_test_profile:
+    command: "docker compose --env-file infra/.env -f infra/docker-compose.yml --profile test build"
+    passed: 146
+    failed: 0
+    skipped: 0
+    result: "PASS (26 Registration Java, 8 Event Management Java and 112 repository Python tests; all service, mock and repository test stages built successfully)"
+  live_payment_flow:
+    result: "PASS (published a paid activity, created a PENDING_PAYMENT registration and observed CONFIRMED after Billing approval through RabbitMQ)"
+validation:
+  compose_config: "PASS"
+  compose_test_profile_build: "PASS"
+  registration_flyway_v6: "PASS"
+  registration_runtime_health: "PASS (200)"
+  live_billing_result: "PASS"
+warnings:
+  - severity: LOW
+    message: "Repository Python tests passed with one existing Starlette/AnyIO BlockingPortal deprecation warning."
+  - severity: LOW
+    message: "Compose warned that buildx is unavailable and used its default Docker builder; all requested builds completed successfully."
+  - severity: LOW
+    message: "The first host pytest attempt lacked the declared project dependencies; dependencies were installed into a temporary virtual environment and all 112 tests then passed."
+errors: []

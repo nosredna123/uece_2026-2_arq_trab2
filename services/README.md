@@ -30,17 +30,26 @@ and FIFO waitlisting. Releasing a slot automatically offers it to the next
 waiter; offers can be accepted through the Registration API and expire after
 the configured `WAITLIST_OFFER_EXPIRY_MINUTES` deadline. A scheduled worker
 expires overdue offers and promotes the next waiter without exceeding frozen
-activity capacity. T027-T030 extend it with outbox publishing and payment
-result/expiry processing. Runtime requires explicit database, migration and
-RabbitMQ credentials and checks dependency health. Typed settings validate
-required business/integration configuration before startup; see the root README.
+activity capacity. Paid reservations atomically persist a Billing request in
+Registration's outbox. Publisher confirms, persistent messages, stable event and
+attempt identities, and capped retry delays make request publication replayable.
+Billing results are correlated and deduplicated in the Registration inbox before
+manual acknowledgment; approvals confirm only live reservations, while refusal
+and database-clock expiry release a slot once and promote the next waiter. Late
+approvals are recorded for manual compensation, and unpublished requests for
+expired reservations are suppressed. Runtime requires explicit database,
+migration and RabbitMQ credentials and checks dependency health. Typed settings
+validate required business/integration configuration before startup; see the
+root README.
 
 Flyway V1 creates owner-local event/activity or capacity/enrollment tables.
 Event Management V2 adds frozen-capacity state and durable command receipts;
 V3 adds bounded database locks for concurrent idempotent commands. Registration
 V2 adds durable command receipts for idempotent enrollment and cancellation;
-V3 adds FIFO waitlist sequencing. Later migrations must be new versions, never
-edits to already applied SQL.
+V3 adds FIFO waitlist sequencing, V4 adds the Billing request outbox, V5 adds
+expired-request suppression and the Billing result inbox, and V6 retains the
+complete result payload for late-payment reconciliation. Later migrations must
+be new versions, never edits to already applied SQL.
 Runtime credentials differ from migration credentials; provisioning/grants are
 the responsibility of the Compose foundation.
 

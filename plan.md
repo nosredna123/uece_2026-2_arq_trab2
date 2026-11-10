@@ -295,10 +295,10 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 - [x] T024 [US2] [Plan:4.1] Implementar reserva atômica/idempotente, consulta de estado, cancelamento e atividade gratuita conforme os testes em `services/registration-java/src/`, aplicando o mecanismo decidido no ADR-003.
 - [x] T025 [US2] [Plan:4.2] Escrever testes property-based e concorrentes para ordenação da fila, cancelamento, expiração e oferta de vaga em `services/registration-java/src/test/`.
 - [x] T026 [US2] [Plan:4.2] Implementar lista de espera ordenada, promoção automática e prazo configurável para aceitar oferta em `services/registration-java/src/`, conforme os testes.
-- [ ] T027 [US2] [Plan:4.3] Escrever testes para outbox, Billing fake, resultados aprovados/recusados/timeout, duplicidade, expiração e transições em `services/registration-java/src/test/` e `mocks/billing/tests/`.
-- [ ] T028 [Plan:4.3] Implementar outbox transacional e publicação idempotente de solicitação de pagamento em `services/registration-java/src/`, conforme os testes.
+- [x] T027 [US2] [Plan:4.3] Escrever testes para outbox, Billing fake, resultados aprovados/recusados/timeout, duplicidade, expiração e transições em `services/registration-java/src/test/` e `mocks/billing/tests/`.
+- [x] T028 [Plan:4.3] Implementar outbox transacional e publicação idempotente de solicitação de pagamento em `services/registration-java/src/`, conforme os testes.
 - [x] T029 [US2] [Plan:4.3] Implementar Billing fake em `mocks/billing/`, consumindo pedidos e publicando resultados de aprovação/recusa/timeout conforme AsyncAPI e configuração de ambiente.
-- [ ] T030 [US2] [Plan:4.3] Implementar consumo do resultado, confirmação somente após aprovação e expiração com prazo padrão de 30 minutos configurável em `services/registration-java/src/`; liberar reservas recusadas/expiradas uma única vez.
+- [x] T030 [US2] [Plan:4.3] Implementar consumo do resultado, confirmação somente após aprovação e expiração com prazo padrão de 30 minutos configurável em `services/registration-java/src/`; liberar reservas recusadas/expiradas uma única vez.
 - [x] T031 [US2] [Plan:4.4] Escrever testes de idempotência, indisponibilidade e reprocessamento para Notification fake em `mocks/notification/tests/` e `tests/integration/`.
 - [x] T032 [US2] [Plan:4.4] Implementar fake assíncrono de Notification em `mocks/notification/`, registrando entregas simuladas e permitindo simular indisponibilidade sem bloquear o fluxo de inscrição.
 

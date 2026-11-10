@@ -67,11 +67,12 @@ sequenceDiagram
   end
 ```
 
-The diagram states business-level interactions, not wire-level contracts.
-HTTP paths, identity-token format, event names/schemas and routing keys remain
-for contract tasks T010-T012. [ADR-002](../adr/ADR-002-data-ownership.md) now
-selects an idempotent, frozen capacity snapshot from Event Management before
-admission; capacity cannot change after activation.
+The diagram states business-level interactions, not wire-level contracts. The
+implemented request/result envelope and routing keys are defined in the
+[AsyncAPI contract](../contracts/asyncapi/eventhub.yaml).
+[ADR-002](../adr/ADR-002-data-ownership.md) selects an idempotent, frozen
+capacity snapshot from Event Management before admission; capacity cannot
+change after activation.
 [ADR-003](../adr/ADR-003-registration-consistency.md) selects a per-activity
 Registration row lock and atomic state/idempotency/outbox writes.
 [ADR-004](../adr/ADR-004-messaging-and-resilience.md) selects publisher confirms,
@@ -104,6 +105,15 @@ wire-level details remain for T010-T012/T016.
    concerns: only the Billing outcome determines paid-registration
    confirmation. Notification and Reporting are not synchronous gates for
    that outcome.
+9. Registration stores each accepted Billing result in its inbox in the same
+   transaction as the state transition. Its event identity is retained for
+   deduplication; operation, attempt and correlation identities must match the
+   persisted payment request. A duplicate event is acknowledged without
+   repeating the transition.
+10. The scheduled expiry worker rechecks the deadline with database time after
+    locking the activity and registration. It suppresses unpublished payment
+    requests and releases/promotes exactly once; a later approval is retained
+    as a manual-compensation disposition, never as a confirmation.
 
 ## Failure and recovery behavior
 

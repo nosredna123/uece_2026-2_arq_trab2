@@ -15,4 +15,9 @@ class RegistrationExpiryScheduler {
   void expireOffers() {
     service.expireOffers();
   }
+
+  @Scheduled(fixedDelay = 30_000)
+  void expireReservations() {
+    service.expireReservations();
+  }
 }

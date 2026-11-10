@@ -43,3 +43,48 @@ record AvailabilityView(
 record CommandResult(int status, RegistrationView body) {}
 
 record ErrorView(String code, String message, String correlationId) {}
+
+record BillingRequest(
+    UUID eventId,
+    String eventType,
+    String schemaVersion,
+    UUID aggregateId,
+    long aggregateVersion,
+    UUID correlationId,
+    OffsetDateTime occurredAt,
+    String producer,
+    BillingRequestData data) {}
+
+record BillingRequestData(
+    UUID operationId,
+    UUID attemptId,
+    String kind,
+    UUID registrationId,
+    UUID activityId,
+    UUID organizationId,
+    UUID participantId,
+    long amountMinor,
+    String currency,
+    OffsetDateTime expiresAt) {}
+
+record BillingResult(
+    UUID eventId,
+    String eventType,
+    String schemaVersion,
+    UUID aggregateId,
+    long aggregateVersion,
+    UUID correlationId,
+    OffsetDateTime occurredAt,
+    String producer,
+    BillingResultData data) {}
+
+record BillingResultData(
+    UUID operationId,
+    UUID attemptId,
+    String kind,
+    UUID registrationId,
+    UUID activityId,
+    UUID organizationId,
+    String status,
+    long amountMinor,
+    String currency) {}

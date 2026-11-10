@@ -1,15 +1,30 @@
 package br.uece.eventhub.registration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.client.Channel;
+import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageDeliveryMode;
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -39,12 +54,20 @@ class RegistrationContractTest {
       UUID.fromString("30000000-0000-0000-0000-000000000002");
 
   @Autowired private TestRestTemplate client;
+  @Autowired private ObjectMapper objectMapper;
   @Autowired private JdbcTemplate jdbc;
+  @Autowired private BillingOutboxPublisher outboxPublisher;
+  @Autowired private BillingResultConsumer billingResultConsumer;
+  @Autowired private RegistrationService service;
   @MockBean private IdentityClient identityClient;
   @MockBean private EventManagementClient eventManagementClient;
+  @MockBean private RabbitTemplate rabbitTemplate;
 
   @BeforeEach
   void setUp() {
+    jdbc.update("DELETE FROM billing_result_inbox");
+    jdbc.update("DELETE FROM billing_outbox");
+    jdbc.update("DELETE FROM waitlist_entry");
     jdbc.update("DELETE FROM command_receipt");
     jdbc.update("DELETE FROM registration");
     jdbc.update("DELETE FROM activity_ledger");
@@ -69,6 +92,7 @@ class RegistrationContractTest {
     assertThat(retry.getStatusCode().value()).isEqualTo(201);
     assertThat(retry.getBody().path("id").asText()).isEqualTo(first.getBody().path("id").asText());
     assertThat(occupied(ACTIVITY_ID)).isEqualTo(1);
+    assertThat(outboxCount()).isZero();
   }
 
   @Test
@@ -188,6 +212,282 @@ class RegistrationContractTest {
   }
 
   @Test
+  void paidRegistrationWritesOneStableBillingRequestBeforeIdempotentReplay() throws Exception {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+
+    ResponseEntity<JsonNode> first = create(ACTIVITY_ID, "paid-outbox", "participant-token");
+    ResponseEntity<JsonNode> replay = create(ACTIVITY_ID, "paid-outbox", "participant-token");
+    UUID registrationId = UUID.fromString(first.getBody().path("id").asText());
+    String body =
+        jdbc.queryForObject(
+            "SELECT body FROM billing_outbox WHERE registration_id = ?",
+            String.class,
+            registrationId);
+    JsonNode request = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body);
+
+    assertThat(first.getStatusCode().value()).isEqualTo(201);
+    assertThat(replay.getBody().path("id").asText()).isEqualTo(registrationId.toString());
+    assertThat(outboxCount()).isEqualTo(1);
+    assertThat(request.path("eventType").asText()).isEqualTo("billing.requested");
+    assertThat(request.path("producer").asText()).isEqualTo("registration");
+    assertThat(request.path("aggregateId").asText()).isEqualTo(registrationId.toString());
+    assertThat(request.path("data").path("operationId").asText())
+        .isEqualTo(registrationId.toString());
+    assertThat(request.path("data").path("registrationId").asText())
+        .isEqualTo(registrationId.toString());
+    assertThat(request.path("data").path("amountMinor").asLong()).isEqualTo(2500);
+    assertThat(request.path("data").path("expiresAt").asText()).isNotBlank();
+    assertThat(request.path("correlationId").asText()).isNotBlank();
+  }
+
+  @Test
+  void confirmedOutboxPublicationUsesPersistentMessageIdentity() {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+    ResponseEntity<JsonNode> created = create(ACTIVITY_ID, "publish-outbox", "participant-token");
+    UUID registrationId = UUID.fromString(created.getBody().path("id").asText());
+    doAnswer(
+            invocation -> {
+              CorrelationData correlationData = invocation.getArgument(3);
+              correlationData.getFuture().complete(new CorrelationData.Confirm(true, null));
+              return null;
+            })
+        .when(rabbitTemplate)
+        .send(
+            eq("eventhub.v1"),
+            eq("billing.requested"),
+            any(Message.class),
+            any(CorrelationData.class));
+
+    int published = outboxPublisher.publishPending();
+    ArgumentCaptor<Message> message = ArgumentCaptor.forClass(Message.class);
+    verify(rabbitTemplate)
+        .send(
+            eq("eventhub.v1"),
+            eq("billing.requested"),
+            message.capture(),
+            any(CorrelationData.class));
+
+    assertThat(published).isEqualTo(1);
+    assertThat(message.getValue().getMessageProperties().getDeliveryMode())
+        .isEqualTo(MessageDeliveryMode.PERSISTENT);
+    assertThat(message.getValue().getMessageProperties().getMessageId()).isNotBlank();
+    assertThat(message.getValue().getMessageProperties().getCorrelationId()).isNotBlank();
+    assertThat(outboxCount()).isZero();
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM billing_outbox "
+                    + "WHERE registration_id = ? AND published_at IS NOT NULL",
+                Integer.class,
+                registrationId))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void unconfirmedOutboxPublicationRemainsRetryable() {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+    create(ACTIVITY_ID, "unconfirmed-outbox", "participant-token");
+    doAnswer(
+            invocation -> {
+              CorrelationData correlationData = invocation.getArgument(3);
+              correlationData.getFuture().complete(new CorrelationData.Confirm(false, "nack"));
+              return null;
+            })
+        .when(rabbitTemplate)
+        .send(
+            eq("eventhub.v1"),
+            eq("billing.requested"),
+            any(Message.class),
+            any(CorrelationData.class));
+
+    assertThat(outboxPublisher.publishPending()).isZero();
+    assertThat(outboxCount()).isEqualTo(1);
+  }
+
+  @Test
+  void approvalConfirmsPaymentAndDuplicateResultsDoNotChangeCapacity() {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+    ResponseEntity<JsonNode> created = create(ACTIVITY_ID, "approved-payment", "participant-token");
+    UUID registrationId = UUID.fromString(created.getBody().path("id").asText());
+    BillingResult result = billingResult(registrationId, "APPROVED", UUID.randomUUID());
+
+    service.applyBillingResult(result);
+    service.applyBillingResult(result);
+
+    assertThat(status(registrationId)).isEqualTo("CONFIRMED");
+    assertThat(occupied(ACTIVITY_ID)).isEqualTo(1);
+    assertThat(inboxDisposition(result.eventId())).isEqualTo("APPLIED_APPROVAL");
+  }
+
+  @Test
+  void refusalReleasesReservationOnceAndPermitsAnotherParticipant() {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+    ResponseEntity<JsonNode> created = create(ACTIVITY_ID, "refused-payment", "participant-token");
+    UUID registrationId = UUID.fromString(created.getBody().path("id").asText());
+    BillingResult result = billingResult(registrationId, "REFUSED", UUID.randomUUID());
+
+    service.applyBillingResult(result);
+    service.applyBillingResult(result);
+    service.applyBillingResult(billingResult(registrationId, "REFUSED", UUID.randomUUID()));
+
+    assertThat(status(registrationId)).isEqualTo("REFUSED");
+    assertThat(occupied(ACTIVITY_ID)).isZero();
+    ResponseEntity<JsonNode> next = create(ACTIVITY_ID, "after-refusal", "other-participant-token");
+    assertThat(next.getStatusCode().value()).isEqualTo(201);
+    assertThat(occupied(ACTIVITY_ID)).isEqualTo(1);
+  }
+
+  @Test
+  void expiredReservationReleasesOnceAndLateApprovalIsRecordedWithoutReconfirmation() {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+    ResponseEntity<JsonNode> created = create(ACTIVITY_ID, "expired-payment", "participant-token");
+    UUID registrationId = UUID.fromString(created.getBody().path("id").asText());
+    jdbc.update(
+        "UPDATE registration SET expires_at = ? WHERE id = ?",
+        OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(1),
+        registrationId);
+
+    service.expireReservations();
+    service.expireReservations();
+    BillingResult lateApproval = billingResult(registrationId, "APPROVED", UUID.randomUUID());
+    service.applyBillingResult(lateApproval);
+
+    assertThat(status(registrationId)).isEqualTo("EXPIRED");
+    assertThat(occupied(ACTIVITY_ID)).isZero();
+    assertThat(inboxDisposition(lateApproval.eventId())).isEqualTo("LATE_APPROVAL");
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT body FROM billing_result_inbox WHERE event_id = ?",
+                String.class,
+                lateApproval.eventId()))
+        .contains("\"status\":\"APPROVED\"");
+    assertThat(outboxCount()).isZero();
+    ResponseEntity<JsonNode> next = create(ACTIVITY_ID, "after-expiry", "other-participant-token");
+    assertThat(next.getStatusCode().value()).isEqualTo(201);
+    assertThat(occupied(ACTIVITY_ID)).isEqualTo(1);
+  }
+
+  @Test
+  void rejectsBillingResultForAnotherPaymentAttempt() {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+    ResponseEntity<JsonNode> created =
+        create(ACTIVITY_ID, "wrong-payment-attempt", "participant-token");
+    UUID registrationId = UUID.fromString(created.getBody().path("id").asText());
+    BillingResult result = billingResult(registrationId, "APPROVED", UUID.randomUUID());
+    BillingResult mismatchedAttempt =
+        new BillingResult(
+            result.eventId(),
+            result.eventType(),
+            result.schemaVersion(),
+            result.aggregateId(),
+            result.aggregateVersion(),
+            result.correlationId(),
+            result.occurredAt(),
+            result.producer(),
+            new BillingResultData(
+                result.data().operationId(),
+                UUID.randomUUID(),
+                result.data().kind(),
+                result.data().registrationId(),
+                result.data().activityId(),
+                result.data().organizationId(),
+                result.data().status(),
+                result.data().amountMinor(),
+                result.data().currency()));
+
+    assertThatThrownBy(() -> service.applyBillingResult(mismatchedAttempt))
+        .isInstanceOf(ApiException.class)
+        .hasMessageContaining("attempt does not match");
+    assertThat(status(registrationId)).isEqualTo("PENDING_PAYMENT");
+    assertThat(occupied(ACTIVITY_ID)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM billing_result_inbox", Integer.class))
+        .isZero();
+  }
+
+  @Test
+  void quarantinesBillingMessageWhenTransportIdentityDoesNotMatchEnvelope() throws Exception {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+    ResponseEntity<JsonNode> created =
+        create(ACTIVITY_ID, "transport-identity-mismatch", "participant-token");
+    UUID registrationId = UUID.fromString(created.getBody().path("id").asText());
+    BillingResult result = billingResult(registrationId, "APPROVED", UUID.randomUUID());
+    MessageProperties sourceProperties = new MessageProperties();
+    sourceProperties.setDeliveryTag(24);
+    sourceProperties.setMessageId(UUID.randomUUID().toString());
+    sourceProperties.setCorrelationId(result.correlationId().toString());
+    Message source = new Message(objectMapper.writeValueAsBytes(result), sourceProperties);
+    Channel channel = org.mockito.Mockito.mock(Channel.class);
+    doAnswer(
+            invocation -> {
+              CorrelationData correlationData = invocation.getArgument(3);
+              correlationData.getFuture().complete(new CorrelationData.Confirm(true, null));
+              return null;
+            })
+        .when(rabbitTemplate)
+        .send(
+            eq("eventhub.v1"),
+            eq("registration.v1.quarantine"),
+            any(Message.class),
+            any(CorrelationData.class));
+
+    billingResultConsumer.consume(source, channel);
+
+    ArgumentCaptor<Message> quarantined = ArgumentCaptor.forClass(Message.class);
+    verify(rabbitTemplate)
+        .send(
+            eq("eventhub.v1"),
+            eq("registration.v1.quarantine"),
+            quarantined.capture(),
+            any(CorrelationData.class));
+    assertThat(quarantined.getValue().getMessageProperties().getHeaders())
+        .containsEntry("x-error-code", "INVALID_BILLING_RESULT");
+    verify(channel).basicAck(24, false);
+  }
+
+  @Test
+  void quarantinesInvalidBillingMessageBeforeAcknowledgingIt() throws Exception {
+    MessageProperties sourceProperties = new MessageProperties();
+    sourceProperties.setDeliveryTag(23);
+    sourceProperties.setMessageId("invalid-billing-result");
+    Message source = new Message("{".getBytes(StandardCharsets.UTF_8), sourceProperties);
+    Channel channel = org.mockito.Mockito.mock(Channel.class);
+    doAnswer(
+            invocation -> {
+              CorrelationData correlationData = invocation.getArgument(3);
+              correlationData.getFuture().complete(new CorrelationData.Confirm(true, null));
+              return null;
+            })
+        .when(rabbitTemplate)
+        .send(
+            eq("eventhub.v1"),
+            eq("registration.v1.quarantine"),
+            any(Message.class),
+            any(CorrelationData.class));
+
+    billingResultConsumer.consume(source, channel);
+
+    ArgumentCaptor<Message> quarantined = ArgumentCaptor.forClass(Message.class);
+    verify(rabbitTemplate)
+        .send(
+            eq("eventhub.v1"),
+            eq("registration.v1.quarantine"),
+            quarantined.capture(),
+            any(CorrelationData.class));
+    assertThat(quarantined.getValue().getMessageProperties().getMessageId())
+        .isEqualTo("invalid-billing-result");
+    assertThat(quarantined.getValue().getMessageProperties().getHeaders())
+        .containsEntry("x-error-code", "INVALID_BILLING_RESULT");
+    verify(channel).basicAck(23, false);
+  }
+
+  @Test
   void rejectsACompetingLastSlotRequestWithoutOverbooking() {
     when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
         .thenReturn(admission(ACTIVITY_ID, 1, 0));
@@ -222,6 +522,54 @@ class RegistrationContractTest {
         "SELECT occupied FROM activity_ledger WHERE activity_id = ?",
         resultSet -> resultSet.next() ? resultSet.getInt("occupied") : 0,
         activityId);
+  }
+
+  private int outboxCount() {
+    return jdbc.queryForObject(
+        "SELECT COUNT(*) FROM billing_outbox WHERE published_at IS NULL AND suppressed_at IS NULL",
+        Integer.class);
+  }
+
+  private String status(UUID registrationId) {
+    return jdbc.queryForObject(
+        "SELECT status FROM registration WHERE id = ?", String.class, registrationId);
+  }
+
+  private String inboxDisposition(UUID eventId) {
+    return jdbc.queryForObject(
+        "SELECT disposition FROM billing_result_inbox WHERE event_id = ?", String.class, eventId);
+  }
+
+  private BillingResult billingResult(UUID registrationId, String status, UUID eventId) {
+    String requestBody =
+        jdbc.queryForObject(
+            "SELECT body FROM billing_outbox WHERE registration_id = ?",
+            String.class,
+            registrationId);
+    try {
+      JsonNode request = new com.fasterxml.jackson.databind.ObjectMapper().readTree(requestBody);
+      return new BillingResult(
+          eventId,
+          "billing.result",
+          "1.0.0",
+          registrationId,
+          2,
+          UUID.fromString(request.path("correlationId").asText()),
+          OffsetDateTime.now(ZoneOffset.UTC),
+          "billing-mock",
+          new BillingResultData(
+              registrationId,
+              UUID.fromString(request.path("data").path("attemptId").asText()),
+              "PAYMENT",
+              registrationId,
+              ACTIVITY_ID,
+              ORGANIZATION_ID,
+              status,
+              2500,
+              "USD"));
+    } catch (com.fasterxml.jackson.core.JsonProcessingException exception) {
+      throw new AssertionError(exception);
+    }
   }
 
   private AdmissionSnapshot admission(UUID activityId, int capacity, long amountMinor) {

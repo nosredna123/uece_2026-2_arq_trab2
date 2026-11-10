@@ -47,7 +47,13 @@ class RegistrationController {
     }
     AdmissionSnapshot snapshot =
         eventManagementClient.activateOrValidateAdmission(input.activityId(), correlationId);
-    CommandResult result = service.create(principal, idempotencyKey, input.activityId(), snapshot);
+    CommandResult result =
+        service.create(
+            principal,
+            idempotencyKey,
+            input.activityId(),
+            snapshot,
+            UUID.fromString(correlationId));
     return ResponseEntity.status(result.status()).body(result.body());
   }
 
@@ -92,7 +98,9 @@ class RegistrationController {
     UUID activityId = service.activityIdForOwnOffer(principal.subjectId(), id);
     AdmissionSnapshot snapshot =
         eventManagementClient.activateOrValidateAdmission(activityId, correlationId);
-    CommandResult result = service.acceptOffer(principal, idempotencyKey, id, snapshot);
+    CommandResult result =
+        service.acceptOffer(
+            principal, idempotencyKey, id, snapshot, UUID.fromString(correlationId));
     return ResponseEntity.status(result.status()).body(result.body());
   }
 

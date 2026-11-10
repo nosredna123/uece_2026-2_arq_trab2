@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -44,9 +45,11 @@ class WaitlistContractTest {
   @Autowired private RegistrationService service;
   @MockBean private IdentityClient identityClient;
   @MockBean private EventManagementClient eventManagementClient;
+  @MockBean private RabbitTemplate rabbitTemplate;
 
   @BeforeEach
   void setUp() {
+    jdbc.update("DELETE FROM billing_outbox");
     jdbc.update("DELETE FROM command_receipt");
     jdbc.update("DELETE FROM waitlist_entry");
     jdbc.update("DELETE FROM registration");
@@ -176,11 +179,25 @@ class WaitlistContractTest {
             request("paid-waiter", "accept-paid-offer", null),
             JsonNode.class,
             waiterId);
+    ResponseEntity<JsonNode> replayed =
+        client.exchange(
+            "/registrations/{id}/accept-offer",
+            HttpMethod.POST,
+            request("paid-waiter", "accept-paid-offer", null),
+            JsonNode.class,
+            waiterId);
 
     assertThat(accepted.getStatusCode().value()).isEqualTo(200);
     assertThat(accepted.getBody().path("status").asText()).isEqualTo("PENDING_PAYMENT");
     assertThat(accepted.getBody().path("expiresAt").asText()).isNotBlank();
     assertThat(accepted.getBody().path("offerExpiresAt").isNull()).isTrue();
+    assertThat(replayed.getBody().path("id").asText()).isEqualTo(waiterId.toString());
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM billing_outbox WHERE registration_id = ?",
+                Integer.class,
+                waiterId))
+        .isEqualTo(1);
     assertThat(occupied()).isEqualTo(CAPACITY);
   }
 

@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 44
-  completed_tasks: 29
+  completed_tasks: 32
   in_progress_tasks: 0
-  pending_tasks: 15
-  completion_percentage: 65.91
+  pending_tasks: 12
+  completion_percentage: 72.73
 
 tasks:
   - task_id: "T001"
@@ -721,6 +721,52 @@ tasks:
       requirements: ["RF06", "RN01", "RN03", "RN04", "RQ04"]
       full_trace: "RF06/RN01/RN03-RN04/RQ04 -> Phase-4.2 -> T026 -> PostgreSQL-owned FIFO waitlist, slot offers, acceptance and expiry"
 
+  - task_id: "T027"
+    description: "Escrever testes para outbox, Billing fake, resultados aprovados/recusados/timeout, duplicidade, expiração e transições."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/registration-java/src/test/java/br/uece/eventhub/registration/RegistrationContractTest.java"
+        - file: "services/registration-java/src/test/java/br/uece/eventhub/registration/WaitlistContractTest.java"
+        - file: "services/registration-java/src/test/resources/schema-test.sql"
+        - file: "mocks/billing/tests/test_billing_processor.py"
+    verification:
+      build_passed: true
+      test_results:
+        command: "Registration Maven tests; python -m pytest -x --import-mode=importlib"
+        passed: 137
+        failed: 0
+        skipped: 0
+      notes: "Coverage includes transactional paid-request outbox persistence/replay, publisher ACK/NACK, late Billing approval, paid waitlist offer delivery, approval/refusal/timeout expiry, duplicate results, attempt mismatch and quarantine acknowledgment."
+    upstream_trace:
+      plan_item: "4.3"
+      requirements: ["RF07", "RN02", "RN03", "RQ03", "RQ04", "RQ05"]
+      full_trace: "RF07/RN02-RN03/RQ03-RQ05 -> Phase-4.3 -> T027 -> Billing request/result, timeout, duplicate and late-approval contract tests"
+
+  - task_id: "T028"
+    description: "Implementar outbox transacional e publicação idempotente de solicitação de pagamento."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationService.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationController.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationModels.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/BillingOutboxPublisher.java"
+        - file: "services/registration-java/src/main/resources/application.yaml"
+        - file: "services/registration-java/src/main/resources/db/migration/V4__registration_billing_outbox.sql"
+    verification:
+      build_passed: true
+      test_results:
+        command: "mvn -B -ff spotless:apply test; Compose test profile build; live paid-registration flow"
+        passed: 25
+        failed: 0
+        skipped: 0
+      notes: "Paid reservation and accepted paid waitlist offer persist Billing requests atomically with state; stable event/attempt identities, publisher confirms, mandatory returns and bounded retry backoff are enabled. A live paid registration reached CONFIRMED through RabbitMQ and Billing."
+    upstream_trace:
+      plan_item: "4.3"
+      requirements: ["RF07", "RN02", "RN03", "RQ03", "RQ05"]
+      full_trace: "RF07/RN02-RN03/RQ03/RQ05 -> Phase-4.3 -> T028 -> Atomic Registration Billing outbox and confirmed persistent publication"
+
   - task_id: "T029"
     description: "Implementar mock Billing durável com cenários configuráveis, idempotência e publicação de resultados."
     status: "completed"
@@ -740,6 +786,32 @@ tasks:
       plan_item: "4.3"
       requirements: ["RF07", "RN02", "RN03", "RQ03", "RQ05"]
       full_trace: "RF/RN/RQ -> Phase-4.3 -> T029 -> durable Billing mock, idempotent scenarios, RabbitMQ result publication and quarantine"
+
+  - task_id: "T030"
+    description: "Consumir resultados Billing, confirmar apenas pagamentos aprovados e expirar/liberar reservas uma única vez."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/BillingResultConsumer.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationService.java"
+        - file: "services/registration-java/src/main/java/br/uece/eventhub/registration/RegistrationExpiryScheduler.java"
+        - file: "services/registration-java/src/main/resources/db/migration/V5__registration_billing_results.sql"
+        - file: "services/registration-java/src/test/resources/schema-test.sql"
+        - file: "services/registration-java/src/main/resources/db/migration/V6__retain_billing_result_payload.sql"
+        - file: "docs/architecture/paid-registration-flow.md"
+        - file: "services/README.md"
+    verification:
+      build_passed: true
+      test_results:
+        command: "mvn -B -ff spotless:apply test; Compose test profile build; live paid-registration flow"
+        passed: 25
+        failed: 0
+        skipped: 0
+      notes: "Inbox deduplicates and correlates results before manual acknowledgment; invalid messages are confirmed to quarantine. Activity-locked transitions use database time, suppress expired unpublished requests, release/promote once on refusal or timeout, and retain the complete late-approval payload for manual compensation."
+    upstream_trace:
+      plan_item: "4.3"
+      requirements: ["RF07", "RN02", "RN03", "RQ03", "RQ04", "RQ05"]
+      full_trace: "RF07/RN02-RN03/RQ03-RQ05 -> Phase-4.3 -> T030 -> Correlated Billing result, deadline, idempotent release and late compensation"
 
   - task_id: "T031"
     description: "Escrever testes de contrato, idempotência, indisponibilidade e reprocessamento do Notification fake."
@@ -778,9 +850,6 @@ tasks:
       full_trace: "RF08/RN05/RQ -> Phase-4.4 -> T032 -> durable async Notification mock and capped retry recovery"
 
 pending_tasks:
-  - task_id: "T027"
-  - task_id: "T028"
-  - task_id: "T030"
   - task_id: "T033"
   - task_id: "T034"
   - task_id: "T035"
@@ -1023,6 +1092,22 @@ traceability_chain:
     files: ["mocks/billing", "infra/.env.example", "infra/environment.schema.json"]
     status: "complete"
 
+  - chain_id: "TRACE-T027-T028"
+    requirement: "RF07/RN02-RN03/RQ03/RQ05"
+    plan_phase: "Phase-4"
+    plan_item: "4.3"
+    tasks: ["T027", "T028"]
+    files: ["services/registration-java/src", "mocks/billing/tests"]
+    status: "complete"
+
+  - chain_id: "TRACE-T030"
+    requirement: "RF07/RN02-RN03/RQ03-RQ05"
+    plan_phase: "Phase-4"
+    plan_item: "4.3"
+    tasks: ["T030"]
+    files: ["services/registration-java/src", "docs/architecture/paid-registration-flow.md"]
+    status: "complete"
+
   - chain_id: "TRACE-T031-T032"
     requirement: "RF08/RN05/RQ01/RQ03/RQ05"
     plan_phase: "Phase-4"
@@ -1036,6 +1121,6 @@ validation:
   errors: []
   warnings:
     - "Documentation/rationale checks are not runtime evidence. T003/T004 readiness checks passed."
-    - "Payment processing, check-in and reporting flows remain pending with T027 and subsequent domain tasks; T013 validates container startup and health only."
+    - "Attendance/check-in and reporting business flows remain pending in subsequent domain tasks; T013 validates container startup and health only."
     - "GitHub branch rules and protected CI secrets/variables require administrator configuration; semantic and invariant-review gates fail closed until configured."
   blocking_issues: []
