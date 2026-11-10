@@ -1,0 +1,118 @@
+batch_id: "B02"
+completed_tasks: ["T047", "T048"]
+blocked_tasks: []
+files_changed:
+  T047:
+    - file: "web/demo-python/tests/conftest.py"
+      change_type: "created"
+      description: "Provide synthetic fixture data and explicit web settings."
+    - file: "web/demo-python/tests/test_settings.py"
+      change_type: "created"
+      description: "Cover required settings, roles, bounds, schedules, origins, collisions, and redaction."
+    - file: "web/demo-python/tests/test_startup.py"
+      change_type: "created"
+      description: "Verify health and fail-fast startup behavior."
+    - file: "tests/configuration/test_demo_web_environment.py"
+      change_type: "created"
+      description: "Cover backend-only compatibility and invalid optional web configuration."
+  T048:
+    - file: "web/demo-python/pyproject.toml"
+      change_type: "created"
+      description: "Define pinned Python runtime and separate test dependencies."
+    - file: "web/demo-python/constraints.txt"
+      change_type: "created"
+      description: "Pin compatible direct and transitive dependencies."
+    - file: "web/demo-python/.dockerignore"
+      change_type: "created"
+      description: "Exclude local environments, caches, and environment files from builds."
+    - file: "web/demo-python/Dockerfile"
+      change_type: "created"
+      description: "Build independent test and non-root single-worker runtime images."
+    - file: "web/demo-python/src/demo_web/__init__.py"
+      change_type: "created"
+      description: "Initialize the presentation package."
+    - file: "web/demo-python/src/demo_web/app.py"
+      change_type: "created"
+      description: "Provide configuration-gated FastAPI startup and health endpoint."
+    - file: "web/demo-python/src/demo_web/settings.py"
+      change_type: "created"
+      description: "Validate required configuration, fixture roles, limits, and service origins."
+    - file: "infra/.env.example"
+      change_type: "modified"
+      description: "Add optional disabled-by-default demo web configuration."
+    - file: "infra/environment.schema.json"
+      change_type: "modified"
+      description: "Validate optional settings and require them when the web app is enabled."
+    - file: "scripts/validate-environment.py"
+      change_type: "modified"
+      description: "Check demo settings, limits, schedule ordering, and host-port collisions."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T047 and T048 complete."
+upstream_artifacts_consumed:
+  T047:
+    - artifact: "docs/webapp/plan.md#Configuration contract to implement"
+      used_for: "Expected setting names, bounds, URLs, backend-only compatibility, and schedule order."
+    - artifact: "mocks/identity-access/src/identity_access_mock/fixtures.json"
+      used_for: "Exact synthetic persona names and role validation."
+  T048:
+    - artifact: "services/attendance-certification-python/pyproject.toml"
+      used_for: "Existing FastAPI and Uvicorn version conventions."
+    - artifact: "services/attendance-certification-python/Dockerfile"
+      used_for: "Independent test/runtime image pattern and fail-fast pytest command."
+    - artifact: "infra/environment.schema.json and scripts/validate-environment.py"
+      used_for: "Optional configuration integration and existing fail-fast validation behavior."
+evidence_mapping:
+  T047:
+    - upstream: "docs/webapp/plan.md#Plan 1.1"
+      output: "web/demo-python/tests/test_settings.py and tests/configuration/test_demo_web_environment.py"
+      evidence: "Settings/environment cases pass in the full repository suite."
+  T048:
+    - upstream: "docs/webapp/plan.md#Configuration contract to implement"
+      output: "web/demo-python/src/demo_web/settings.py and infra/environment.schema.json"
+      evidence: "220 tests pass; sample env validates; backend-only env remains valid."
+    - upstream: "docs/webapp/plan.md#Plan 1.1"
+      output: "web/demo-python/Dockerfile"
+      evidence: "Test and runtime targets build successfully; runtime GET /health returns HTTP 200."
+traceability:
+  - requirement: "REQ-001"
+    plan_item: "1.1"
+    task: "T048"
+    files: ["web/demo-python/pyproject.toml", "web/demo-python/Dockerfile", "web/demo-python/src/demo_web/app.py"]
+    status: "completed"
+  - requirement: "REQ-015"
+    plan_item: "1.1"
+    task: "T047"
+    files: ["web/demo-python/src/demo_web/settings.py", "infra/environment.schema.json", "scripts/validate-environment.py"]
+    status: "completed"
+  - requirement: "REQ-016"
+    plan_item: "1.1"
+    task: "T048"
+    files: ["web/demo-python/Dockerfile", "web/demo-python/constraints.txt"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "1.1"
+    task: "T047"
+    files: ["web/demo-python/tests/test_startup.py", "web/demo-python/tests/test_settings.py", "tests/configuration/test_demo_web_environment.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings: []
+test_results:
+  T047:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 220
+    failed: 0
+    skipped: 6
+    failures: []
+  T048:
+    command: "docker build --target test -f web/demo-python/Dockerfile web/demo-python"
+    passed: 34
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/health"
+    status: 200
+    result: "PASS"

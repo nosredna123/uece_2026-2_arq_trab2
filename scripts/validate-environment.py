@@ -33,6 +33,27 @@ def validate(path: Path) -> list[str]:
             continue
         location = ".".join(str(item) for item in error.path) or "environment"
         errors.append(f"{location}: invalid or missing configuration ({error.validator})")
+    if values.get("DEMO_WEB_ENABLED") == "true":
+        required_demo_keys = (
+            "DEMO_WEB_PORT",
+            "DEMO_WEB_SESSION_TTL_SECONDS",
+            "DEMO_WEB_MAX_SESSIONS",
+            "DEMO_WEB_MAX_COMMANDS_PER_SESSION",
+            "DEMO_WEB_HISTORY_LIMIT",
+            "DEMO_WEB_POLL_INTERVAL_SECONDS",
+            "DEMO_WEB_POLL_TIMEOUT_SECONDS",
+            "DEMO_WEB_PAID_START_DELAY_SECONDS",
+            "DEMO_WEB_ACTIVITY_DURATION_SECONDS",
+            "DEMO_WEB_FREE_START_DELAY_SECONDS",
+            "DEMO_WEB_EVENT_BASE_URL",
+            "DEMO_WEB_REGISTRATION_BASE_URL",
+            "DEMO_WEB_ATTENDANCE_BASE_URL",
+            "DEMO_WEB_REPORTING_BASE_URL",
+            "DEMO_WEB_IDENTITY_FIXTURES_PATH",
+        )
+        for key in required_demo_keys:
+            if key not in values:
+                errors.append(f"{key}: required when DEMO_WEB_ENABLED=true")
     for key, value in values.items():
         if key.endswith("_PORT") and value.isdigit() and int(value) > 65535:
             errors.append(f"{key}: port exceeds 65535")
@@ -40,10 +61,38 @@ def validate(path: Path) -> list[str]:
     maximum = values.get("MESSAGE_RETRY_MAX_SECONDS", "")
     if initial.isdigit() and maximum.isdigit() and int(initial) > int(maximum):
         errors.append("MESSAGE_RETRY_MAX_SECONDS: less than initial retry delay")
+    poll_interval = values.get("DEMO_WEB_POLL_INTERVAL_SECONDS", "")
+    poll_timeout = values.get("DEMO_WEB_POLL_TIMEOUT_SECONDS", "")
+    if poll_interval.isdigit() and poll_timeout.isdigit():
+        if int(poll_timeout) <= int(poll_interval):
+            errors.append("DEMO_WEB_POLL_TIMEOUT_SECONDS: must exceed poll interval")
+        if int(poll_timeout) > 300:
+            errors.append("DEMO_WEB_POLL_TIMEOUT_SECONDS: exceeds 300")
+    paid_start = values.get("DEMO_WEB_PAID_START_DELAY_SECONDS", "")
+    activity_duration = values.get("DEMO_WEB_ACTIVITY_DURATION_SECONDS", "")
+    free_start = values.get("DEMO_WEB_FREE_START_DELAY_SECONDS", "")
+    if paid_start.isdigit() and activity_duration.isdigit() and free_start.isdigit():
+        if int(free_start) <= int(paid_start) + int(activity_duration):
+            errors.append(
+                "DEMO_WEB_FREE_START_DELAY_SECONDS: must follow the paid activity"
+            )
+    demo_bounds = {
+        "DEMO_WEB_SESSION_TTL_SECONDS": 86400,
+        "DEMO_WEB_MAX_SESSIONS": 500,
+        "DEMO_WEB_MAX_COMMANDS_PER_SESSION": 100,
+        "DEMO_WEB_HISTORY_LIMIT": 100,
+    }
+    for key, maximum_value in demo_bounds.items():
+        value = values.get(key, "")
+        if value.isdigit() and int(value) > maximum_value:
+            errors.append(f"{key}: exceeds the configured safety limit")
+    demo_port = values.get("DEMO_WEB_PORT", "")
+    if demo_port.isdigit() and not 1024 <= int(demo_port) <= 65535:
+        errors.append("DEMO_WEB_PORT: must be between 1024 and 65535")
     host_port_keys = (
         "POSTGRES_PORT", "RABBITMQ_HOST_PORT", "RABBITMQ_MANAGEMENT_PORT",
         "EVENT_MANAGEMENT_PORT", "REGISTRATION_PORT", "ATTENDANCE_PORT",
-        "REPORTING_PORT",
+        "REPORTING_PORT", "DEMO_WEB_PORT",
     )
     ports = [values[key] for key in host_port_keys if key in values]
     if len(ports) != len(set(ports)):

@@ -63,7 +63,46 @@
     "EVENT_MANAGEMENT_PORT": {"$ref": "#/definitions/port"},
     "REGISTRATION_PORT": {"$ref": "#/definitions/port"},
     "ATTENDANCE_PORT": {"$ref": "#/definitions/port"},
-    "REPORTING_PORT": {"$ref": "#/definitions/port"}
+    "REPORTING_PORT": {"$ref": "#/definitions/port"},
+    "DEMO_WEB_ENABLED": {"enum": ["true", "false"]},
+    "DEMO_WEB_PORT": {"$ref": "#/definitions/port"},
+    "DEMO_WEB_SESSION_TTL_SECONDS": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_MAX_SESSIONS": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_MAX_COMMANDS_PER_SESSION": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_HISTORY_LIMIT": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_POLL_INTERVAL_SECONDS": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_POLL_TIMEOUT_SECONDS": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_PAID_START_DELAY_SECONDS": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_ACTIVITY_DURATION_SECONDS": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_FREE_START_DELAY_SECONDS": {"$ref": "#/definitions/positive"},
+    "DEMO_WEB_EVENT_BASE_URL": {"const": "http://event-management:8080"},
+    "DEMO_WEB_REGISTRATION_BASE_URL": {"const": "http://registration:8080"},
+    "DEMO_WEB_ATTENDANCE_BASE_URL": {"const": "http://attendance:8080"},
+    "DEMO_WEB_REPORTING_BASE_URL": {"const": "http://reporting:8080"},
+    "DEMO_WEB_IDENTITY_FIXTURES_PATH": {"type": "string", "minLength": 1}
+  },
+  "if": {
+    "properties": {"DEMO_WEB_ENABLED": {"const": "true"}},
+    "required": ["DEMO_WEB_ENABLED"]
+  },
+  "then": {
+    "required": [
+      "DEMO_WEB_PORT",
+      "DEMO_WEB_SESSION_TTL_SECONDS",
+      "DEMO_WEB_MAX_SESSIONS",
+      "DEMO_WEB_MAX_COMMANDS_PER_SESSION",
+      "DEMO_WEB_HISTORY_LIMIT",
+      "DEMO_WEB_POLL_INTERVAL_SECONDS",
+      "DEMO_WEB_POLL_TIMEOUT_SECONDS",
+      "DEMO_WEB_PAID_START_DELAY_SECONDS",
+      "DEMO_WEB_ACTIVITY_DURATION_SECONDS",
+      "DEMO_WEB_FREE_START_DELAY_SECONDS",
+      "DEMO_WEB_EVENT_BASE_URL",
+      "DEMO_WEB_REGISTRATION_BASE_URL",
+      "DEMO_WEB_ATTENDANCE_BASE_URL",
+      "DEMO_WEB_REPORTING_BASE_URL",
+      "DEMO_WEB_IDENTITY_FIXTURES_PATH"
+    ]
   },
   "definitions": {
     "positive": {"type": "string", "pattern": "^[1-9][0-9]*$"},

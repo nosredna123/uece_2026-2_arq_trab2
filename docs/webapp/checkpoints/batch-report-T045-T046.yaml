@@ -1,0 +1,92 @@
+batch_id: "B01"
+completed_tasks: ["T045", "T046"]
+blocked_tasks: []
+files_changed:
+  T045:
+    - file: "docs/adr/ADR-006-demo-webapp.md"
+      change_type: "created"
+      description: "Document bounded Python presentation architecture and preserved invariants."
+    - file: "docs/rationales/ADR-006.json"
+      change_type: "created"
+      description: "Record the versioned rationale and presentation constraints."
+  T046:
+    - file: "tests/docs/test_rationales.py"
+      change_type: "modified"
+      description: "Require and validate the exact ADR-001 through ADR-006 inventory."
+    - file: "docs/rationales/README.md"
+      change_type: "modified"
+      description: "Document the six-record inventory and checks."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Link ADR-006 and mark decision-gate tasks complete."
+upstream_artifacts_consumed:
+  T045:
+    - artifact: "constitution.md"
+      used_for: "Security, data ownership, simplicity, configuration, and quality constraints."
+    - artifact: "docs/webapp/plan.md"
+      used_for: "Approved presentation requirements, single-worker boundary, and Scenario Lab limits."
+    - artifact: "docs/adr/ADR-001-service-boundaries.md"
+      used_for: "Preserved service boundaries."
+    - artifact: "docs/adr/ADR-004-messaging-and-resilience.md"
+      used_for: "Preserved integration and failure semantics."
+    - artifact: "docs/adr/ADR-005-prototype-scope.md"
+      used_for: "Preserved prototype authorization and scope."
+  T046:
+    - artifact: "docs/rationales/ADR-001.json through docs/rationales/ADR-006.json"
+      used_for: "Exact expected rationale inventory, artifact paths, versions, and invariant checks."
+evidence_mapping:
+  T045:
+    - upstream: "docs/webapp/plan.md#Plan 0.1"
+      output: "docs/adr/ADR-006-demo-webapp.md and docs/rationales/ADR-006.json"
+      evidence: "Rationale schema and inventory tests pass; no earlier rationale changed."
+  T046:
+    - upstream: "docs/rationales/README.md and docs/adr/ADR-006-demo-webapp.md"
+      output: "tests/docs/test_rationales.py"
+      evidence: "Full test suite and semantic/invariant gate unit tests pass."
+traceability:
+  - requirement: "REQ-001"
+    plan_item: "0.1"
+    task: "T045"
+    files: ["docs/adr/ADR-006-demo-webapp.md", "docs/rationales/ADR-006.json"]
+    status: "completed"
+  - requirement: "REQ-002"
+    plan_item: "0.1"
+    task: "T045"
+    files: ["docs/adr/ADR-006-demo-webapp.md", "docs/rationales/ADR-006.json"]
+    status: "completed"
+  - requirement: "REQ-015"
+    plan_item: "0.1"
+    task: "T045"
+    files: ["docs/adr/ADR-006-demo-webapp.md", "docs/rationales/ADR-006.json"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "0.1"
+    task: "T046"
+    files: ["tests/docs/test_rationales.py", "docs/rationales/README.md"]
+    status: "completed"
+  - requirement: "REQ-019"
+    plan_item: "0.1"
+    task: "T045"
+    files: ["docs/adr/ADR-006-demo-webapp.md", "docs/rationales/ADR-006.json"]
+    status: "completed"
+  - requirement: "REQ-021"
+    plan_item: "0.1"
+    task: "T045"
+    files: ["docs/adr/ADR-006-demo-webapp.md", "docs/rationales/ADR-006.json"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings: []
+test_results:
+  T045:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 186
+    failed: 0
+    skipped: 6
+    failures: []
+  T046:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 186
+    failed: 0
+    skipped: 6
+    failures: []

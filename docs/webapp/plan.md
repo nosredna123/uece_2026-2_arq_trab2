@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T046 are complete; T047-T080 remain unimplemented. Tests belong before the
+T045-T048 are complete; T049-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -405,8 +405,8 @@ T070 subsequently updates the same decision with the opt-in lab fixture details.
 **Requirements:** REQ-001, REQ-015, REQ-016, REQ-017.
 **Inputs:** existing Python Dockerfiles, schema/validator, Compose conventions.
 
-- [ ] T047 [Plan:1.1] Add `web/demo-python/tests/conftest.py`, `test_startup.py`, and `test_settings.py` plus `tests/configuration/test_demo_web_environment.py`; define missing/invalid settings, fixture roles, backend-only compatibility, session bounds, schedule ordering, host-port collisions, and startup-failure cases before implementation.
-- [ ] T048 [Plan:1.1] Create `web/demo-python/pyproject.toml`, `constraints.txt`, `.dockerignore`, `Dockerfile`, `src/demo_web/__init__.py`, `app.py`, and `settings.py`; integrate optional web fields into `infra/.env.example`, `infra/environment.schema.json`, and `scripts/validate-environment.py`. Pin compatible dependencies, enforce one worker, separate runtime/test dependencies, and pass T047 without modifying local `infra/.env`.
+- [x] T047 [Plan:1.1] Add `web/demo-python/tests/conftest.py`, `test_startup.py`, and `test_settings.py` plus `tests/configuration/test_demo_web_environment.py`; define missing/invalid settings, fixture roles, backend-only compatibility, session bounds, schedule ordering, host-port collisions, and startup-failure cases before implementation.
+- [x] T048 [Plan:1.1] Create `web/demo-python/pyproject.toml`, `constraints.txt`, `.dockerignore`, `Dockerfile`, `src/demo_web/__init__.py`, `app.py`, and `settings.py`; integrate optional web fields into `infra/.env.example`, `infra/environment.schema.json`, and `scripts/validate-environment.py`. Pin compatible dependencies, enforce one worker, separate runtime/test dependencies, and pass T047 without modifying local `infra/.env`.
 
 **Done when:** independent test/runtime images build; health and invalid-startup
 tests pass; no Node or host install required; existing configurations still validate.
