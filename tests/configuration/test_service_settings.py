@@ -11,6 +11,10 @@ VALUES = {
     "HTTP_TIMEOUT_SECONDS": "5",
     "MESSAGE_RETRY_INITIAL_SECONDS": "1",
     "MESSAGE_RETRY_MAX_SECONDS": "60",
+    "RABBITMQ_HOST": "rabbitmq",
+    "RABBITMQ_PORT": "5672",
+    "RABBITMQ_USER": "synthetic-user",
+    "RABBITMQ_PASSWORD": "synthetic-password-never-log",
     "CERTIFICATE_ELIGIBILITY_POLICY": "CHECK_IN",
     "CERTIFICATE_ISSUANCE_AFTER_EVENT": "true",
 }
@@ -21,7 +25,11 @@ def test_typed_settings_require_explicit_values(settings):
     configured = settings.model_validate(VALUES)
     assert configured.http_timeout_seconds == 5
     assert "synthetic-secret-never-log" not in repr(configured)
-    for field in ("DATABASE_URL", "INTERNAL_SERVICE_KEY", "HTTP_TIMEOUT_SECONDS"):
+    assert "synthetic-password-never-log" not in repr(configured)
+    required_fields = ["DATABASE_URL", "INTERNAL_SERVICE_KEY", "HTTP_TIMEOUT_SECONDS"]
+    if settings is AttendanceSettings:
+        required_fields.extend(["RABBITMQ_HOST", "RABBITMQ_PASSWORD"])
+    for field in required_fields:
         invalid = dict(VALUES)
         del invalid[field]
         with pytest.raises(ValidationError):

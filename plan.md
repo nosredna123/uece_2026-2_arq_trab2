@@ -304,8 +304,8 @@ As tarefas são numeradas sequencialmente de T001 a T044, seguindo a ordem das f
 
 ### Fase 5 — US3/US4: Serviços executáveis
 
-- [ ] T033 [US3] [Plan:5.1] Escrever testes de contrato, elegibilidade, check-in idempotente e emissão após encerramento da atividade em `services/attendance-certification-python/tests/`.
-- [ ] T034 [US3] [Plan:5.1] Implementar Attendance & Certification com persistência própria, consumidor de eventos de inscrição, endpoint de check-in idempotente e emissão de certificado elegível em `services/attendance-certification-python/`.
+- [x] T033 [US3] [Plan:5.1] Escrever testes de contrato, elegibilidade, check-in idempotente e emissão após encerramento da atividade em `services/attendance-certification-python/tests/`.
+- [x] T034 [US3] [Plan:5.1] Implementar Attendance & Certification com persistência própria, consumidor de eventos de inscrição, endpoint de check-in idempotente e emissão de certificado elegível em `services/attendance-certification-python/`.
 - [ ] T035 [US4] [Plan:5.2] Escrever testes de contrato, projeção eventual, autorização de organizador e isolamento de falha para Reporting em `services/reporting-python/tests/`.
 - [ ] T036 [US4] [Plan:5.2] Implementar Reporting com projeção de inscrições, pagamentos, ocupação e comparecimento alimentada por eventos e API de consulta autorizada em `services/reporting-python/`; não acessar bancos alheios.
 

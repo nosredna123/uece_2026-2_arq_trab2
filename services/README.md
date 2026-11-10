@@ -65,9 +65,15 @@ Runtime requires `DATABASE_URL` and `MIGRATION_DATABASE_URL` (SQLAlchemy
 `postgresql+psycopg://` URLs with separate runtime/migration credentials).
 Startup first applies `alembic upgrade head`, then starts Uvicorn on port 8080.
 `/health` queries the configured database and reports 503 on failure; missing
-configuration fails startup. Domain routes and event consumers are later tasks.
-Unit tests explicitly use isolated SQLite files only for scaffold health checks;
-actual Alembic DDL targets PostgreSQL and is validated separately against it.
+configuration fails startup. Attendance consumes durable registration/activity
+snapshots into its own projections, exposes participant-only idempotent
+check-in/certificate routes, and uses an outbox to publish attendance and
+certificate events. A certificate requires a confirmed registration, check-in,
+a published activity, and a database time after the projected activity end.
+Attendance migrations 0001-0002 own these projections and message ledgers.
+Reporting remains a health-only scaffold pending T035-T036.
+Attendance tests use isolated SQLite databases; Alembic DDL targets PostgreSQL
+and is validated separately against it.
 
 For host-side full Python tests, install the validation requirements and all
 service and mock packages with their `[test]` extras into an isolated Python

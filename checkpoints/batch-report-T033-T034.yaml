@@ -1,0 +1,98 @@
+batch_id: "T033-T034"
+completed_tasks: ["T033", "T034"]
+blocked_tasks: []
+required_endpoints:
+  - method: POST
+    path: /registrations/{id}/check-in
+    source: docs/contracts/openapi/attendance-certification.yaml
+    status: implemented
+  - method: POST
+    path: /registrations/{id}/certificate
+    source: docs/contracts/openapi/attendance-certification.yaml
+    status: implemented
+  - method: GET
+    path: /registrations/{id}/certificate
+    source: docs/contracts/openapi/attendance-certification.yaml
+    status: implemented
+endpoint_probes:
+  - method: GET
+    path: /health
+    status: 200
+    result: "PASS (live Attendance runtime backed by PostgreSQL)"
+  - method: POST
+    path: /registrations/{id}/check-in
+    status: 200
+    result: "PASS (consumed confirmed registration/activity snapshots and recorded check-in)"
+  - method: POST
+    path: /registrations/{id}/certificate
+    status: 200
+    result: "PASS (issued only after projected activity end and check-in)"
+  - method: GET
+    path: /registrations/{id}/certificate
+    status: 200
+    result: "PASS (returned the same participant-owned certificate)"
+database_probes:
+  - check: "Attendance Alembic migration history"
+    result: "PASS (revision 0002 is head)"
+  - check: "Attendance event outbox"
+    result: "PASS (attendance.recorded and certificate.issued each published and confirmed)"
+implementation:
+  T033:
+    files:
+      - "services/attendance-certification-python/tests/conftest.py"
+      - "services/attendance-certification-python/tests/test_attendance_contract.py"
+      - "services/attendance-certification-python/tests/test_startup.py"
+    notes: "Added contract/OpenAPI, projection readiness and version ordering, authorization, idempotent check-in, check-in/certificate eligibility, stable issuance and retrieval coverage."
+  T034:
+    files:
+      - "services/attendance-certification-python/src/attendance_service"
+      - "services/attendance-certification-python/migrations/versions/0002_attendance_messaging.py"
+      - "services/attendance-certification-python/pyproject.toml"
+      - "services/attendance-certification-python/constraints.txt"
+      - "infra/docker-compose.yml"
+      - "services/README.md"
+      - "tests/configuration/test_service_settings.py"
+    notes: "Added durable version-aware registration/activity projections, event inbox deduplication/quarantine, participant-only check-in and certificate routes, transactional message outbox with publisher confirms, RabbitMQ configuration, and migration 0002."
+upstream_artifacts_consumed:
+  - {artifact: "plan.md", used_for: "T033/T034 scope, Phase 5.1 ordering and acceptance criteria."}
+  - {artifact: "docs/contracts/openapi/attendance-certification.yaml", used_for: "HTTP routes, response shapes, idempotency, security and eligibility behavior."}
+  - {artifact: "docs/contracts/asyncapi/eventhub.yaml", used_for: "Registration/activity source snapshots and attendance/certificate event routing."}
+  - {artifact: "docs/contracts/schemas/registration-changed.json", used_for: "Registration projection fields and status eligibility."}
+  - {artifact: "docs/contracts/schemas/activity-changed.json", used_for: "Activity publication and end-time projection."}
+  - {artifact: "docs/contracts/schemas/attendance-recorded.json", used_for: "Attendance outbox event body."}
+  - {artifact: "docs/contracts/schemas/certificate-issued.json", used_for: "Certificate outbox event body."}
+  - {artifact: "docs/adr/ADR-002-data-ownership.md", used_for: "Service-owned persistence and no cross-service database reads."}
+  - {artifact: "docs/adr/ADR-004-messaging-and-resilience.md", used_for: "Durable event processing, deduplication and confirmed message publication."}
+traceability:
+  - {requirement: "RF09, RF10, RN06, RQ01, RQ05", plan_item: "5.1", task: "T033-T034", files: ["services/attendance-certification-python", "infra/docker-compose.yml"], status: "completed"}
+test_results:
+  attendance_python:
+    command: "python -m pytest -x --import-mode=importlib services/attendance-certification-python/tests"
+    passed: 10
+    failed: 0
+    skipped: 0
+  repository_python:
+    command: "python -m pytest -x --import-mode=importlib"
+    passed: 120
+    failed: 0
+    skipped: 0
+  compose_test_profile:
+    command: "docker compose --env-file infra/.env -f infra/docker-compose.yml config --quiet && docker compose --env-file infra/.env -f infra/docker-compose.yml --profile test build"
+    passed: 154
+    failed: 0
+    skipped: 0
+    result: "PASS (26 Registration Java, 8 Event Management Java, and 120 repository Python tests; all Compose test/runtime image stages built)"
+  live_attendance_flow:
+    result: "PASS (published synthetic activity/confirmed-registration events through RabbitMQ, recorded participant check-in, issued and retrieved the certificate, and verified both outbox events were confirmed)"
+validation:
+  compose_config: "PASS"
+  compose_test_profile_build: "PASS"
+  attendance_migration_0002: "PASS"
+  attendance_runtime_health: "PASS (200)"
+  rabbitmq_projection_checkin_certificate_flow: "PASS"
+  outbox_publisher_confirms: "PASS"
+warnings:
+  - severity: LOW
+    message: "Repository Python tests passed with one existing Starlette/AnyIO BlockingPortal deprecation warning."
+  - severity: LOW
+    message: "Docker Compose warned that buildx is unavailable and used its default Docker builder; all requested builds completed successfully."
