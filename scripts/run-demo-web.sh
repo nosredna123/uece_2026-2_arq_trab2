@@ -71,7 +71,7 @@ if [[ "$demo_lab_enabled" == true ]]; then
     DEMO_LAB_SETTLE_TIMEOUT_SECONDS \
     DEMO_LAB_RUN_TTL_SECONDS \
     DEMO_LAB_MAX_RETAINED_RUNS; do
-    [[ -n "$(read_env_value "$key")" ]] || fail "$key must be set in infra/.env when the Scenario Lab is enabled."
+    [[ -n "$(read_env_value "$key")" ]] || fail "$key must be set in infra/.env when the load scenarios are enabled."
   done
 fi
 if [[ "$demo_lab_enabled" == true ]]; then
@@ -119,7 +119,7 @@ fi
 printf 'EventHub presentation app is ready at http://localhost:%s\n' "$web_port"
 printf 'Prerequisites: healthy Event Management, Registration, Attendance, Reporting, and Identity services; Billing and Notification mocks are started for domain flows.\n'
 if [[ "$demo_lab_enabled" == true ]]; then
-  printf 'Scenario Lab is enabled with the fixed read-only fixture pool and configured Registration waitlist.\n'
+  printf 'Load scenarios are enabled; run: bash scripts/cenario.sh <pico-inscricoes|ultima-vaga|envios-repetidos>\n'
 else
-  printf 'Scenario Lab is disabled; the presentation app remains available for regular journeys.\n'
+  printf 'Load scenarios are disabled (set DEMO_LAB_ENABLED=true and IDENTITY_LAB_ENABLED=true to enable them).\n'
 fi
