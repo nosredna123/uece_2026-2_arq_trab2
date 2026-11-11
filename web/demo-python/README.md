@@ -39,6 +39,23 @@ a 15-minute default timeout, and removes only its temporary test container. It
 does not start or stop backend services or remove persistent volumes.
 `DEMO_WEB_TEST_TIMEOUT_SECONDS` may set a value from 60 through 3600 seconds.
 
+## Real-browser acceptance
+
+Run the isolated Playwright/Chromium journeys against fresh synthetic services:
+
+```sh
+bash tests/webapp/run.sh
+```
+
+The runner builds the pinned browser image, uses the synthetic
+`infra/.env.example` rather than `infra/.env`, assigns a unique Compose project,
+publishes no service ports, and removes only that project's containers and
+volumes. It exercises paid registration/check-in/certificate read-back,
+two-person waitlist promotion, the real Scenario Lab, and bounded
+Reporting/Identity outage probes; the probes restore their services before
+cleanup, including on failure. Browser screenshots are saved under
+`docs/validation/artifacts/webapp/`.
+
 ## Optional Scenario Lab
 
 The Scenario Lab is disabled by default. To enable it, set both

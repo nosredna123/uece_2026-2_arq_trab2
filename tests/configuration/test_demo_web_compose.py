@@ -38,6 +38,7 @@ def test_demo_web_is_an_opt_in_localhost_profile_with_internal_service_urls():
     assert (
         environment["DEMO_WEB_ENABLED"] == "${DEMO_WEB_ENABLED:?Set DEMO_WEB_ENABLED in infra/.env}"
     )
+    assert environment["DEMO_WEB_PORT"] == "${DEMO_WEB_PORT:?Set DEMO_WEB_PORT in infra/.env}"
     expected_urls = {
         "DEMO_WEB_EVENT_BASE_URL": "http://event-management:8080",
         "DEMO_WEB_REGISTRATION_BASE_URL": "http://registration:8080",

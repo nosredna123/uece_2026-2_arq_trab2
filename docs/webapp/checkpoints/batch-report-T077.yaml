@@ -1,0 +1,121 @@
+batch_id: "T077"
+completed_tasks: ["T077"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T077:
+    - file: "tests/webapp/conftest.py"
+      change_type: "created"
+      description: "Provide isolated Playwright contexts, personas, run preparation, bounded schedule waits, and screenshot output."
+    - file: "tests/webapp/test_paid_journey.py"
+      change_type: "created"
+      description: "Exercise the paid participant journey, certificate eligibility/read-back, responsive widths, print styling, and report projection."
+    - file: "tests/webapp/test_waitlist_journey.py"
+      change_type: "created"
+      description: "Verify independent browser contexts, FIFO offer/acceptance, and capacity read-back."
+    - file: "tests/webapp/test_failures_and_isolation.py"
+      change_type: "created"
+      description: "Cover identity failures, persona/stale-CSRF rejection, and controlled Reporting/Identity outages."
+    - file: "tests/webapp/run.sh"
+      change_type: "created"
+      description: "Run browser acceptance against a uniquely named isolated Compose stack with scoped teardown and service recovery."
+    - file: "infra/Dockerfile.webapp-browser-tests"
+      change_type: "created"
+      description: "Pin the Playwright Python package and matching Chromium image."
+    - file: "infra/docker-compose.webapp-browser-tests.yml"
+      change_type: "created"
+      description: "Add an internal-only browser-test service and remove host-published ports from the isolated stack."
+    - file: "infra/docker-compose.demo-web.yml"
+      change_type: "modified"
+      description: "Pass DEMO_WEB_PORT into the app container after live startup exposed the missing required setting."
+    - file: "tests/configuration/test_demo_web_compose.py"
+      change_type: "modified"
+      description: "Assert the demo app receives its configured port."
+    - file: ".github/workflows/ci.yml"
+      change_type: "modified"
+      description: "Run isolated real-browser acceptance in CI."
+    - file: "README.md"
+      change_type: "modified"
+      description: "Document the isolated real-browser test target."
+    - file: "web/demo-python/README.md"
+      change_type: "modified"
+      description: "Document browser setup, safety boundaries, outage recovery, and screenshots."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T077 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T077 implementation and validation results."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Plan 6.2 acceptance scope, isolated stack rules, and browser validation requirements."
+  - artifact: "infra/docker-compose.demo-web.yml"
+    used_for: "Existing demo runtime wiring and service dependencies."
+evidence_mapping:
+  T077:
+    - upstream: "docs/webapp/plan.md#Plan-6.2"
+      output: "tests/webapp and infra/docker-compose.webapp-browser-tests.yml"
+      evidence: "Real-browser paid, waitlist, failure/isolation, and Scenario Lab acceptance ran against an isolated service stack."
+traceability:
+  - requirement: "REQ-017"
+    plan_item: "6.2"
+    task: "T077"
+    files: ["tests/webapp/run.sh", ".github/workflows/ci.yml"]
+    status: "completed"
+  - requirement: "REQ-002"
+    plan_item: "6.2"
+    task: "T077"
+    files: ["tests/webapp/test_paid_journey.py", "tests/webapp/test_waitlist_journey.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "The baseline browser target reported 4 passed and 2 skipped in 77.41 seconds; Reporting and Identity outage probes were then run separately and each passed."
+  - severity: "LOW"
+    message: "One live organizer-report observation showed confirmed/check-in counts but zero certificates despite successful certificate read-back. The browser test does not claim certificate-count projection; T078 should record this as a possible projection gap."
+test_results:
+  isolated_browser:
+    command: "bash tests/webapp/run.sh"
+    passed: 4
+    failed: 0
+    skipped: 2
+    duration: "77.41 seconds"
+    failures: []
+  outage_probes:
+    command: "tests/webapp/run.sh controlled Reporting and Identity outage probes"
+    passed: 2
+    failed: 0
+    skipped: 0
+    failures: []
+  full_suite_host:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 406
+    failed: 0
+    skipped: 10
+    failures: []
+  lint:
+    command: ".venv/bin/ruff check --no-cache tests/webapp tests/configuration/test_demo_web_compose.py"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  formatting:
+    command: ".venv/bin/ruff format --check --no-cache tests/webapp tests/configuration/test_demo_web_compose.py"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  checkpoint_yaml:
+    command: ".venv/bin/python -c \"import yaml; yaml.safe_load(open('docs/webapp/checkpoints/tasks-to-impl.yaml'))\""
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  whitespace:
+    command: "git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes: []

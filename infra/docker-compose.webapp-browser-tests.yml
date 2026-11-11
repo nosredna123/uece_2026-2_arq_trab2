@@ -1,0 +1,33 @@
+services:
+  postgres:
+    ports: !reset []
+
+  rabbitmq:
+    ports: !reset []
+
+  event-management:
+    ports: !reset []
+
+  registration:
+    ports: !reset []
+
+  attendance:
+    ports: !reset []
+
+  reporting:
+    ports: !reset []
+
+  demo-web:
+    ports: !reset []
+
+  webapp-browser-test:
+    profiles: [webapp-browser]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.webapp-browser-tests
+    environment:
+      DEMO_WEB_BASE_URL: http://demo-web:8080
+      SCENARIO_LAB_BASE_URL: http://demo-web:8080
+      WEBAPP_TEST_ARTIFACTS_DIR: /artifacts
+    volumes:
+      - ${WEBAPP_TEST_ARTIFACTS_HOST_DIR:-../docs/validation/artifacts/webapp}:/artifacts

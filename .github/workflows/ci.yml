@@ -35,6 +35,8 @@ jobs:
       - name: Remove test containers and volumes
         if: always()
         run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml down --volumes --remove-orphans
+      - name: Run isolated real-browser presentation tests
+        run: bash tests/webapp/run.sh
       - name: Remove presentation-profile containers
         if: always()
         run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml -f infra/docker-compose.demo-web.yml down --remove-orphans

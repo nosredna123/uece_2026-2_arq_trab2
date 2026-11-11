@@ -157,6 +157,7 @@ the default backend-only startup. Set `DEMO_WEB_ENABLED=true` in the ignored
 ```sh
 bash scripts/run-demo-web.sh
 bash scripts/test-demo-web.sh
+bash tests/webapp/run.sh
 ```
 
 The launcher binds the app to localhost, waits for required service health,
@@ -165,6 +166,12 @@ overwrites `infra/.env`. See
 [the presentation setup guide](web/demo-python/README.md) for the optional
 Scenario Lab fixture pool, including the explicit Identity restart required
 when enabling it on an already-running stack.
+
+The browser runner uses `infra/.env.example` plus bounded synthetic settings
+in a uniquely named Compose project. It publishes no host ports, uses fresh
+project-scoped volumes, restores Reporting/Identity after its outage probes,
+and removes only that isolated project. Screenshots are written to
+`docs/validation/artifacts/webapp/`.
 
 ### Paid-registration demonstration
 

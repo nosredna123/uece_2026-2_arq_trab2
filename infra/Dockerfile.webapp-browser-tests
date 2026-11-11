@@ -1,0 +1,10 @@
+FROM mcr.microsoft.com/playwright/python:v1.63.0-noble
+
+WORKDIR /workspace
+COPY . .
+RUN python -m pip install --no-cache-dir \
+    -r requirements-validation.txt \
+    -e "web/demo-python[test]" \
+    playwright==1.63.0
+
+CMD ["python", "-m", "pytest", "-x", "--import-mode=importlib", "tests/webapp"]

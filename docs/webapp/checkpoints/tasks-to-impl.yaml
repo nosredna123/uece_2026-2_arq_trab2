@@ -1,14 +1,14 @@
 metadata:
-  generated: "2026-11-10"
+  generated: "2026-11-11"
   source_tasks: "docs/webapp/plan.md#6-implementation-phases-and-ordered-tasks"
-  last_updated: "2026-11-10"
+  last_updated: "2026-11-11"
 
 summary:
   total_tasks: 36
-  completed_tasks: 32
+  completed_tasks: 33
   in_progress_tasks: 0
-  pending_tasks: 4
-  completion_percentage: 88.9
+  pending_tasks: 3
+  completion_percentage: 91.7
 
 tasks:
   - task_id: "T045"
@@ -906,8 +906,54 @@ tasks:
       requirements: ["REQ-001", "REQ-015", "REQ-016", "REQ-017", "REQ-021"]
       full_trace: "REQ-001/015/016/017/021 → Plan 6.1 → T076 → isolated startup/test/CI wiring"
 
+  - task_id: "T077"
+    description: "Complete isolated browser integration suite."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "tests/webapp/conftest.py"
+          changes: ["Add isolated Playwright contexts, personas, run preparation, bounded schedule waits, and screenshot output."]
+        - file: "tests/webapp/test_paid_journey.py"
+          changes: ["Exercise keyboard preparation, paid confirmation, early certificate rejection, check-in, certificate read-back, responsive widths, print styling, and report projection."]
+        - file: "tests/webapp/test_waitlist_journey.py"
+          changes: ["Verify separate participant contexts, waitlist promotion and acceptance, state polling controls, and capacity read-back."]
+        - file: "tests/webapp/test_failures_and_isolation.py"
+          changes: ["Cover missing/invalid identity, persona and stale-CSRF rejection, plus controlled Reporting/Identity outage responses."]
+        - file: "infra/Dockerfile.webapp-browser-tests"
+          changes: ["Pin Playwright 1.63.0 and use its matching Chromium test image."]
+        - file: "infra/docker-compose.webapp-browser-tests.yml"
+          changes: ["Create browser test service and reset all host-published service ports for the isolated stack."]
+        - file: "tests/webapp/run.sh"
+          changes: ["Build and run real-browser tests in a unique project, then run outage probes with service restoration and scoped teardown."]
+        - file: "infra/docker-compose.demo-web.yml"
+          changes: ["Pass the required presentation port into the app container after live startup exposed the missing setting."]
+        - file: ".github/workflows/ci.yml"
+          changes: ["Run the isolated real-browser acceptance target in CI."]
+        - file: "README.md"
+          changes: ["Document the isolated real-browser test target."]
+        - file: "web/demo-python/README.md"
+          changes: ["Document browser setup, safety boundaries, outage recovery, and screenshots."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "bash tests/webapp/run.sh"
+        passed: 6
+        failed: 0
+        skipped: 2
+        failures: []
+      outage_probes:
+        command: "tests/webapp/run.sh controlled Reporting and Identity failure probes"
+        passed: 2
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The baseline browser target passed against the isolated real stack in 77.41 seconds. The 2 skips are the separately executed Reporting and Identity outage probes. Paid registration, certificate read-back, waitlist, and Scenario Lab real-service journeys passed."
+    upstream_trace:
+      plan_item: "6.2"
+      requirements: ["REQ-002", "REQ-004", "REQ-006", "REQ-008", "REQ-010", "REQ-011", "REQ-012", "REQ-014", "REQ-015", "REQ-016", "REQ-017", "REQ-019", "REQ-020", "REQ-021"]
+      full_trace: "REQ-002/004/006/008/010/011/012/014/015/016/017/019/020/021 → Plan 6.2 → T077 → isolated Playwright and Scenario Lab journeys"
+
 pending_tasks:
-  - {task_id: "T077", description: "Complete isolated browser integration suite", blocked_by: ["T076"], priority: "P1"}
   - {task_id: "T078", description: "Execute validation gates and record evidence", blocked_by: ["T077"], priority: "P1"}
   - {task_id: "T079", description: "Write presentation plot and recovery branches", blocked_by: ["T078"], priority: "P1"}
   - {task_id: "T080", description: "Rehearse and close verified requirements", blocked_by: ["T079"], priority: "P1"}
