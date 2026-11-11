@@ -550,8 +550,8 @@ be shown as rollback or success, and no operator can select arbitrary targets.
 
 **Requirements:** REQ-002, REQ-017, REQ-019, REQ-020, REQ-021.
 
-- [ ] T073 [Plan:5.5] Add `web/demo-python/tests/test_lab_pages.py` and `tests/webapp/test_scenario_lab.py`: exact preset preview, correct provenance, seat/counter values, non-clamped anomaly rendering, unknown/error distinction, reduced motion, run access controls, safe stop, refresh without restart, real two-user/rush/replay read-back, and explicit promotion/acceptance without presuming the winner.
-- [ ] T074 [Plan:5.5] Implement `templates/lab.html`, `templates/partials/lab_board.html`, and `static/lab.js`; extend local CSS and navigation with four preset cards, participant groups, seat grid, small timeline, measured counters, accessible controls, evidence verdict, and recorded-observation review. Keep server state authoritative and browser polling bounded; no graphing dependency or fabricated slow-motion "live" results.
+- [x] T073 [Plan:5.5] Add `web/demo-python/tests/test_lab_pages.py` and `tests/webapp/test_scenario_lab.py`: exact preset preview, correct provenance, seat/counter values, non-clamped anomaly rendering, unknown/error distinction, reduced motion, run access controls, safe stop, refresh without restart, real two-user/rush/replay read-back, and explicit promotion/acceptance without presuming the winner.
+- [x] T074 [Plan:5.5] Implement `templates/lab.html`, `templates/partials/lab_board.html`, and `static/lab.js`; extend local CSS and navigation with four preset cards, participant groups, seat grid, small timeline, measured counters, accessible controls, evidence verdict, and recorded-observation review. Keep server state authoritative and browser polling bounded; no graphing dependency or fabricated slow-motion "live" results.
 
 **Done when:** a presenter explains each experiment in under a minute after
 setup, results are legible at projector resolution, a fast run remains reviewable,

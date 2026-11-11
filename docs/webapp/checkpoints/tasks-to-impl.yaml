@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 28
+  completed_tasks: 30
   in_progress_tasks: 0
-  pending_tasks: 8
-  completion_percentage: 77.8
+  pending_tasks: 6
+  completion_percentage: 83.3
 
 tasks:
   - task_id: "T045"
@@ -787,9 +787,62 @@ tasks:
       requirements: ["REQ-013", "REQ-014", "REQ-015", "REQ-019", "REQ-020", "REQ-021"]
       full_trace: "REQ-013/014/015/019/020/021 → Phase-5.4 → T072 → lifespan-supervised, bounded, owner-isolated Scenario Lab"
 
+  - task_id: "T073"
+    description: "Specify Scenario Lab page and real-service acceptance."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_lab_pages.py"
+          changes: ["Verify exact fixed preset values, provenance labels, disabled preview behavior, raw over-capacity observations, distinct unknown/error outcomes, safe stop, no restart on refresh, access controls, reduced motion, and bounded polling."]
+        - file: "tests/webapp/test_scenario_lab.py"
+          changes: ["Add an opt-in real-service two-session flow for last-seat read-back, FIFO promotion and acceptance, rush counts, ownership isolation, and duplicate replay."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 396
+        failed: 0
+        skipped: 7
+        failures: []
+      notes: "All seven page tests passed. The real-service journey is opt-in and was skipped because SCENARIO_LAB_BASE_URL is not configured; six pre-existing infrastructure-dependent tests were also skipped."
+    upstream_trace:
+      plan_item: "5.5"
+      requirements: ["REQ-002", "REQ-017", "REQ-019", "REQ-020", "REQ-021"]
+      full_trace: "REQ-002/017/019/020/021 → Phase-5.5 → T073 → visual, access-control, and real-service Scenario Lab acceptance"
+  - task_id: "T074"
+    description: "Implement the Scenario Lab cards and observation board."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Render the read-only Scenario Lab page, fixed preset previews, session-owned observations, and organizer-only controls."]
+        - file: "web/demo-python/src/demo_web/presentation.py"
+          changes: ["Add Scenario Lab page metadata."]
+        - file: "web/demo-python/src/demo_web/templates/base.html"
+          changes: ["Add Scenario Lab to primary navigation."]
+        - file: "web/demo-python/src/demo_web/templates/lab.html"
+          changes: ["Present four fixed cards, provenance, read-only preview guidance, and accessible observation controls."]
+        - file: "web/demo-python/src/demo_web/templates/partials/lab_board.html"
+          changes: ["Render measured workload, raw capacity/read-back, seat illustration, participant groups, timeline, verdict, continuation, and owner controls."]
+        - file: "web/demo-python/src/demo_web/static/lab.js"
+          changes: ["Add safe DOM-based updates, explicit CSRF-protected controls, and bounded read-only polling."]
+        - file: "web/demo-python/src/demo_web/static/app.css"
+          changes: ["Style responsive cards and board with reduced-motion support."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 396
+        failed: 0
+        skipped: 7
+        failures: []
+      notes: "Full suite passed; Ruff, Python format, JavaScript syntax, diff checks, and FastAPI TestClient page/asset probes passed."
+    upstream_trace:
+      plan_item: "5.5"
+      requirements: ["REQ-002", "REQ-017", "REQ-019", "REQ-020", "REQ-021"]
+      full_trace: "REQ-002/017/019/020/021 → Phase-5.5 → T074 → server-authoritative, bounded-polling Scenario Lab presentation"
+
 pending_tasks:
-  - {task_id: "T073", description: "Specify visual and real lab acceptance", blocked_by: ["T072"], priority: "P1"}
-  - {task_id: "T074", description: "Implement lab cards, board, and timeline", blocked_by: ["T073"], priority: "P1"}
   - {task_id: "T075", description: "Specify Compose and launcher safety tests", blocked_by: ["T048", "T066", "T068", "T074"], priority: "P1"}
   - {task_id: "T076", description: "Wire images, launchers, boundaries, and CI", blocked_by: ["T075"], priority: "P1"}
   - {task_id: "T077", description: "Complete isolated browser integration suite", blocked_by: ["T076"], priority: "P1"}
@@ -825,5 +878,5 @@ validation:
   passed: true
   errors: []
   warnings:
-    - "Six backend integration/concurrency tests are skipped when their required external infrastructure is unavailable."
+    - "Seven tests are skipped: six require external infrastructure and the Scenario Lab real-service journey requires SCENARIO_LAB_BASE_URL."
   blocking_issues: []

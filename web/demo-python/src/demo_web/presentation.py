@@ -150,6 +150,16 @@ PAGE_METADATA = {
         ),
         implementation_status="Organizer report projection available",
     ),
+    "lab": PageMetadata(
+        title="Scenario Lab",
+        eyebrow="Bounded concurrency experiments",
+        heading="Scenario Lab",
+        description=(
+            "Run fixed, synthetic registration workloads and review measured service "
+            "observations without treating a timeout as a rollback."
+        ),
+        implementation_status="Fixed scenarios and observation board available",
+    ),
     "error": PageMetadata(
         title="Request not completed",
         eyebrow="The prototype could not complete this page",

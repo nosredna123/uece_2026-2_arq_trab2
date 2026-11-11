@@ -1,0 +1,133 @@
+batch_id: "T073-T074"
+completed_tasks: ["T073", "T074"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T073:
+    - file: "web/demo-python/tests/test_lab_pages.py"
+      change_type: "created"
+      description: "Test exact fixed previews, provenance, disabled mode, raw anomalies, unknown/error groups, controls, refresh behavior, reduced motion, and bounded polling."
+    - file: "tests/webapp/test_scenario_lab.py"
+      change_type: "created"
+      description: "Add an opt-in real-service journey for owner isolation, last-seat/read-back, FIFO continuation, rush, and duplicate replay."
+  T074:
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Render the Scenario Lab page from fixed manager previews and session-owned run snapshots."
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "modified"
+      description: "Define Scenario Lab page metadata."
+    - file: "web/demo-python/src/demo_web/templates/base.html"
+      change_type: "modified"
+      description: "Add the Scenario Lab primary navigation link."
+    - file: "web/demo-python/src/demo_web/templates/lab.html"
+      change_type: "created"
+      description: "Present the four workload/continuation cards and accessible read-only polling controls."
+    - file: "web/demo-python/src/demo_web/templates/partials/lab_board.html"
+      change_type: "created"
+      description: "Render service evidence, raw counts, outcomes, timeline, verdict, and explicit continuation actions."
+    - file: "web/demo-python/src/demo_web/static/lab.js"
+      change_type: "created"
+      description: "Implement safe DOM updates, CSRF-protected controls, and bounded observation polling."
+    - file: "web/demo-python/src/demo_web/static/app.css"
+      change_type: "modified"
+      description: "Style the responsive Scenario Lab and reduced-motion behavior."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Plan 5.5 preset, evidence, UI, and bounded polling requirements."
+  - artifact: "web/demo-python/src/demo_web/scenarios.py"
+    used_for: "Render authoritative, session-owned runner snapshots and fixed preset previews."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "Preserve presentation/service boundaries, synthetic personas, and explicit user intent."
+evidence_mapping:
+  T073:
+    - upstream: "docs/webapp/plan.md#Plan-5.5"
+      output: "web/demo-python/tests/test_lab_pages.py and tests/webapp/test_scenario_lab.py"
+      evidence: "Seven page tests pass; the opt-in integration test exercises two sessions, read-back, FIFO continuation, rush, and duplicate replay when SCENARIO_LAB_BASE_URL is explicitly configured."
+  T074:
+    - upstream: "docs/webapp/plan.md#Plan-5.5"
+      output: "web/demo-python/src/demo_web/templates/lab.html, web/demo-python/src/demo_web/templates/partials/lab_board.html, and web/demo-python/src/demo_web/static/lab.js"
+      evidence: "FastAPI TestClient verifies page rendering, fixed previews, disabled mode, owner-only controls, raw anomaly values, and static assets; JavaScript syntax and reduced-motion CSS checks pass."
+traceability:
+  - requirement: "REQ-002"
+    plan_item: "5.5"
+    task: "T073-T074"
+    files: ["web/demo-python/src/demo_web/templates/lab.html", "web/demo-python/src/demo_web/templates/partials/lab_board.html"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "5.5"
+    task: "T073-T074"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/tests/test_lab_pages.py"]
+    status: "completed"
+  - requirement: "REQ-019"
+    plan_item: "5.5"
+    task: "T073-T074"
+    files: ["web/demo-python/src/demo_web/static/lab.js", "web/demo-python/tests/test_lab_pages.py"]
+    status: "completed"
+  - requirement: "REQ-020"
+    plan_item: "5.5"
+    task: "T073-T074"
+    files: ["web/demo-python/src/demo_web/templates/partials/lab_board.html", "tests/webapp/test_scenario_lab.py"]
+    status: "completed"
+  - requirement: "REQ-021"
+    plan_item: "5.5"
+    task: "T073-T074"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/static/lab.js"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "The real-service acceptance test was skipped because SCENARIO_LAB_BASE_URL is not configured; it remains opt-in to avoid unrequested service mutations."
+  - severity: "LOW"
+    message: "Six existing infrastructure-dependent tests were skipped."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 396
+    failed: 0
+    skipped: 7
+    failures: []
+  focused_page_tests:
+    command: ".venv/bin/python -m pytest web/demo-python/tests/test_lab_pages.py -x --import-mode=importlib"
+    passed: 7
+    failed: 0
+    skipped: 0
+    failures: []
+  lint:
+    command: ".venv/bin/ruff check --no-cache on changed Python files"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  formatting:
+    command: ".venv/bin/ruff format --check --no-cache on changed Python files"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  javascript_syntax:
+    command: "node --check web/demo-python/src/demo_web/static/lab.js"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  whitespace:
+    command: "git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/scenario-lab"
+    status: 200
+    result: "PASS (FastAPI TestClient)"
+  - method: "GET"
+    path: "/static/lab.js"
+    status: 200
+    result: "PASS (FastAPI TestClient)"
+  - method: "GET"
+    path: "/static/app.css"
+    status: 200
+    result: "PASS (FastAPI TestClient)"

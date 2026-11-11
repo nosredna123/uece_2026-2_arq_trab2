@@ -31,6 +31,7 @@ from demo_web.presentation import (
     templates,
 )
 from demo_web.scenarios import (
+    PRESETS,
     PresetUnavailableError,
     ScenarioAccessError,
     ScenarioConflictError,
@@ -2044,6 +2045,64 @@ async def session_info(request: Request, response: Response) -> dict[str, str]:
     if identity is not None:
         result["role"] = identity["role"]
     return result
+
+
+@router.get("/scenario-lab", response_class=HTMLResponse)
+async def scenario_lab_page(request: Request) -> HTMLResponse:
+    store = _session_store(request)
+    session, is_new = _session_or_create(request)
+    manager = getattr(request.app.state, "scenario_manager", None)
+    identity = store.identity_for(session)
+    enabled = manager is not None
+    presets = [
+        manager.preview(preset_key)
+        if enabled
+        else {
+            "preset": preset.key,
+            "title": preset.title,
+            "participants": preset.participants,
+            "capacity": preset.capacity,
+            "submissionsPerParticipant": preset.submissions_per_participant,
+            "concurrency": preset.required_concurrency,
+            "priceMinor": preset.price_minor,
+            "available": False,
+            "unavailableReason": "Scenario Lab is disabled by the application configuration.",
+        }
+        for preset_key, preset in PRESETS.items()
+    ]
+    presets.append(
+        {
+            "preset": "seat-opens",
+            "title": "A seat opens",
+            "participants": 0,
+            "capacity": 0,
+            "submissionsPerParticipant": 0,
+            "concurrency": 0,
+            "priceMinor": 0,
+            "available": enabled,
+            "unavailableReason": None,
+        }
+    )
+    timeout = getattr(request.app.state.settings, "lab_run_timeout_seconds", None) or 60
+    response = templates.TemplateResponse(
+        request=request,
+        name="lab.html",
+        context={
+            "page": PAGE_METADATA["lab"],
+            "operational_status": (
+                "Preview only; no run has been started." if enabled else "Scenario Lab is disabled."
+            ),
+            "lab_enabled": enabled,
+            "can_run": enabled and identity is not None and identity["role"] == "ORGANIZER",
+            "csrf_token": session.csrf_token,
+            "presets": presets,
+            "runs": manager.snapshots_for(session.id) if enabled else [],
+            "max_poll_attempts": min(90, timeout + 10),
+        },
+    )
+    response.headers["Cache-Control"] = "no-store"
+    _set_cookie_if_new(response, is_new=is_new, session=session, store=store)
+    return response
 
 
 @router.get("/scenario-lab/presets/{preset}")
