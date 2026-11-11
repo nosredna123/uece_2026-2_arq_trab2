@@ -1,0 +1,64 @@
+batch_id: "T079"
+completed_tasks: ["T079"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T079:
+    - file: "docs/validation/webapp-presentation-script.md"
+      change_type: "created"
+      description: "Document full, happy-path, and short presentations with exact UI actions, evidence, narration, recovery paths, Q&A, AI disclosure, and safe shutdown."
+    - file: "README.md"
+      change_type: "modified"
+      description: "Link the browser presentation script while retaining the existing API/script-based defense guide."
+    - file: "web/demo-python/README.md"
+      change_type: "modified"
+      description: "Link the browser presentation script from the app setup guide."
+    - file: "docs/validation/final-delivery.md"
+      change_type: "modified"
+      description: "Link the timed browser script and clarify that it complements the API/script-based defense guide."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T079 complete and identify T080 as the remaining task."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T079 traceability and current validation results."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "T079 acceptance criteria, presentation requirements, and implementation order."
+  - artifact: "docs/validation/webapp-evidence.md"
+    used_for: "Existing browser results, known limits, scenario evidence, and truthful claims."
+  - artifact: "web/demo-python/README.md"
+    used_for: "Documented setup, service configuration, and browser behavior."
+evidence_mapping:
+  T079:
+    - upstream: "docs/webapp/plan.md#Plan-6.3"
+      output: "docs/validation/webapp-presentation-script.md"
+      evidence: "Timed walkthrough and abbreviated variants include exact actions/personas, observed outcomes, presenter narration, recovery guidance, Q&A, disclosure, and non-destructive shutdown."
+traceability:
+  - requirement: "REQ-018"
+    plan_item: "6.3"
+    task: "T079"
+    files: ["docs/validation/webapp-presentation-script.md", "README.md", "web/demo-python/README.md", "docs/validation/final-delivery.md"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "The full host suite passed with 10 skips; some integration tests require external infrastructure and the Scenario Lab real-service journey requires SCENARIO_LAB_BASE_URL."
+  - severity: "LOW"
+    message: "Pytest reported the existing Starlette/AnyIO BlockingPortal deprecation warning."
+test_results:
+  host_python_suite:
+    command: "./.venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 406
+    failed: 0
+    skipped: 10
+    duration: "7.93 seconds"
+    failures: []
+  documentation_diff_check:
+    command: "git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes: []

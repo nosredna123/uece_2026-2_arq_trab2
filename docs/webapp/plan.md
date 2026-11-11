@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Implementation in progress; T045-T078 are complete.
+**Status:** Implementation in progress; T045-T079 are complete.
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T078 are complete; T079-T080 remain. Tests belong before the
+T045-T079 are complete; T080 remains. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -590,7 +590,7 @@ passed via mocks. No evidence claim predates the execution it describes.
 **Requirements:** REQ-002, REQ-012, REQ-014, REQ-016, REQ-017, REQ-018,
 REQ-019, REQ-020, REQ-021.
 
-- [ ] T079 [Plan:6.3] Write `docs/validation/webapp-presentation-script.md` following section 9: preflight, timed acts, exact clicks/personas, expected real responses, badge disclosures, prepared-data timing, narration, happy-path-then-lab sequence, failure branches, short version, evidence references, questions/answers, AI disclosure, and non-destructive shutdown. Link it from both READMEs and `docs/validation/final-delivery.md`; preserve the existing API/script-based defense guide.
+- [x] T079 [Plan:6.3] Write `docs/validation/webapp-presentation-script.md` following section 9: preflight, timed acts, exact clicks/personas, expected real responses, badge disclosures, prepared-data timing, narration, happy-path-then-lab sequence, failure branches, short version, evidence references, questions/answers, AI disclosure, and non-destructive shutdown. Link it from both READMEs and `docs/validation/final-delivery.md`; preserve the existing API/script-based defense guide.
 - [ ] T080 [Plan:6.3] Rehearse the full presentation on fresh synthetic data using only documented commands/actions; fix tightly coupled documentation/UX issues, re-run affected tests and full regression gates, and record actual timings/limits in `docs/validation/webapp-evidence.md`. Create `docs/webapp/checkpoints/tasks-to-impl.yaml` and task/batch reports as implementation proceeds; close every REQ with observed evidence, not checkbox presence alone.
 
 **Done when:** another presenter can follow the Markdown plot without hidden

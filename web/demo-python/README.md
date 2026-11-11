@@ -56,6 +56,10 @@ Reporting/Identity outage probes; the probes restore their services before
 cleanup, including on failure. Browser screenshots are saved under
 `docs/validation/artifacts/webapp/`.
 
+For presenter timing, exact UI actions, narration, failure branches, and
+non-destructive shutdown, follow the
+[browser presentation script](../../docs/validation/webapp-presentation-script.md).
+
 ## Optional Scenario Lab
 
 The Scenario Lab is disabled by default. To enable it, set both

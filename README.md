@@ -173,6 +173,10 @@ project-scoped volumes, restores Reporting/Identity after its outage probes,
 and removes only that isolated project. Screenshots are written to
 `docs/validation/artifacts/webapp/`.
 
+Use the [timed browser presentation script](docs/validation/webapp-presentation-script.md)
+for the full walkthrough, happy-path version, short version, and recovery
+branches. The existing API/script-based defense guide remains available.
+
 ### Paid-registration demonstration
 
 There is no preloaded production-like dataset. The repeatable demonstration

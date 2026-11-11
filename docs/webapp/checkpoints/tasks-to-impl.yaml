@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 34
+  completed_tasks: 35
   in_progress_tasks: 0
-  pending_tasks: 2
-  completion_percentage: 94.4
+  pending_tasks: 1
+  completion_percentage: 97.2
 
 tasks:
   - task_id: "T045"
@@ -1039,8 +1039,36 @@ tasks:
       requirements: ["REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006", "REQ-007", "REQ-008", "REQ-009", "REQ-010", "REQ-011", "REQ-012", "REQ-013", "REQ-014", "REQ-015", "REQ-016", "REQ-017", "REQ-019", "REQ-020", "REQ-021"]
       full_trace: "REQ-002/003/004/005/006/007/008/009/010/011/012/013/014/015/016/017/019/020/021 → Plan 6.2 → T078 → real-browser evidence, sanitized artifacts, and adapter boundary diagrams"
 
+  - task_id: "T079"
+    description: "Write presentation plot and recovery branches."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/validation/webapp-presentation-script.md"
+          changes: ["Document full, happy-path, and short presentations with exact UI actions, evidence, narration, recovery paths, Q&A, AI disclosure, and safe shutdown."]
+        - file: "README.md"
+          changes: ["Link the timed browser presentation script while retaining the API/script defense guide."]
+        - file: "web/demo-python/README.md"
+          changes: ["Link the browser presentation script from the app setup guide."]
+        - file: "docs/validation/final-delivery.md"
+          changes: ["Link the browser presentation script and clarify that it complements the API/script guide."]
+        - file: "docs/webapp/plan.md"
+          changes: ["Mark T079 complete and update the remaining task status."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "./.venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 406
+        failed: 0
+        skipped: 10
+        failures: []
+      notes: "The complete host suite passed. Ten tests were skipped due to collection/environment-dependent integration and Scenario Lab requirements; one existing Starlette/AnyIO deprecation warning remains."
+    upstream_trace:
+      plan_item: "6.3"
+      requirements: ["REQ-018"]
+      full_trace: "REQ-018 → Plan 6.3 → T079 → timed browser presentation script, recovery branches, Q&A, and linked delivery guidance"
+
 pending_tasks:
-  - {task_id: "T079", description: "Write presentation plot and recovery branches", blocked_by: ["T078"], priority: "P1"}
   - {task_id: "T080", description: "Rehearse and close verified requirements", blocked_by: ["T079"], priority: "P1"}
 
 untracked_changes: []
@@ -1071,5 +1099,5 @@ validation:
   passed: true
   errors: []
   warnings:
-    - "Seven tests are skipped: six require external infrastructure and the Scenario Lab real-service journey requires SCENARIO_LAB_BASE_URL."
+    - "The latest host suite passed 406 tests with 10 skips; some integration tests require external infrastructure and the Scenario Lab real-service journey requires SCENARIO_LAB_BASE_URL."
   blocking_issues: []

@@ -118,6 +118,13 @@ does not claim that AI independently proves correctness or replaces human
 review. Project maintainers remain responsible for reviewing the deliverable,
 the accuracy of claims, and the final demonstration.
 
+## Python browser presentation
+
+The [timed browser presentation script](./webapp-presentation-script.md)
+contains the full 14–16 minute walkthrough, shorter variants, exact UI actions,
+recovery branches, Q&A, and non-destructive shutdown. It complements the
+script/API-based demonstration below; it does not replace that defense guide.
+
 ## Demonstration and defense script
 
 Allow about 7–10 minutes for the walkthrough, plus up to two minutes for the
