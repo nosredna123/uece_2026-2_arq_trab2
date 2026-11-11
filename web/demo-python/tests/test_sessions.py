@@ -120,3 +120,21 @@ def test_session_expiry_capacity_and_restart_invalidation(identity_fixtures):
 
     now[0] = 11.0
     assert store.get(second.id) is None
+
+
+def test_activity_check_does_not_extend_session_lifetime(identity_fixtures):
+    fixtures = json.loads(identity_fixtures.read_text(encoding="utf-8"))
+    now = [0.0]
+    store = SessionStore(
+        fixtures,
+        ttl_seconds=10,
+        max_sessions=1,
+        clock=lambda: now[0],
+    )
+    session = store.create()
+
+    now[0] = 9.0
+    assert store.is_active(session.id)
+    assert session.last_used_at == 0.0
+    now[0] = 10.0
+    assert not store.is_active(session.id)

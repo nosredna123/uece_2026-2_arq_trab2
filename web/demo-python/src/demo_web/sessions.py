@@ -97,6 +97,12 @@ class SessionStore:
             self._sessions.move_to_end(session_id)
             return session
 
+    def is_active(self, session_id: str) -> bool:
+        now = self._clock()
+        with self._lock:
+            self._remove_expired(now)
+            return session_id in self._sessions
+
     def identity_for(self, session: BrowserSession) -> Mapping[str, str] | None:
         if session.persona == "visitor":
             return None

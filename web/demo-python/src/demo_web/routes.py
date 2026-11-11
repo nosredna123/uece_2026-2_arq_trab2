@@ -30,6 +30,14 @@ from demo_web.presentation import (
     service_failure,
     templates,
 )
+from demo_web.scenarios import (
+    PresetUnavailableError,
+    ScenarioAccessError,
+    ScenarioConflictError,
+    ScenarioDisabledError,
+    ScenarioManager,
+    ScenarioStateError,
+)
 from demo_web.sessions import (
     BrowserSession,
     InvalidPersonaError,
@@ -157,6 +165,27 @@ def _organizer_identity(request: Request, session: BrowserSession) -> dict[str, 
     if identity is None or identity.get("role") != "ORGANIZER":
         raise HTTPException(status_code=403, detail="Select the organizer persona to continue.")
     return dict(identity)
+
+
+def _scenario_manager(request: Request, session: BrowserSession) -> ScenarioManager:
+    _organizer_identity(request, session)
+    manager = getattr(request.app.state, "scenario_manager", None)
+    if manager is None:
+        raise HTTPException(status_code=404, detail="Scenario Lab is not available.")
+    return manager
+
+
+def _scenario_error(error: Exception) -> HTTPException:
+    if isinstance(error, ScenarioAccessError):
+        return HTTPException(status_code=404, detail="The requested run is not available.")
+    if isinstance(
+        error,
+        (ScenarioConflictError, PresetUnavailableError, ScenarioStateError),
+    ):
+        return HTTPException(status_code=409, detail=str(error))
+    if isinstance(error, ScenarioDisabledError):
+        return HTTPException(status_code=404, detail="Scenario Lab is not available.")
+    raise error
 
 
 def _demo_response(
@@ -2017,10 +2046,148 @@ async def session_info(request: Request, response: Response) -> dict[str, str]:
     return result
 
 
+@router.get("/scenario-lab/presets/{preset}")
+async def scenario_preview(request: Request, preset: str) -> JSONResponse:
+    session = _existing_session(request)
+    manager = _scenario_manager(request, session)
+    try:
+        result = manager.preview(preset)
+    except (
+        ScenarioAccessError,
+        ScenarioConflictError,
+        PresetUnavailableError,
+        ScenarioDisabledError,
+        ScenarioStateError,
+    ) as error:
+        raise _scenario_error(error) from None
+    response = JSONResponse(result)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.get("/scenario-lab/runs")
+async def scenario_runs(request: Request) -> JSONResponse:
+    session = _existing_session(request)
+    manager = _scenario_manager(request, session)
+    response = JSONResponse({"runs": manager.snapshots_for(session.id)})
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.post("/scenario-lab/runs/{preset}")
+async def start_scenario(request: Request, preset: str) -> JSONResponse:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    manager = _scenario_manager(request, session)
+    try:
+        result = await manager.start(session.id, preset)
+    except (
+        ScenarioAccessError,
+        ScenarioConflictError,
+        PresetUnavailableError,
+        ScenarioDisabledError,
+        ScenarioStateError,
+    ) as error:
+        raise _scenario_error(error) from None
+    response = JSONResponse(result, status_code=202)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.get("/scenario-lab/runs/{run_id:uuid}")
+async def scenario_snapshot(request: Request, run_id: UUID) -> JSONResponse:
+    session = _existing_session(request)
+    manager = _scenario_manager(request, session)
+    result = manager.snapshot(session.id, str(run_id))
+    if result is None:
+        raise HTTPException(status_code=404, detail="The requested run is not available.")
+    response = JSONResponse(result)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.get("/scenario-lab/runs/{run_id:uuid}/export")
+async def export_scenario(request: Request, run_id: UUID) -> JSONResponse:
+    session = _existing_session(request)
+    manager = _scenario_manager(request, session)
+    result = manager.export(session.id, str(run_id))
+    if result is None:
+        raise HTTPException(status_code=404, detail="The requested run is not available.")
+    response = JSONResponse(result)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.post("/scenario-lab/runs/{run_id:uuid}/stop")
+async def stop_scenario(request: Request, run_id: UUID) -> JSONResponse:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    manager = _scenario_manager(request, session)
+    try:
+        result = await manager.stop(session.id, str(run_id))
+    except (
+        ScenarioAccessError,
+        ScenarioConflictError,
+        PresetUnavailableError,
+        ScenarioDisabledError,
+        ScenarioStateError,
+    ) as error:
+        raise _scenario_error(error) from None
+    response = JSONResponse(result)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.post("/scenario-lab/runs/{run_id:uuid}/cancel-confirmed")
+async def cancel_scenario_registration(request: Request, run_id: UUID) -> JSONResponse:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    manager = _scenario_manager(request, session)
+    try:
+        result = await manager.cancel_confirmed(session.id, str(run_id))
+    except (
+        ScenarioAccessError,
+        ScenarioConflictError,
+        PresetUnavailableError,
+        ScenarioDisabledError,
+        ScenarioStateError,
+    ) as error:
+        raise _scenario_error(error) from None
+    response = JSONResponse(result)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.post("/scenario-lab/runs/{run_id:uuid}/accept-offer")
+async def accept_scenario_offer(request: Request, run_id: UUID) -> JSONResponse:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    manager = _scenario_manager(request, session)
+    try:
+        result = await manager.accept_offer(session.id, str(run_id))
+    except (
+        ScenarioAccessError,
+        ScenarioConflictError,
+        PresetUnavailableError,
+        ScenarioDisabledError,
+        ScenarioStateError,
+    ) as error:
+        raise _scenario_error(error) from None
+    response = JSONResponse(result)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 @router.post("/persona/{persona}")
 async def select_persona(request: Request, persona: str) -> Response:
     session = _existing_session(request)
     await _validate_csrf(request, session)
+    manager = getattr(request.app.state, "scenario_manager", None)
+    if manager is not None and manager.is_running_for(session.id):
+        raise HTTPException(
+            status_code=409,
+            detail="Persona cannot change while this session owns an active Scenario Lab run.",
+        )
     try:
         _session_store(request).set_persona(session, persona)
     except InvalidPersonaError:

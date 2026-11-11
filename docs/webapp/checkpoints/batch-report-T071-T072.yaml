@@ -1,0 +1,180 @@
+batch_id: "T071-T072"
+completed_tasks: ["T071", "T072"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T071:
+    - file: "web/demo-python/tests/test_scenarios.py"
+      change_type: "created"
+      description: "Exercise the fixed scenario workloads, concurrency, failures, stop/drain, bounded read-back, FIFO continuation, and verdict oracle."
+    - file: "web/demo-python/tests/test_scenario_routes.py"
+      change_type: "created"
+      description: "Exercise organizer/CSRF gates, owner isolation, export confidentiality, route controls, and active-run persona protection."
+    - file: "web/demo-python/tests/test_sessions.py"
+      change_type: "modified"
+      description: "Verify runner session checks do not refresh session lifetime."
+  T072:
+    - file: "web/demo-python/src/demo_web/scenarios.py"
+      change_type: "created"
+      description: "Implement the bounded concurrent scenario manager, supervised workers, reconciliation, sanitized snapshots, and idempotent continuation."
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Add CSRF-protected organizer run controls and owner-only preview, snapshot, and export endpoints."
+    - file: "web/demo-python/src/demo_web/app.py"
+      change_type: "modified"
+      description: "Initialize the opt-in lab manager and shut it down before HTTP clients."
+    - file: "web/demo-python/src/demo_web/sessions.py"
+      change_type: "modified"
+      description: "Add non-touching session validity checks for workers."
+    - file: "infra/.env.example"
+      change_type: "modified"
+      description: "Align opt-in and resource-limit names with the implementation plan."
+    - file: "infra/environment.schema.json"
+      change_type: "modified"
+      description: "Enforce matching opt-in and fixed operator bounds."
+    - file: "infra/docker-compose.yml"
+      change_type: "modified"
+      description: "Wire the plan-defined identity lab setting to the mock."
+    - file: "scripts/validate-environment.py"
+      change_type: "modified"
+      description: "Validate exact Scenario Lab names and bounds."
+    - file: "web/demo-python/src/demo_web/settings.py"
+      change_type: "modified"
+      description: "Validate matching flags, fixture path, and the six bounded runner settings."
+    - file: "mocks/identity-access/src/identity_access_mock/settings.py"
+      change_type: "modified"
+      description: "Align the opt-in participant fixture path with the plan."
+    - file: "mocks/identity-access/src/identity_access_mock/app.py"
+      change_type: "modified"
+      description: "Preserve fixture loading behind explicit identity lab opt-in."
+    - file: "mocks/identity-access/README.md"
+      change_type: "modified"
+      description: "Align the documented fixture path with the plan-defined identity lab setting."
+    - file: "mocks/identity-access/tests/test_identity_runtime.py"
+      change_type: "modified"
+      description: "Use the plan-defined identity lab setting in runtime tests."
+    - file: "mocks/identity-access/tests/test_scenario_identities.py"
+      change_type: "modified"
+      description: "Use the plan-defined identity lab setting in fixture authorization tests."
+    - file: "web/demo-python/tests/conftest.py"
+      change_type: "modified"
+      description: "Use the exact plan-defined Scenario Lab flags in the standard web test environment."
+    - file: "web/demo-python/tests/test_lab_settings.py"
+      change_type: "modified"
+      description: "Use plan-defined fixture and resource-limit names in settings tests."
+    - file: "tests/configuration/test_demo_web_environment.py"
+      change_type: "modified"
+      description: "Validate the plan-defined flags, paths, and resource limits."
+    - file: "docs/webapp/checkpoints/batch-report-T069-T070.yaml"
+      change_type: "modified"
+      description: "Correct prior report wording to match the plan-defined lab setting."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Fixed workloads, resource limits, worker lifecycle, ownership, reconciliation, and continuation behavior."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "Preserved service boundaries, server-only identities, and non-destructive demo scope."
+  - artifact: "web/demo-python/src/demo_web/clients.py"
+    used_for: "Use only existing Event Management and Registration client operations."
+evidence_mapping:
+  T071:
+    - upstream: "docs/webapp/plan.md#Plan-5.4"
+      output: "web/demo-python/tests/test_scenarios.py"
+      evidence: "All 20 runner acceptance tests pass, including fixed counts, same-key concurrent replay, operator bounds, waitlist-disabled blocking, inconsistent availability detection, unknown outcomes, read-back resolution, safe stop, session expiry, FIFO promotion, and continuation retry."
+  T072:
+    - upstream: "docs/webapp/plan.md#Plan-5.4"
+      output: "web/demo-python/src/demo_web/scenarios.py and web/demo-python/src/demo_web/routes.py"
+      evidence: "The runner uses only fixed free activities and existing service clients; lifespan supervises tasks; owner/CSRF/organizer checks protect controls; snapshots omit fixture tokens; final verdicts use public service read-back."
+traceability:
+  - requirement: "REQ-013"
+    plan_item: "5.4"
+    task: "T071-T072"
+    files: ["web/demo-python/src/demo_web/scenarios.py", "web/demo-python/tests/test_scenarios.py"]
+    status: "completed"
+  - requirement: "REQ-014"
+    plan_item: "5.4"
+    task: "T071-T072"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/tests/test_scenario_routes.py"]
+    status: "completed"
+  - requirement: "REQ-015"
+    plan_item: "5.4"
+    task: "T071-T072"
+    files: ["web/demo-python/src/demo_web/app.py", "web/demo-python/src/demo_web/scenarios.py"]
+    status: "completed"
+  - requirement: "REQ-019"
+    plan_item: "5.4"
+    task: "T071-T072"
+    files: ["web/demo-python/src/demo_web/scenarios.py", "web/demo-python/tests/test_scenarios.py"]
+    status: "completed"
+  - requirement: "REQ-020"
+    plan_item: "5.4"
+    task: "T071-T072"
+    files: ["web/demo-python/src/demo_web/scenarios.py", "web/demo-python/tests/test_scenarios.py"]
+    status: "completed"
+  - requirement: "REQ-021"
+    plan_item: "5.4"
+    task: "T071-T072"
+    files: ["infra/environment.schema.json", "web/demo-python/src/demo_web/settings.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six existing integration/concurrency tests were skipped because the required external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 389
+    failed: 0
+    skipped: 6
+    failures: []
+  lint:
+    command: "RUFF_CACHE_DIR=/tmp/uece-ruff-cache .venv/bin/ruff check on changed Python files"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  formatting:
+    command: "RUFF_CACHE_DIR=/tmp/uece-ruff-cache .venv/bin/ruff format --check on changed Python files"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  environment:
+    command: "python scripts/validate-environment.py infra/.env.example; python -m json.tool infra/environment.schema.json; git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/scenario-lab/presets/last-seat"
+    status: 200
+    result: "PASS (FastAPI TestClient)"
+  - method: "GET"
+    path: "/scenario-lab/runs"
+    status: 200
+    result: "PASS (FastAPI TestClient)"
+  - method: "POST"
+    path: "/scenario-lab/runs/last-seat"
+    status: 202
+    result: "PASS (FastAPI TestClient)"
+  - method: "GET"
+    path: "/scenario-lab/runs/{run_id}"
+    status: 200
+    result: "PASS (FastAPI TestClient)"
+  - method: "GET"
+    path: "/scenario-lab/runs/{run_id}/export"
+    status: 200
+    result: "PASS (FastAPI TestClient)"
+  - method: "POST"
+    path: "/scenario-lab/runs/{run_id}/stop"
+    status: 200
+    result: "PASS (FastAPI TestClient)"
+  - method: "POST"
+    path: "/scenario-lab/runs/{run_id}/cancel-confirmed"
+    status: 200
+    result: "PASS (FastAPI TestClient)"
+  - method: "POST"
+    path: "/scenario-lab/runs/{run_id}/accept-offer"
+    status: 200
+    result: "PASS (FastAPI TestClient)"

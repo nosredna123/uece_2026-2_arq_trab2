@@ -156,12 +156,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging()
     runtime_settings = settings or Settings.from_environment()
     fixtures = load_fixtures()
-    if runtime_settings.scenario_pool_enabled:
-        if runtime_settings.scenario_fixtures_path is None:
-            raise ValueError("scenario identity fixture path is required when the pool is enabled")
+    if runtime_settings.lab_enabled:
+        if runtime_settings.lab_fixtures_path is None:
+            raise ValueError("scenario identity fixture path is required when the lab is enabled")
         fixtures.update(
             load_scenario_fixtures(
-                runtime_settings.scenario_fixtures_path,
+                runtime_settings.lab_fixtures_path,
                 fixtures,
             )
         )

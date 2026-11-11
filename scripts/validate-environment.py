@@ -50,26 +50,42 @@ def validate(path: Path) -> list[str]:
             "DEMO_WEB_ATTENDANCE_BASE_URL",
             "DEMO_WEB_REPORTING_BASE_URL",
             "DEMO_WEB_IDENTITY_FIXTURES_PATH",
-            "DEMO_WEB_SCENARIO_POOL_ENABLED",
+            "DEMO_LAB_ENABLED",
         )
         for key in required_demo_keys:
             if key not in values:
                 errors.append(f"{key}: required when DEMO_WEB_ENABLED=true")
-    identity_pool_enabled = values.get("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "false")
-    web_pool_enabled = values.get("DEMO_WEB_SCENARIO_POOL_ENABLED", "false")
-    if identity_pool_enabled != web_pool_enabled:
-        errors.append(
-            "DEMO_WEB_SCENARIO_POOL_ENABLED: must match IDENTITY_MOCK_SCENARIO_POOL_ENABLED"
-        )
-    if identity_pool_enabled == "true":
+    identity_lab_enabled = values.get("IDENTITY_LAB_ENABLED", "false")
+    demo_lab_enabled = values.get("DEMO_LAB_ENABLED", "false")
+    if identity_lab_enabled != demo_lab_enabled:
+        errors.append("DEMO_LAB_ENABLED: must match IDENTITY_LAB_ENABLED")
+    if identity_lab_enabled == "true":
         if values.get("DEMO_WEB_ENABLED") != "true":
-            errors.append("DEMO_WEB_ENABLED: must be true when the scenario pool is enabled")
+            errors.append("DEMO_WEB_ENABLED: must be true when the lab is enabled")
         for key in (
-            "IDENTITY_MOCK_SCENARIO_FIXTURES_PATH",
-            "DEMO_WEB_SCENARIO_FIXTURES_PATH",
+            "IDENTITY_LAB_FIXTURES_PATH",
+            "DEMO_LAB_FIXTURES_PATH",
+            "DEMO_LAB_MAX_PARTICIPANTS",
+            "DEMO_LAB_MAX_CONCURRENCY",
+            "DEMO_LAB_RUN_TIMEOUT_SECONDS",
+            "DEMO_LAB_SETTLE_TIMEOUT_SECONDS",
+            "DEMO_LAB_RUN_TTL_SECONDS",
+            "DEMO_LAB_MAX_RETAINED_RUNS",
         ):
             if not values.get(key):
-                errors.append(f"{key}: required when the scenario pool is enabled")
+                errors.append(f"{key}: required when the lab is enabled")
+    lab_bounds = {
+        "DEMO_LAB_MAX_PARTICIPANTS": 50,
+        "DEMO_LAB_MAX_CONCURRENCY": 10,
+        "DEMO_LAB_RUN_TIMEOUT_SECONDS": 60,
+        "DEMO_LAB_SETTLE_TIMEOUT_SECONDS": 30,
+        "DEMO_LAB_RUN_TTL_SECONDS": 1800,
+        "DEMO_LAB_MAX_RETAINED_RUNS": 5,
+    }
+    for key, maximum_value in lab_bounds.items():
+        value = values.get(key, "")
+        if value.isdigit() and int(value) > maximum_value:
+            errors.append(f"{key}: exceeds the configured safety limit")
     for key, value in values.items():
         if key.endswith("_PORT") and value.isdigit() and int(value) > 65535:
             errors.append(f"{key}: port exceeds 65535")

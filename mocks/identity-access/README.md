@@ -18,9 +18,9 @@ such as waitlist integration tests.
 The service requires `INTERNAL_SERVICE_KEY` and
 `IDENTITY_MOCK_AVAILABLE=true|false`; configuration is rejected when either
 is missing or malformed. The scenario identity pool is disabled unless
-`IDENTITY_MOCK_SCENARIO_POOL_ENABLED=true`. When enabled, the mock loads the
+`IDENTITY_LAB_ENABLED=true`. When enabled, the mock loads the
 fixed `scenario-participants.json` file from
-`IDENTITY_MOCK_SCENARIO_FIXTURES_PATH` and accepts exactly twenty unique,
+`IDENTITY_LAB_FIXTURES_PATH` and accepts exactly twenty unique,
 unscoped `PARTICIPANT` identities. The fixture is limited to 32 KiB and is
 validated against the four baseline fixtures; malformed, oversized, duplicate,
 or privileged entries fail closed. Keep the fixture server-side: this mock
@@ -34,7 +34,7 @@ docker build --target runtime -t eventhub-identity-mock mocks/identity-access
 docker run --rm -p 8085:8080 \
   -e INTERNAL_SERVICE_KEY=synthetic-internal-service-only \
   -e IDENTITY_MOCK_AVAILABLE=true \
-  -e IDENTITY_MOCK_SCENARIO_POOL_ENABLED=false \
+  -e IDENTITY_LAB_ENABLED=false \
   eventhub-identity-mock
 ```
 

@@ -37,7 +37,7 @@ files_changed:
       description: "Validate flags, matching opt-in, and conditional fixture paths."
     - file: "infra/docker-compose.yml"
       change_type: "modified"
-      description: "Wire the explicit scenario pool settings into identity-mock."
+      description: "Wire the explicit lab identity settings into identity-mock."
     - file: "scripts/validate-environment.py"
       change_type: "modified"
       description: "Validate matching flags and required paths without exposing fixture contents."

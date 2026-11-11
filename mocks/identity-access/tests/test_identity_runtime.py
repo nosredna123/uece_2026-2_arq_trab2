@@ -16,7 +16,7 @@ IDENTITY_URL = "/internal/identity/validate"
 def client(monkeypatch):
     monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
     monkeypatch.setenv("IDENTITY_MOCK_AVAILABLE", "true")
-    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "false")
+    monkeypatch.setenv("IDENTITY_LAB_ENABLED", "false")
     with TestClient(create_app()) as test_client:
         yield test_client
 
@@ -134,16 +134,16 @@ def test_identity_settings_are_required_and_secret_is_not_represented(monkeypatc
     assert SERVICE_KEY not in repr(Settings.from_environment())
 
 
-def test_scenario_pool_settings_require_explicit_boolean_and_path(monkeypatch):
+def test_lab_settings_require_explicit_boolean_and_path(monkeypatch):
     monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
     monkeypatch.setenv("IDENTITY_MOCK_AVAILABLE", "true")
-    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "yes")
-    with pytest.raises(RuntimeError, match="IDENTITY_MOCK_SCENARIO_POOL_ENABLED"):
+    monkeypatch.setenv("IDENTITY_LAB_ENABLED", "yes")
+    with pytest.raises(RuntimeError, match="IDENTITY_LAB_ENABLED"):
         Settings.from_environment()
 
-    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "true")
-    monkeypatch.delenv("IDENTITY_MOCK_SCENARIO_FIXTURES_PATH", raising=False)
-    with pytest.raises(RuntimeError, match="IDENTITY_MOCK_SCENARIO_FIXTURES_PATH"):
+    monkeypatch.setenv("IDENTITY_LAB_ENABLED", "true")
+    monkeypatch.delenv("IDENTITY_LAB_FIXTURES_PATH", raising=False)
+    with pytest.raises(RuntimeError, match="IDENTITY_LAB_FIXTURES_PATH"):
         Settings.from_environment()
 
 

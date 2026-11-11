@@ -39,8 +39,8 @@ def test_default_behavior_remains_limited_to_the_four_baseline_fixtures(
 ):
     monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
     monkeypatch.setenv("IDENTITY_MOCK_AVAILABLE", "true")
-    monkeypatch.delenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", raising=False)
-    monkeypatch.delenv("IDENTITY_MOCK_SCENARIO_FIXTURES_PATH", raising=False)
+    monkeypatch.delenv("IDENTITY_LAB_ENABLED", raising=False)
+    monkeypatch.delenv("IDENTITY_LAB_FIXTURES_PATH", raising=False)
 
     with TestClient(create_app()) as client:
         baseline = load_fixtures()
@@ -65,8 +65,8 @@ def test_enabled_pool_authenticates_exactly_twenty_unique_participants(
 ):
     monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
     monkeypatch.setenv("IDENTITY_MOCK_AVAILABLE", "true")
-    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "true")
-    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_FIXTURES_PATH", str(FIXTURE_PATH))
+    monkeypatch.setenv("IDENTITY_LAB_ENABLED", "true")
+    monkeypatch.setenv("IDENTITY_LAB_FIXTURES_PATH", str(FIXTURE_PATH))
     fixtures = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     assert len(fixtures) == 20
     assert len({identity["token"] for identity in fixtures.values()}) == 20
@@ -88,8 +88,8 @@ def test_enabled_pool_authenticates_exactly_twenty_unique_participants(
 def test_enabled_pool_preserves_the_baseline_persona_roles(monkeypatch):
     monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
     monkeypatch.setenv("IDENTITY_MOCK_AVAILABLE", "true")
-    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "true")
-    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_FIXTURES_PATH", str(FIXTURE_PATH))
+    monkeypatch.setenv("IDENTITY_LAB_ENABLED", "true")
+    monkeypatch.setenv("IDENTITY_LAB_FIXTURES_PATH", str(FIXTURE_PATH))
 
     with TestClient(create_app()) as client:
         for token, role in (

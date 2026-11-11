@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 26
+  completed_tasks: 28
   in_progress_tasks: 0
-  pending_tasks: 10
-  completion_percentage: 72.2
+  pending_tasks: 8
+  completion_percentage: 77.8
 
 tasks:
   - task_id: "T045"
@@ -706,9 +706,88 @@ tasks:
       requirements: ["REQ-003", "REQ-015", "REQ-019", "REQ-021"]
       full_trace: "REQ-003/015/019/021 → Phase-5.3 → T070 → explicit, bounded server-side identity fixtures"
 
+  - task_id: "T071"
+    description: "Specify scenario workload and oracle tests."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_scenarios.py"
+          changes: ["Verify fixed free workloads, synchronized bounded concurrency, duplicate replay keys, exact dispatch and sample counts, distinct activities, owner isolation, errors and unknown outcomes, stop/drain, session expiry, shutdown, FIFO promotion, contradictory samples, reconciled verdicts, and stable continuation retries."]
+        - file: "web/demo-python/tests/test_scenario_routes.py"
+          changes: ["Verify organizer and CSRF gates, run ownership, snapshot/export confidentiality, all run-control routes, and blocked persona changes while a run is active."]
+        - file: "web/demo-python/tests/test_sessions.py"
+          changes: ["Verify worker session-validity checks do not extend browser-session lifetime."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 389
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "All 20 runner tests and the route/session acceptance tests passed, including disabled-waitlist blocking, inconsistent availability detection, and read-back resolution of a committed unknown outcome. Six integration/concurrency tests require external infrastructure."
+    upstream_trace:
+      plan_item: "5.4"
+      requirements: ["REQ-013", "REQ-014", "REQ-015", "REQ-019", "REQ-020", "REQ-021"]
+      full_trace: "REQ-013/014/015/019/020/021 → Phase-5.4 → T071 → bounded concurrency, safety, and reconciliation acceptance tests"
+  - task_id: "T072"
+    description: "Implement supervised bounded scenario runner."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/scenarios.py"
+          changes: ["Implement fixed free last-seat, rush, and duplicate workloads; supervised workers; global active-run exclusion; stop/drain and bounded retention; sanitized metrics/read-back; and idempotent FIFO cancel/accept continuation."]
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add organizer-gated, CSRF-protected start/stop/continuation controls and owner-only preview, snapshots, and export."]
+        - file: "web/demo-python/src/demo_web/app.py"
+          changes: ["Load the lab pool only under matching opt-in and shut down the supervised manager before closing clients."]
+        - file: "web/demo-python/src/demo_web/sessions.py"
+          changes: ["Add a non-touching live-session check for worker expiry and protect active-run ownership."]
+        - file: "web/demo-python/tests/test_scenario_routes.py"
+          changes: ["Exercise run lifecycle route wiring and hidden cross-session run access."]
+        - file: "infra/.env.example"
+          changes: ["Align the documented Scenario Lab settings to the exact plan variable names."]
+        - file: "infra/environment.schema.json"
+          changes: ["Validate the documented lab limits and matching opt-in settings."]
+        - file: "infra/docker-compose.yml"
+          changes: ["Pass the exact identity lab fixture setting to the mock."]
+        - file: "scripts/validate-environment.py"
+          changes: ["Validate exact matching opt-in and resource-limit environment names."]
+        - file: "web/demo-python/src/demo_web/settings.py"
+          changes: ["Validate the six bounded lab resource settings and exact configuration names."]
+        - file: "mocks/identity-access/src/identity_access_mock/settings.py"
+          changes: ["Align the optional fixture path with the plan's identity lab setting."]
+        - file: "mocks/identity-access/src/identity_access_mock/app.py"
+          changes: ["Keep loading of the finite participant pool gated on the matching opt-in."]
+        - file: "mocks/identity-access/README.md"
+          changes: ["Use the plan's identity lab fixture setting in documented setup."]
+        - file: "mocks/identity-access/tests/test_identity_runtime.py"
+          changes: ["Use the plan-defined identity lab setting in runtime configuration tests."]
+        - file: "mocks/identity-access/tests/test_scenario_identities.py"
+          changes: ["Use the plan-defined identity lab setting in fixture authorization tests."]
+        - file: "web/demo-python/tests/conftest.py"
+          changes: ["Use the exact plan-defined lab flags in standard web test settings."]
+        - file: "web/demo-python/tests/test_lab_settings.py"
+          changes: ["Use exact plan-defined fixture and resource-limit names in settings tests."]
+        - file: "tests/configuration/test_demo_web_environment.py"
+          changes: ["Validate matching plan-defined lab settings and resource limits."]
+        - file: "docs/webapp/checkpoints/batch-report-T069-T070.yaml"
+          changes: ["Correct the prior report's wording to match the plan-defined lab setting."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 389
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "Ruff lint/format, JSON schema parsing, environment validation, diff checks, and FastAPI TestClient endpoint probes passed. No live backend stack was required; six external-infrastructure tests remain skipped."
+    upstream_trace:
+      plan_item: "5.4"
+      requirements: ["REQ-013", "REQ-014", "REQ-015", "REQ-019", "REQ-020", "REQ-021"]
+      full_trace: "REQ-013/014/015/019/020/021 → Phase-5.4 → T072 → lifespan-supervised, bounded, owner-isolated Scenario Lab"
+
 pending_tasks:
-  - {task_id: "T071", description: "Specify scenario workload and oracle tests", blocked_by: ["T070"], priority: "P1"}
-  - {task_id: "T072", description: "Implement supervised bounded scenario runner", blocked_by: ["T071"], priority: "P1"}
   - {task_id: "T073", description: "Specify visual and real lab acceptance", blocked_by: ["T072"], priority: "P1"}
   - {task_id: "T074", description: "Implement lab cards, board, and timeline", blocked_by: ["T073"], priority: "P1"}
   - {task_id: "T075", description: "Specify Compose and launcher safety tests", blocked_by: ["T048", "T066", "T068", "T074"], priority: "P1"}

@@ -32,8 +32,8 @@ _REQUIRED = (
     "DEMO_WEB_ATTENDANCE_BASE_URL",
     "DEMO_WEB_REPORTING_BASE_URL",
     "DEMO_WEB_IDENTITY_FIXTURES_PATH",
-    "IDENTITY_MOCK_SCENARIO_POOL_ENABLED",
-    "DEMO_WEB_SCENARIO_POOL_ENABLED",
+    "IDENTITY_LAB_ENABLED",
+    "DEMO_LAB_ENABLED",
 )
 _SERVICE_URLS = {
     "DEMO_WEB_EVENT_BASE_URL": "event-management",
@@ -88,7 +88,7 @@ def _validate_scenario_fixtures(path: Path, baseline_path: Path) -> None:
         baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError):
         raise SettingsError(
-            "DEMO_WEB_SCENARIO_FIXTURES_PATH must reference a readable JSON fixture."
+            "DEMO_LAB_FIXTURES_PATH must reference a readable JSON fixture."
         ) from None
     expected_names = {
         f"scenarioParticipant{index:02}" for index in range(1, SCENARIO_PARTICIPANT_COUNT + 1)
@@ -143,8 +143,14 @@ class Settings:
     attendance_base_url: str
     reporting_base_url: str
     identity_fixtures_path: Path
-    scenario_pool_enabled: bool
-    scenario_fixtures_path: Path | None
+    lab_enabled: bool
+    lab_fixtures_path: Path | None
+    lab_max_participants: int | None
+    lab_max_concurrency: int | None
+    lab_run_timeout_seconds: int | None
+    lab_settle_timeout_seconds: int | None
+    lab_run_ttl_seconds: int | None
+    lab_max_retained_runs: int | None
 
     def __init__(self, values: Mapping[str, str]):
         missing = [key for key in _REQUIRED if key not in values or not values[key]]
@@ -205,32 +211,71 @@ class Settings:
 
         self.identity_fixtures_path = Path(values["DEMO_WEB_IDENTITY_FIXTURES_PATH"])
         _validate_fixtures(self.identity_fixtures_path)
-        identity_pool_enabled = values["IDENTITY_MOCK_SCENARIO_POOL_ENABLED"]
-        web_pool_enabled = values["DEMO_WEB_SCENARIO_POOL_ENABLED"]
-        if identity_pool_enabled not in {"true", "false"} or web_pool_enabled not in {
+        identity_lab_enabled = values["IDENTITY_LAB_ENABLED"]
+        demo_lab_enabled = values["DEMO_LAB_ENABLED"]
+        if identity_lab_enabled not in {"true", "false"} or demo_lab_enabled not in {
             "true",
             "false",
         }:
-            raise SettingsError("Scenario pool settings must be exactly true or false.")
-        if identity_pool_enabled != web_pool_enabled:
-            raise SettingsError("Scenario pool settings must match the identity mock.")
-        self.scenario_pool_enabled = web_pool_enabled == "true"
-        scenario_path_value = values.get("DEMO_WEB_SCENARIO_FIXTURES_PATH", "")
-        self.scenario_fixtures_path = None
-        if self.scenario_pool_enabled:
-            if not scenario_path_value:
-                raise SettingsError(
-                    "DEMO_WEB_SCENARIO_FIXTURES_PATH is required when the scenario pool is enabled."
-                )
-            self.scenario_fixtures_path = Path(scenario_path_value)
+            raise SettingsError("Lab settings must be exactly true or false.")
+        if identity_lab_enabled != demo_lab_enabled:
+            raise SettingsError("Lab settings must match the identity mock.")
+        self.lab_enabled = demo_lab_enabled == "true"
+        lab_path_value = values.get("DEMO_LAB_FIXTURES_PATH", "")
+        self.lab_fixtures_path = None
+        lab_limit_keys = {
+            "DEMO_LAB_MAX_PARTICIPANTS": 50,
+            "DEMO_LAB_MAX_CONCURRENCY": 10,
+            "DEMO_LAB_RUN_TIMEOUT_SECONDS": 60,
+            "DEMO_LAB_SETTLE_TIMEOUT_SECONDS": 30,
+            "DEMO_LAB_RUN_TTL_SECONDS": 1800,
+            "DEMO_LAB_MAX_RETAINED_RUNS": 5,
+        }
+        lab_limits: dict[str, int] = {}
+        self.lab_max_participants = None
+        self.lab_max_concurrency = None
+        self.lab_run_timeout_seconds = None
+        self.lab_settle_timeout_seconds = None
+        self.lab_run_ttl_seconds = None
+        self.lab_max_retained_runs = None
+        if self.lab_enabled:
+            if not lab_path_value:
+                raise SettingsError("DEMO_LAB_FIXTURES_PATH is required when the lab is enabled.")
+            self.lab_fixtures_path = Path(lab_path_value)
             _validate_scenario_fixtures(
-                self.scenario_fixtures_path,
+                self.lab_fixtures_path,
                 self.identity_fixtures_path,
             )
-        elif scenario_path_value:
+            for key, maximum in lab_limit_keys.items():
+                if key not in values or not values[key]:
+                    raise SettingsError(f"{key} is required when the lab is enabled.")
+                lab_limits[key] = _positive_integer(values, key)
+                if lab_limits[key] > maximum:
+                    raise SettingsError(f"{key} exceeds the safety limit of {maximum}.")
+            if (
+                lab_limits["DEMO_LAB_SETTLE_TIMEOUT_SECONDS"]
+                > lab_limits["DEMO_LAB_RUN_TIMEOUT_SECONDS"]
+            ):
+                raise SettingsError(
+                    "DEMO_LAB_SETTLE_TIMEOUT_SECONDS must not exceed the run timeout."
+                )
+            if (
+                lab_limits["DEMO_LAB_RUN_TTL_SECONDS"]
+                < lab_limits["DEMO_LAB_RUN_TIMEOUT_SECONDS"]
+                + lab_limits["DEMO_LAB_SETTLE_TIMEOUT_SECONDS"]
+            ):
+                raise SettingsError("DEMO_LAB_RUN_TTL_SECONDS must cover run and settle timeouts.")
+            (
+                self.lab_max_participants,
+                self.lab_max_concurrency,
+                self.lab_run_timeout_seconds,
+                self.lab_settle_timeout_seconds,
+                self.lab_run_ttl_seconds,
+                self.lab_max_retained_runs,
+            ) = tuple(lab_limits.values())
+        elif lab_path_value or any(key in values for key in lab_limit_keys):
             raise SettingsError(
-                "DEMO_WEB_SCENARIO_FIXTURES_PATH must not be set when the "
-                "scenario pool is disabled."
+                "Lab fixtures and limits must only be configured when DEMO_LAB_ENABLED=true."
             )
         self._validate_host_port_collisions(values)
 

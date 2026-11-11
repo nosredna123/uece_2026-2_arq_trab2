@@ -48,8 +48,8 @@ def test_web_enabled_requires_complete_configuration(tmp_path):
             "DEMO_WEB_EVENT_BASE_URL=http://event-management:8080",
             "DEMO_WEB_EVENT_BASE_URL=http://attacker.example:8080",
         ),
-        ("IDENTITY_MOCK_SCENARIO_POOL_ENABLED=false", "IDENTITY_MOCK_SCENARIO_POOL_ENABLED=true"),
-        ("DEMO_WEB_SCENARIO_POOL_ENABLED=false", "DEMO_WEB_SCENARIO_POOL_ENABLED=true"),
+        ("IDENTITY_LAB_ENABLED=false", "IDENTITY_LAB_ENABLED=true"),
+        ("DEMO_LAB_ENABLED=false", "DEMO_LAB_ENABLED=true"),
     ],
 )
 def test_invalid_web_configuration_is_rejected_without_value_leak(tmp_path, old, new):
@@ -69,17 +69,23 @@ def test_scenario_pool_requires_matching_explicit_opt_in_and_fixture_paths(
     example = (ROOT / "infra/.env.example").read_text(encoding="utf-8")
     enabled = example.replace("DEMO_WEB_ENABLED=false", "DEMO_WEB_ENABLED=true")
     enabled = enabled.replace(
-        "IDENTITY_MOCK_SCENARIO_POOL_ENABLED=false",
-        "IDENTITY_MOCK_SCENARIO_POOL_ENABLED=true",
+        "IDENTITY_LAB_ENABLED=false",
+        "IDENTITY_LAB_ENABLED=true",
     )
     enabled = enabled.replace(
-        "DEMO_WEB_SCENARIO_POOL_ENABLED=false",
-        "DEMO_WEB_SCENARIO_POOL_ENABLED=true",
+        "DEMO_LAB_ENABLED=false",
+        "DEMO_LAB_ENABLED=true",
     )
 
     assert MODULE.validate(_environment(tmp_path, enabled))
 
     complete = enabled + (
-        "DEMO_WEB_SCENARIO_FIXTURES_PATH=/run/eventhub/scenario-participants.json\n"
+        "DEMO_LAB_FIXTURES_PATH=/run/eventhub/scenario-participants.json\n"
+        "DEMO_LAB_MAX_PARTICIPANTS=50\n"
+        "DEMO_LAB_MAX_CONCURRENCY=10\n"
+        "DEMO_LAB_RUN_TIMEOUT_SECONDS=60\n"
+        "DEMO_LAB_SETTLE_TIMEOUT_SECONDS=30\n"
+        "DEMO_LAB_RUN_TTL_SECONDS=1800\n"
+        "DEMO_LAB_MAX_RETAINED_RUNS=5\n"
     )
     assert MODULE.validate(_environment(tmp_path, complete)) == []

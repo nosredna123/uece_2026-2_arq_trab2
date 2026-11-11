@@ -7,8 +7,8 @@ from pathlib import Path
 class Settings:
     internal_service_key: str = field(repr=False)
     available: bool
-    scenario_pool_enabled: bool = False
-    scenario_fixtures_path: Path | None = None
+    lab_enabled: bool = False
+    lab_fixtures_path: Path | None = None
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -20,23 +20,18 @@ class Settings:
         if available_value not in {"true", "false"}:
             raise RuntimeError("IDENTITY_MOCK_AVAILABLE must be exactly 'true' or 'false'")
 
-        scenario_pool_value = os.environ.get("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "false")
-        if scenario_pool_value not in {"true", "false"}:
+        lab_enabled_value = os.environ.get("IDENTITY_LAB_ENABLED", "false")
+        if lab_enabled_value not in {"true", "false"}:
+            raise RuntimeError("IDENTITY_LAB_ENABLED must be exactly 'true' or 'false'")
+        lab_fixtures_value = os.environ.get("IDENTITY_LAB_FIXTURES_PATH")
+        if lab_enabled_value == "true" and not lab_fixtures_value:
             raise RuntimeError(
-                "IDENTITY_MOCK_SCENARIO_POOL_ENABLED must be exactly 'true' or 'false'"
-            )
-        scenario_fixtures_value = os.environ.get("IDENTITY_MOCK_SCENARIO_FIXTURES_PATH")
-        if scenario_pool_value == "true" and not scenario_fixtures_value:
-            raise RuntimeError(
-                "IDENTITY_MOCK_SCENARIO_FIXTURES_PATH must be configured "
-                "when the scenario pool is enabled"
+                "IDENTITY_LAB_FIXTURES_PATH must be configured when the lab pool is enabled"
             )
 
         return cls(
             internal_service_key=service_key,
             available=available_value == "true",
-            scenario_pool_enabled=scenario_pool_value == "true",
-            scenario_fixtures_path=(
-                Path(scenario_fixtures_value) if scenario_fixtures_value else None
-            ),
+            lab_enabled=lab_enabled_value == "true",
+            lab_fixtures_path=(Path(lab_fixtures_value) if lab_fixtures_value else None),
         )
