@@ -83,6 +83,15 @@ activity schedule, not promises that a registration or payment has happened.
    another unused `DEMO_WEB_PORT` in `infra/.env`; never stop an unknown
    listener.
 
+   On the first start with empty volumes, the app pre-fills the initial
+   presentation data from `web/demo-python/seed-data.json`. This includes
+   events titled `[DADOS INICIAIS][SIMULADO][…]` for GESAD/UECE, UECE, and
+   IASC, with registrations, check-ins, and certificates. Start at least 6
+   minutes before presenting: the certificates exist only once their short
+   seeded activities have ended. The data is created once and is never
+   duplicated by later restarts. See the
+   [Demo Web README](../../web/demo-python/README.md#initial-presentation-data).
+
 5. Before presenting, confirm the home page loads, the banner says
    **“EventHub prototype · local demonstration · not production”**, both
    participant contexts are clean, and no secret-bearing terminal or `.env`

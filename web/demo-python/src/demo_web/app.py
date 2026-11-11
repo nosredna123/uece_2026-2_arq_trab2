@@ -1,5 +1,6 @@
+import asyncio
 import json
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Mapping
 
 from fastapi import FastAPI, Request
@@ -13,6 +14,7 @@ from demo_web.commands import CommandLedger
 from demo_web.presentation import PAGE_METADATA, STATIC_DIRECTORY, templates
 from demo_web.routes import router
 from demo_web.scenarios import ScenarioManager
+from demo_web.seed import run_seed
 from demo_web.sessions import SessionStore
 from demo_web.settings import Settings
 
@@ -49,8 +51,17 @@ def create_app(environ: Mapping[str, str] | None = None) -> FastAPI:
                     organization_id=organizer["organizationId"],
                     session_is_active=app.state.sessions.is_active,
                 )
+            if app.state.settings.seed_data_path is not None:
+                app.state.seed_task = asyncio.create_task(
+                    run_seed(app.state.settings, fixtures), name="initial-presentation-data"
+                )
             yield
         finally:
+            seed_task = getattr(app.state, "seed_task", None)
+            if seed_task is not None and not seed_task.done():
+                seed_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await seed_task
             try:
                 if app.state.scenario_manager is not None:
                     await app.state.scenario_manager.shutdown()

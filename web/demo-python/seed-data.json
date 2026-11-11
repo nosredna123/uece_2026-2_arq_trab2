@@ -1,0 +1,247 @@
+{
+  "_leia-me": [
+    "Dados iniciais sintéticos da apresentação do EventHub. Edite à vontade.",
+    "São aplicados uma única vez quando o Demo Web inicia: parar, iniciar ou reiniciar os contêineres não duplica registros (as requisições são idempotentes e o lote é identificado pela linha 'Lote de dados iniciais' na descrição dos eventos).",
+    "Para aplicar alterações deste arquivo sobre um banco limpo, execute: docker compose -p eventhub --env-file infra/.env -f infra/docker-compose.yml down -v && bash scripts/run-demo-web.sh",
+    "Os títulos recebem automaticamente o prefixo [DADOS INICIAIS][SIMULADO][<label da organização>].",
+    "organizer e participant referenciam nomes do arquivo mocks/identity-access/src/identity_access_mock/fixtures.json.",
+    "Horários são relativos ao momento da primeira carga: use startsInDays (>= 1) com startTime 'HH:MM' (horário de Fortaleza) para atividades futuras, ou startsInMinutes (>= 2) para atividades que acontecem logo após a carga.",
+    "A plataforma só aceita inscrições antes do início da atividade; por isso check-in e certificado exigem startsInMinutes, e o certificado é emitido automaticamente assim que a atividade termina (no máximo 30 minutos após a carga).",
+    "O período de cada evento é calculado a partir das suas atividades. Preços em centavos (priceMinor).",
+    "Ações por inscrição: checkIn, certificate (exige checkIn) e cancel (não combina com checkIn). As inscrições são feitas na ordem listada; quem exceder a capacidade entra na lista de espera."
+  ],
+  "organizations": [
+    {
+      "organizer": "organizer",
+      "label": "GESAD/UECE",
+      "events": [
+        {
+          "title": "Seminário de Pesquisa do GESAD 2026",
+          "description": "Seminário anual fictício do Grupo de Engenharia de Software Adaptativo e Distribuído (GESAD) da UECE, com palestras e minicursos para a comunidade acadêmica.",
+          "publish": true,
+          "activities": [
+            {
+              "title": "Palestra: Arquitetura de Microsserviços na Prática",
+              "startsInMinutes": 2,
+              "durationMinutes": 2,
+              "location": "Auditório do GESAD — Campus do Itaperi",
+              "responsible": "Coordenação do GESAD (simulada)",
+              "capacity": 40,
+              "priceMinor": 0,
+              "registrations": [
+                {
+                  "participant": "participant",
+                  "checkIn": true,
+                  "certificate": true
+                },
+                {
+                  "participant": "participantTwo",
+                  "checkIn": true
+                }
+              ]
+            },
+            {
+              "title": "Minicurso: Testes de Contrato com OpenAPI",
+              "startsInMinutes": 3,
+              "durationMinutes": 2,
+              "location": "Laboratório de Engenharia de Software",
+              "responsible": "Pesquisadores do GESAD (simulados)",
+              "capacity": 20,
+              "priceMinor": 5000,
+              "registrations": [
+                {
+                  "participant": "participant",
+                  "checkIn": true,
+                  "certificate": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Workshop de Sistemas Autoadaptativos",
+          "description": "Workshop fictício sobre sistemas autoadaptativos, arquiteturas MAPE-K e observabilidade.",
+          "publish": true,
+          "activities": [
+            {
+              "title": "Oficina: Arquiteturas Autoadaptativas com MAPE-K",
+              "startsInDays": 22,
+              "startTime": "09:00",
+              "durationMinutes": 180,
+              "location": "Sala de Seminários do GESAD",
+              "responsible": "Coordenação do GESAD (simulada)",
+              "capacity": 1,
+              "priceMinor": 0,
+              "registrations": [
+                {
+                  "participant": "participant"
+                },
+                {
+                  "participant": "participantTwo"
+                }
+              ]
+            },
+            {
+              "title": "Tutorial: Observabilidade em Sistemas Distribuídos",
+              "startsInDays": 23,
+              "startTime": "14:00",
+              "durationMinutes": 180,
+              "location": "Laboratório de Engenharia de Software",
+              "responsible": "Pesquisadores do GESAD (simulados)",
+              "capacity": 25,
+              "priceMinor": 3000,
+              "registrations": [
+                {
+                  "participant": "participantTwo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "organizer": "organizerUece",
+      "label": "UECE",
+      "events": [
+        {
+          "title": "Encontro de Iniciação Científica da UECE 2026",
+          "description": "Encontro fictício para apresentação de trabalhos de iniciação científica da Universidade Estadual do Ceará.",
+          "publish": true,
+          "activities": [
+            {
+              "title": "Sessão de Pôsteres: Computação e Engenharias",
+              "startsInMinutes": 2,
+              "durationMinutes": 3,
+              "location": "Centro de Convivência — Campus do Itaperi",
+              "responsible": "Pró-Reitoria de Pesquisa (simulada)",
+              "capacity": 60,
+              "priceMinor": 0,
+              "registrations": [
+                {
+                  "participant": "participantTwo",
+                  "checkIn": true,
+                  "certificate": true
+                },
+                {
+                  "participant": "participant",
+                  "checkIn": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Semana Universitária da UECE 2026",
+          "description": "Programação fictícia da Semana Universitária com mesas-redondas e cursos abertos à comunidade.",
+          "publish": true,
+          "activities": [
+            {
+              "title": "Mesa-redonda: Ciência Aberta na Universidade",
+              "startsInDays": 12,
+              "startTime": "14:00",
+              "durationMinutes": 120,
+              "location": "Auditório Central da UECE",
+              "responsible": "Comissão organizadora (simulada)",
+              "capacity": 100,
+              "priceMinor": 0,
+              "registrations": [
+                {
+                  "participant": "participant"
+                },
+                {
+                  "participant": "participantTwo",
+                  "cancel": true
+                }
+              ]
+            },
+            {
+              "title": "Curso: Introdução à Ciência de Dados",
+              "startsInDays": 13,
+              "startTime": "08:00",
+              "durationMinutes": 240,
+              "location": "Laboratório de Informática 3",
+              "responsible": "Comissão organizadora (simulada)",
+              "capacity": 30,
+              "priceMinor": 2500,
+              "registrations": [
+                {
+                  "participant": "participant"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "organizer": "organizerAcademicSim",
+      "label": "IASC",
+      "events": [
+        {
+          "title": "Congresso Acadêmico Simulado do Ceará 2026",
+          "description": "Congresso fictício do Instituto Acadêmico Simulado do Ceará (IASC), organização inexistente usada apenas para demonstração.",
+          "publish": true,
+          "activities": [
+            {
+              "title": "Painel: Ética e Inteligência Artificial na Educação",
+              "startsInMinutes": 3,
+              "durationMinutes": 2,
+              "location": "Auditório Principal do IASC (fictício)",
+              "responsible": "Comitê científico do IASC (simulado)",
+              "capacity": 80,
+              "priceMinor": 0,
+              "registrations": [
+                {
+                  "participant": "participant",
+                  "checkIn": true,
+                  "certificate": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Escola de Verão Simulada em Computação 2027",
+          "description": "Escola de verão fictícia com minicursos intensivos.",
+          "publish": true,
+          "activities": [
+            {
+              "title": "Minicurso: Fundamentos de Computação em Nuvem",
+              "startsInDays": 68,
+              "startTime": "09:00",
+              "durationMinutes": 180,
+              "location": "Sala 101 do IASC (fictícia)",
+              "responsible": "Comitê científico do IASC (simulado)",
+              "capacity": 2,
+              "priceMinor": 8000,
+              "registrations": [
+                {
+                  "participant": "participantTwo"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "Jornada Simulada de Extensão (rascunho)",
+          "description": "Evento em rascunho, ainda não publicado, para demonstrar o ciclo de vida do evento.",
+          "publish": false,
+          "activities": [
+            {
+              "title": "Roda de Conversa: Extensão Universitária",
+              "startsInDays": 119,
+              "startTime": "09:00",
+              "durationMinutes": 120,
+              "location": "Sala 102 do IASC (fictícia)",
+              "responsible": "Comitê de extensão do IASC (simulado)",
+              "capacity": 30,
+              "priceMinor": 0,
+              "registrations": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

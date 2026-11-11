@@ -24,10 +24,12 @@ services:
       DEMO_WEB_IDENTITY_FIXTURES_PATH: ${DEMO_WEB_IDENTITY_FIXTURES_PATH:?Set DEMO_WEB_IDENTITY_FIXTURES_PATH in infra/.env}
       IDENTITY_LAB_ENABLED: ${IDENTITY_LAB_ENABLED:?Set IDENTITY_LAB_ENABLED in infra/.env}
       DEMO_LAB_ENABLED: ${DEMO_LAB_ENABLED:?Set DEMO_LAB_ENABLED in infra/.env}
+      DEMO_WEB_SEED_DATA_PATH: /run/eventhub/seed-data.json
     ports:
       - "127.0.0.1:${DEMO_WEB_PORT:?Set DEMO_WEB_PORT in infra/.env}:8080"
     volumes:
       - ../mocks/identity-access/src/identity_access_mock/fixtures.json:/run/eventhub/identity-fixtures.json:ro
+      - ../web/demo-python/seed-data.json:/run/eventhub/seed-data.json:ro
     depends_on:
       identity-mock:
         condition: service_healthy

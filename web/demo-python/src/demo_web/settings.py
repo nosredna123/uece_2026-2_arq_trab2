@@ -171,6 +171,7 @@ class Settings:
     lab_settle_timeout_seconds: int | None
     lab_run_ttl_seconds: int | None
     lab_max_retained_runs: int | None
+    seed_data_path: Path | None
 
     def __init__(self, values: Mapping[str, str]):
         missing = [key for key in _REQUIRED if key not in values or not values[key]]
@@ -297,6 +298,8 @@ class Settings:
             raise SettingsError(
                 "Lab fixtures and limits must only be configured when DEMO_LAB_ENABLED=true."
             )
+        seed_path_value = values.get("DEMO_WEB_SEED_DATA_PATH", "")
+        self.seed_data_path = Path(seed_path_value) if seed_path_value else None
         self._validate_host_port_collisions(values)
 
     @staticmethod

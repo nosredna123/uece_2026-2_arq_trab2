@@ -19,6 +19,8 @@ services:
 
   demo-web:
     ports: !reset []
+    environment:
+      DEMO_WEB_SEED_DATA_PATH: ""
 
   webapp-browser-test:
     profiles: [webapp-browser]

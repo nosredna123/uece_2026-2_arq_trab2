@@ -38,6 +38,42 @@ GESAD/UECE persona because its fixed workload identities and records use that
 organization. Generated records carry a Portuguese test-purpose prefix and
 `SIMULADO` label.
 
+## Initial presentation data
+
+On startup the app pre-fills the stack with Brazilian-Portuguese synthetic data
+from a single editable file,
+[`seed-data.json`](./seed-data.json). It covers every domain entity for the
+three organizer tenants:
+- events, including one draft;
+- free and paid activities;
+- registrations: confirmed, waitlisted, and cancelled;
+- check-ins and certificates.
+
+All titles start with `[DADOS INICIAIS][SIMULADO][<organização>]`. The seeding
+runs in the background through the real service APIs. Data appears within
+seconds, and certificates appear about 5 minutes after the first start, once
+their short activities have ended. The app logs `Initial presentation data
+ready (batch …)` when it finishes.
+
+Seeding happens **only once per database**. Times are relative to a batch
+anchor recorded in each event description. Every later start (restart, stop and
+start, or rerunning the launcher) finds that anchor and replays the services'
+durable idempotency keys, so nothing is duplicated. The comment array `_leia-me`
+inside the file explains the editable fields. Keys starting with `_` are
+ignored.
+
+Editing the file after the first seed adds the new or changed items as extra
+records; it does not update the existing ones. To apply edits cleanly, reset
+the local data (this deletes all local volumes) and launch again:
+
+```sh
+docker compose -p eventhub --env-file infra/.env -f infra/docker-compose.yml down -v
+bash scripts/run-demo-web.sh
+```
+
+Set `DEMO_WEB_SEED_DATA_PATH` to an empty value to disable seeding. The
+isolated browser acceptance stack does this.
+
 ## Test without host runtimes
 
 Run the bounded, fail-fast repository Python suite in the dedicated test image:
