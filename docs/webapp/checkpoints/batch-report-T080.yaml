@@ -1,0 +1,121 @@
+batch_id: "T080"
+completed_tasks: ["T080"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T080:
+    - file: "docs/validation/webapp-evidence.md"
+      change_type: "modified"
+      description: "Record the fresh-data browser-flow rehearsal, actual suite and bounded Scenario Lab timings, observed outcomes, regression gates, and timing limits."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T080 complete and the ordered implementation plan complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record completion of T080, its requirement trace, and final verification."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "T080 rehearsal, evidence, and regression-gate acceptance criteria."
+  - artifact: "docs/validation/webapp-presentation-script.md"
+    used_for: "Exact presenter actions, synthetic data boundaries, waitlist flow, lab actions, and timing targets."
+  - artifact: "tests/webapp/run.sh"
+    used_for: "Isolated fresh-data browser rehearsal, bounded test schedule, and controlled outage recovery probes."
+  - artifact: "docs/validation/webapp-evidence.md"
+    used_for: "Prior browser/environment evidence and known limits."
+evidence_mapping:
+  T080:
+    - upstream: "docs/webapp/plan.md#Plan-6.3"
+      output: "docs/validation/webapp-evidence.md"
+      evidence: "Documents the fresh synthetic browser rehearsal, observed service states, Scenario Lab results and timings, isolated recovery probes, regression gates, and explicit limits on what the timing evidence proves."
+traceability:
+  - requirement: "REQ-018"
+    plan_item: "6.3"
+    task: "T080"
+    files: ["docs/validation/webapp-presentation-script.md", "docs/validation/webapp-evidence.md"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "The automated fresh-data browser rehearsal took 77.54 seconds for its primary journeys; human presenter narration was not timed."
+  - severity: "LOW"
+    message: "The host and canonical suites each reported 10 environment-dependent skips and one existing Starlette/AnyIO deprecation warning."
+  - severity: "LOW"
+    message: "Docker Compose used the Docker builder because buildx is unavailable; image builds completed successfully."
+test_results:
+  host_python_suite:
+    command: "./.venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 406
+    failed: 0
+    skipped: 10
+    duration: "8.00 seconds"
+    failures: []
+  canonical_python_suite:
+    command: "EVENTHUB_ENV_FILE=infra/.env.example bash scripts/test-demo-web.sh"
+    passed: 406
+    failed: 0
+    skipped: 10
+    duration: "9.57 seconds"
+    failures: []
+  browser_journeys:
+    command: "bash tests/webapp/run.sh (fresh isolated synthetic data)"
+    passed: 4
+    failed: 0
+    skipped: 2
+    duration: "77.54 seconds"
+    failures: []
+  outage_recovery:
+    command: "tests/webapp/run.sh controlled Reporting and Identity failure probes"
+    passed: 2
+    failed: 0
+    skipped: 0
+    durations: ["0.78 seconds", "0.87 seconds"]
+    failures: []
+  scenario_lab_rehearsal:
+    results:
+      last_seat:
+        elapsed: "381 ms"
+        verdict: "EXPECTED"
+        dispatches: 2
+        peak_concurrency: 2
+        capacity: 1
+        errors: 0
+        unknown: 0
+        fifo: "EXPECTED"
+      registration_rush:
+        elapsed: "555 ms"
+        verdict: "EXPECTED"
+        dispatches: 20
+        peak_concurrency: 10
+        capacity: 5
+        confirmed: 5
+        waitlisted: 15
+        errors: 0
+        unknown: 0
+      duplicate_submission:
+        elapsed: "312 ms"
+        verdict: "EXPECTED"
+        dispatches: 10
+        registrations_read_back: 1
+        capacity: 1
+        errors: 0
+        unknown: 0
+  test_profile_build:
+    command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  lint_format_import_boundaries:
+    command: "ruff check/format on webapp browser tests; .venv/bin/lint-imports --no-cache"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  documentation_diff_check:
+    command: "git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes: []

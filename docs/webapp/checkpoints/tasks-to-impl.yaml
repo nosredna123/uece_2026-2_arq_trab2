@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 35
+  completed_tasks: 36
   in_progress_tasks: 0
-  pending_tasks: 1
-  completion_percentage: 97.2
+  pending_tasks: 0
+  completion_percentage: 100.0
 
 tasks:
   - task_id: "T045"
@@ -1068,8 +1068,60 @@ tasks:
       requirements: ["REQ-018"]
       full_trace: "REQ-018 → Plan 6.3 → T079 → timed browser presentation script, recovery branches, Q&A, and linked delivery guidance"
 
-pending_tasks:
-  - {task_id: "T080", description: "Rehearse and close verified requirements", blocked_by: ["T079"], priority: "P1"}
+  - task_id: "T080"
+    description: "Rehearse and close verified requirements."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/validation/webapp-evidence.md"
+          changes: ["Record fresh-data browser rehearsal results, service outcomes, actual bounded-run timings, regression results, and the distinction between automated timings and presenter targets."]
+        - file: "docs/webapp/plan.md"
+          changes: ["Mark T080 complete and update the plan status."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "./.venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 406
+        failed: 0
+        skipped: 10
+        failures: []
+      canonical_test_results:
+        command: "EVENTHUB_ENV_FILE=infra/.env.example bash scripts/test-demo-web.sh"
+        passed: 406
+        failed: 0
+        skipped: 10
+        failures: []
+      browser_journeys:
+        command: "bash tests/webapp/run.sh (fresh isolated synthetic data)"
+        passed: 4
+        failed: 0
+        skipped: 2
+        duration: "77.54 seconds"
+      outage_probes:
+        command: "tests/webapp/run.sh controlled Reporting and Identity failure probes"
+        passed: 2
+        failed: 0
+        skipped: 0
+        durations: ["0.78 seconds", "0.87 seconds"]
+      test_profile_build:
+        command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      lint_and_import_boundaries:
+        command: "ruff check/format on browser tests and .venv/bin/lint-imports --no-cache"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The fresh-data browser rehearsal completed the paid/certificate/report, independent-session waitlist, and bounded Scenario Lab journeys. The last-seat, rush, and duplicate runs took 381 ms, 555 ms, and 312 ms respectively; each returned EXPECTED with zero errors/unknowns. Presenter narration time was not measured."
+    upstream_trace:
+      plan_item: "6.3"
+      requirements: ["REQ-002", "REQ-012", "REQ-014", "REQ-016", "REQ-017", "REQ-018", "REQ-019", "REQ-020", "REQ-021"]
+      full_trace: "REQ-002/012/014/016/017/018/019/020/021 → Plan 6.3 → T080 → fresh-data browser rehearsal, bounded scenario read-back, recovery probes, and complete regression evidence"
+
+pending_tasks: []
 
 untracked_changes: []
 traceability_chain:
@@ -1094,10 +1146,17 @@ traceability_chain:
     tasks: ["T048"]
     files: ["web/demo-python/Dockerfile", "web/demo-python/constraints.txt"]
     status: "complete"
+  - chain_id: "TRACE-WEB-018"
+    requirement: "REQ-018"
+    plan_phase: "Phase-6.3"
+    plan_item: "6.3"
+    tasks: ["T079", "T080"]
+    files: ["docs/validation/webapp-presentation-script.md", "docs/validation/webapp-evidence.md"]
+    status: "complete"
 
 validation:
   passed: true
   errors: []
   warnings:
-    - "The latest host suite passed 406 tests with 10 skips; some integration tests require external infrastructure and the Scenario Lab real-service journey requires SCENARIO_LAB_BASE_URL."
+    - "The final host and canonical suites each passed 406 tests with 10 skips; skipped cases remain environment-dependent and are not counted as passes."
   blocking_issues: []

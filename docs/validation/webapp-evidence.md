@@ -1,11 +1,11 @@
 # Demo Web browser validation evidence
 
-**Task:** T078
+**Tasks:** T078, T080
 **Execution date:** 2026-11-11
 **Scope:** Isolated browser acceptance, presentation viewport checks, Scenario
-Lab read-back exports, recovery behavior, and the presentation adapter
-architecture view. This is local prototype evidence, not a production
-readiness or security certification.
+Lab read-back exports, recovery behavior, the presentation adapter architecture
+view, and a fresh-data browser rehearsal. This is local prototype evidence, not
+a production readiness or security certification.
 
 ## Environment and versions
 
@@ -119,3 +119,42 @@ provider behavior, statistically reliable capacity, a latency SLA, or
 production readiness. Mutation scores remain those in the existing
 [mutation-testing evidence](./mutation-testing.md); this task changes no domain
 service implementation or invariant.
+
+## T080 fresh-data presentation-flow rehearsal
+
+The browser presentation flow was rehearsed against fresh synthetic records
+using the documented isolated runner, `bash tests/webapp/run.sh`. Its optional
+`WEBAPP_TEST_ARTIFACTS_HOST_DIR` was redirected to temporary session storage so
+the existing checked-in evidence artifacts were preserved.
+
+The runner created an ephemeral settings file from `infra/.env.example`, a
+PID-scoped Compose project, and fresh project volumes. It did not read or modify
+`infra/.env`, use the already-running default project, or retain rehearsal
+artifacts in the repository. The test settings accelerated the schedule to a
+paid start 40 seconds after preparation, a 30-second paid activity, and a free
+start 90 seconds after preparation; these are test-only overrides. The
+presentation example remains 180/60/900 seconds. The runner used the bounded
+Scenario Lab limits listed above.
+
+| Rehearsal gate | Observed result |
+|---|---|
+| Host Python suite | **406 passed, 10 skipped** in 8.00 seconds using `.venv/bin/python -m pytest -x --import-mode=importlib`. |
+| Canonical Python suite | **406 passed, 10 skipped** in 9.57 seconds using `EVENTHUB_ENV_FILE=infra/.env.example bash scripts/test-demo-web.sh`. |
+| Real-browser journeys | **4 passed, 2 skipped** in 77.54 seconds. The two controlled outage checks are separate gates below, not unverified passes. |
+| Reporting outage and recovery | **1 passed** in 0.78 seconds. |
+| Identity outage and recovery | **1 passed** in 0.87 seconds. |
+| Compose test-profile image build | Complete test-profile build succeeded. |
+| Lint, format, import boundaries | Ruff checks and formatting passed; import-linter analyzed 81 files and reported 0 broken contracts. |
+| Paid journey | Preparation, confirmed registration, reload/read-back, check-in, pre-end certificate rejection, post-end issuance/read-back, print view, and report projection completed. |
+| Two-person waitlist | Independent browser contexts observed `CONFIRMED`, `WAITLISTED`, `CANCELLED`, `OFFERED`, and explicit acceptance to `CONFIRMED`; the second session could not read the first participant's registration. |
+| Last-seat lab run | 2 dispatches, peak concurrency 2, capacity 1, no errors or unknowns, `EXPECTED`; observed 381 ms. FIFO offer/acceptance completed, with one occupied place in final read-back. |
+| Registration-rush lab run | 20 dispatches, peak concurrency 10, capacity 5, five confirmed and fifteen waitlisted, no errors or unknowns, `EXPECTED`; observed 555 ms. |
+| Duplicate-submission lab run | 10 same-key dispatches, peak concurrency 10, one confirmed registration in read-back, no errors or unknowns, `EXPECTED`; observed 312 ms. |
+
+These are timings for automated browser checks and bounded local lab requests,
+not the duration of a spoken presentation or a production performance
+measurement. The full, happy-path, and short presenter durations remain
+targets, not measured human talk times. Service responses and returned
+`Starts`/`Ends` remain authoritative; the runner's accelerated schedule must
+not be copied into a live presentation configuration. The three Scenario Lab
+measurements are single synthetic samples, not an SLA or capacity guarantee.
