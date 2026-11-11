@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 from importlib.resources import files
+from pathlib import Path
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -35,12 +36,18 @@ EXPECTED_ROLES = {
     "globalAdmin": "GLOBAL_ADMIN",
 }
 LOGGER = logging.getLogger(__name__)
+SCENARIO_PARTICIPANT_COUNT = 20
+MAX_SCENARIO_FIXTURE_BYTES = 32_768
+
+
+def _scenario_names() -> set[str]:
+    return {f"scenarioParticipant{index:02}" for index in range(1, SCENARIO_PARTICIPANT_COUNT + 1)}
 
 
 class IdentityFixture(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    token: SecretStr = Field(min_length=1)
+    token: SecretStr = Field(min_length=1, max_length=4096)
     subject_id: UUID = Field(alias="subjectId")
     role: Literal["PARTICIPANT", "ORGANIZER", "GLOBAL_ADMIN"]
     organization_id: UUID | None = Field(default=None, alias="organizationId")
@@ -76,20 +83,54 @@ def load_fixtures() -> dict[str, IdentityFixture]:
 
     try:
         fixtures = {
-            name: IdentityFixture.model_validate(fixture_data[name])
-            for name in EXPECTED_ROLES
+            name: IdentityFixture.model_validate(fixture_data[name]) for name in EXPECTED_ROLES
         }
     except ValidationError:
         raise ValueError("identity fixture data is invalid") from None
     if any(fixtures[name].role != role for name, role in EXPECTED_ROLES.items()):
         raise ValueError("identity fixtures do not match their approved roles")
 
-    tokens = [
-        fixture.token.get_secret_value()
-        for fixture in fixtures.values()
-    ]
+    tokens = [fixture.token.get_secret_value() for fixture in fixtures.values()]
     if len(tokens) != len(set(tokens)):
         raise ValueError("identity fixture tokens must be unique")
+
+    return fixtures
+
+
+def load_scenario_fixtures(
+    fixture_path: Path,
+    baseline_fixtures: dict[str, IdentityFixture],
+) -> dict[str, IdentityFixture]:
+    try:
+        if fixture_path.stat().st_size > MAX_SCENARIO_FIXTURE_BYTES:
+            raise ValueError("scenario identity fixture exceeds its size limit")
+        with fixture_path.open("r", encoding="utf-8") as fixture_file:
+            fixture_data = json.load(fixture_file)
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        raise ValueError("scenario identity fixture is invalid") from None
+
+    if not isinstance(fixture_data, dict) or set(fixture_data) != _scenario_names():
+        raise ValueError("scenario identity fixture must contain twenty actors")
+
+    try:
+        fixtures = {
+            name: IdentityFixture.model_validate(fixture_data[name])
+            for name in sorted(_scenario_names())
+        }
+    except ValidationError:
+        raise ValueError("scenario identity fixture is invalid") from None
+
+    if any(
+        fixture.role != "PARTICIPANT" or fixture.organization_id is not None
+        for fixture in fixtures.values()
+    ):
+        raise ValueError("scenario identities must be unscoped participants")
+
+    combined_fixtures = [*baseline_fixtures.values(), *fixtures.values()]
+    tokens = [fixture.token.get_secret_value() for fixture in combined_fixtures]
+    subjects = [fixture.subject_id for fixture in combined_fixtures]
+    if len(tokens) != len(set(tokens)) or len(subjects) != len(set(subjects)):
+        raise ValueError("identity fixture tokens and subjects must be unique")
 
     return fixtures
 
@@ -115,10 +156,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging()
     runtime_settings = settings or Settings.from_environment()
     fixtures = load_fixtures()
-    fixtures_by_token = {
-        fixture.token.get_secret_value(): fixture
-        for fixture in fixtures.values()
-    }
+    if runtime_settings.scenario_pool_enabled:
+        if runtime_settings.scenario_fixtures_path is None:
+            raise ValueError("scenario identity fixture path is required when the pool is enabled")
+        fixtures.update(
+            load_scenario_fixtures(
+                runtime_settings.scenario_fixtures_path,
+                fixtures,
+            )
+        )
+    fixtures_by_token = {fixture.token.get_secret_value(): fixture for fixture in fixtures.values()}
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -139,9 +186,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ):
         supplied_id = request.headers.get("X-Correlation-ID")
         try:
-            correlation_id = (
-                UUID(supplied_id) if supplied_id is not None else uuid4()
-            )
+            correlation_id = UUID(supplied_id) if supplied_id is not None else uuid4()
         except ValueError:
             request.state.correlation_id = str(uuid4())
             context_tokens = bind_context(request.state.correlation_id)
@@ -186,9 +231,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             reset_context(context_tokens)
 
     @app.exception_handler(RequestValidationError)
-    async def invalid_request(
-        request: Request, _: RequestValidationError
-    ) -> JSONResponse:
+    async def invalid_request(request: Request, _: RequestValidationError) -> JSONResponse:
         return error_response(
             request,
             400,
@@ -197,9 +240,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def http_error(
-        request: Request, error: StarletteHTTPException
-    ) -> JSONResponse:
+    async def http_error(request: Request, error: StarletteHTTPException) -> JSONResponse:
         code, message = {
             404: ("NOT_FOUND", "Resource not found."),
             405: ("METHOD_NOT_ALLOWED", "HTTP method is not allowed."),

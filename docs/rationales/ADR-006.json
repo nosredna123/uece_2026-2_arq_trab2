@@ -1,7 +1,7 @@
 {
   "artifact": "docs/adr/ADR-006-demo-webapp.md",
-  "version": "1.0.0",
-  "rationale": "Use an independent, server-rendered Python client for local demonstrations so existing services remain the authority for business state, authorization, and persistence. Explicit provenance labels and synthetic server-side personas make the prototype honest and didactic. Bounded single-worker in-memory sessions and a fixed opt-in scenario lab meet the presentation need without adding a gateway, shared domain library, database, broker consumer, or general-purpose load generator. Presentation code is outside the domain-core mutation-score denominator, but remains subject to focused adapter, security, and browser tests; existing domain gates are unchanged.",
+  "version": "1.1.0",
+  "rationale": "Use an independent, server-rendered Python client for local demonstrations so existing services remain the authority for business state, authorization, and persistence. Explicit provenance labels and synthetic server-side personas make the prototype honest and didactic. Bounded single-worker in-memory sessions and a fixed opt-in scenario lab meet the presentation need without adding a gateway, shared domain library, database, broker consumer, or general-purpose load generator. The lab's fixed pool contains exactly twenty unique, unscoped participants, is enabled consistently in the web client and identity mock, is rejected when malformed or oversized, and keeps tokens server-side. Presentation code is outside the domain-core mutation-score denominator, but remains subject to focused adapter, security, and browser tests; existing domain gates are unchanged.",
   "invariants": [
     "Existing services and contracts remain authoritative for business rules, protected operations, and owned data.",
     "The presentation client does not add a generic gateway, shared domain import, database, broker consumer, or independent domain state.",

@@ -1,0 +1,102 @@
+{
+  "scenarioParticipant01": {
+    "token": "synthetic-scenario-participant-01",
+    "subjectId": "50000000-0000-4000-8000-000000000001",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant02": {
+    "token": "synthetic-scenario-participant-02",
+    "subjectId": "50000000-0000-4000-8000-000000000002",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant03": {
+    "token": "synthetic-scenario-participant-03",
+    "subjectId": "50000000-0000-4000-8000-000000000003",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant04": {
+    "token": "synthetic-scenario-participant-04",
+    "subjectId": "50000000-0000-4000-8000-000000000004",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant05": {
+    "token": "synthetic-scenario-participant-05",
+    "subjectId": "50000000-0000-4000-8000-000000000005",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant06": {
+    "token": "synthetic-scenario-participant-06",
+    "subjectId": "50000000-0000-4000-8000-000000000006",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant07": {
+    "token": "synthetic-scenario-participant-07",
+    "subjectId": "50000000-0000-4000-8000-000000000007",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant08": {
+    "token": "synthetic-scenario-participant-08",
+    "subjectId": "50000000-0000-4000-8000-000000000008",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant09": {
+    "token": "synthetic-scenario-participant-09",
+    "subjectId": "50000000-0000-4000-8000-000000000009",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant10": {
+    "token": "synthetic-scenario-participant-10",
+    "subjectId": "50000000-0000-4000-8000-000000000010",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant11": {
+    "token": "synthetic-scenario-participant-11",
+    "subjectId": "50000000-0000-4000-8000-000000000011",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant12": {
+    "token": "synthetic-scenario-participant-12",
+    "subjectId": "50000000-0000-4000-8000-000000000012",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant13": {
+    "token": "synthetic-scenario-participant-13",
+    "subjectId": "50000000-0000-4000-8000-000000000013",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant14": {
+    "token": "synthetic-scenario-participant-14",
+    "subjectId": "50000000-0000-4000-8000-000000000014",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant15": {
+    "token": "synthetic-scenario-participant-15",
+    "subjectId": "50000000-0000-4000-8000-000000000015",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant16": {
+    "token": "synthetic-scenario-participant-16",
+    "subjectId": "50000000-0000-4000-8000-000000000016",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant17": {
+    "token": "synthetic-scenario-participant-17",
+    "subjectId": "50000000-0000-4000-8000-000000000017",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant18": {
+    "token": "synthetic-scenario-participant-18",
+    "subjectId": "50000000-0000-4000-8000-000000000018",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant19": {
+    "token": "synthetic-scenario-participant-19",
+    "subjectId": "50000000-0000-4000-8000-000000000019",
+    "role": "PARTICIPANT"
+  },
+  "scenarioParticipant20": {
+    "token": "synthetic-scenario-participant-20",
+    "subjectId": "50000000-0000-4000-8000-000000000020",
+    "role": "PARTICIPANT"
+  }
+}

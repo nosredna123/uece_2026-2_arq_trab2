@@ -1,0 +1,120 @@
+batch_id: "B13"
+completed_tasks: ["T069", "T070"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T069:
+    - file: "mocks/identity-access/tests/test_scenario_identities.py"
+      change_type: "created"
+      description: "Cover default fixture compatibility, disabled-mode rejection, twenty unique participant-only actors, role preservation, malformed and oversized fixture rejection, and baseline collisions."
+    - file: "web/demo-python/tests/test_lab_settings.py"
+      change_type: "created"
+      description: "Cover explicit matching opt-in configuration, finite fixture shape and bounds, baseline collisions, and absence of scenario tokens in browser responses."
+    - file: "tests/configuration/test_demo_web_environment.py"
+      change_type: "modified"
+      description: "Verify pool configuration consistency and conditional fixture-path requirements."
+  T070:
+    - file: "mocks/identity-access/scenario-participants.json"
+      change_type: "created"
+      description: "Add twenty synthetic participant fixtures with unique tokens and UUID subjects."
+    - file: "mocks/identity-access/src/identity_access_mock/settings.py"
+      change_type: "modified"
+      description: "Add fail-closed boolean opt-in and a required path when the pool is enabled."
+    - file: "mocks/identity-access/src/identity_access_mock/app.py"
+      change_type: "modified"
+      description: "Load only the fixed pool under opt-in and reject invalid, oversized, privileged, duplicate, or baseline-colliding fixtures."
+    - file: "mocks/identity-access/Dockerfile"
+      change_type: "modified"
+      description: "Include the fixture in build/runtime images and execute scenario tests in the test image."
+    - file: "web/demo-python/src/demo_web/settings.py"
+      change_type: "modified"
+      description: "Require mock/web enablement agreement and validate the same twenty server-side identities."
+    - file: "infra/.env.example"
+      change_type: "modified"
+      description: "Document disabled-by-default scenario configuration and fixture paths."
+    - file: "infra/environment.schema.json"
+      change_type: "modified"
+      description: "Validate flags, matching opt-in, and conditional fixture paths."
+    - file: "infra/docker-compose.yml"
+      change_type: "modified"
+      description: "Wire the explicit scenario pool settings into identity-mock."
+    - file: "scripts/validate-environment.py"
+      change_type: "modified"
+      description: "Validate matching flags and required paths without exposing fixture contents."
+    - file: "mocks/identity-access/README.md"
+      change_type: "modified"
+      description: "Document the finite 20-participant pool, 32 KiB limit, fail-closed behavior, and token confidentiality."
+    - file: "docs/adr/ADR-006-demo-webapp.md"
+      change_type: "modified"
+      description: "Document the pool's opt-in, role and confidentiality constraints."
+    - file: "docs/rationales/ADR-006.json"
+      change_type: "modified"
+      description: "Update the versioned rationale and scenario-pool invariant."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Twenty distinct participants, exact pool boundaries, matching configuration, and server-only credentials."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "Preserved service authority, no credential minting, and bounded Scenario Lab scope."
+  - artifact: "infra/environment.schema.json"
+    used_for: "Existing strict environment validation and backend-only compatibility."
+evidence_mapping:
+  T069:
+    - upstream: "docs/webapp/plan.md#Plan-5.3"
+      output: "mocks/identity-access/tests/test_scenario_identities.py and web/demo-python/tests/test_lab_settings.py"
+      evidence: "TestClient authenticates all twenty identities only under opt-in; disabled identities fail with 401, baseline roles stay unchanged, malformed/oversized/colliding/privileged pools fail, and browser HTML contains no pool token."
+  T070:
+    - upstream: "docs/adr/ADR-006-demo-webapp.md"
+      output: "mocks/identity-access/src/identity_access_mock/app.py and web/demo-python/src/demo_web/settings.py"
+      evidence: "Both the identity mock and web configuration enforce the same fixed twenty-actor pool, 32 KiB cap, unique tokens/UUID subjects, participant-only role, and matching explicit flags; no API or service contract was added."
+traceability:
+  - requirement: "REQ-003"
+    plan_item: "5.3"
+    task: "T069-T070"
+    files: ["mocks/identity-access/tests/test_scenario_identities.py", "web/demo-python/tests/test_lab_settings.py"]
+    status: "completed"
+  - requirement: "REQ-015"
+    plan_item: "5.3"
+    task: "T069-T070"
+    files: ["mocks/identity-access/src/identity_access_mock/settings.py", "web/demo-python/src/demo_web/settings.py"]
+    status: "completed"
+  - requirement: "REQ-019"
+    plan_item: "5.3"
+    task: "T069-T070"
+    files: ["mocks/identity-access/src/identity_access_mock/app.py", "infra/environment.schema.json"]
+    status: "completed"
+  - requirement: "REQ-021"
+    plan_item: "5.3"
+    task: "T069-T070"
+    files: ["mocks/identity-access/scenario-participants.json", "docs/adr/ADR-006-demo-webapp.md"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six integration/concurrency tests were skipped because the required external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 367
+    failed: 0
+    skipped: 6
+    failures: []
+  identity_mock_image:
+    command: "docker build --target test -f mocks/identity-access/Dockerfile mocks/identity-access"
+    passed: 30
+    failed: 0
+    skipped: 0
+    failures: []
+  lint:
+    command: "ruff check and ruff format --check on changed Python files"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  configuration:
+    command: "JSON validation, scripts/validate-environment.py infra/.env.example, and git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes: []

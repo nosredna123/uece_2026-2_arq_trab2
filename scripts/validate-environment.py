@@ -50,10 +50,26 @@ def validate(path: Path) -> list[str]:
             "DEMO_WEB_ATTENDANCE_BASE_URL",
             "DEMO_WEB_REPORTING_BASE_URL",
             "DEMO_WEB_IDENTITY_FIXTURES_PATH",
+            "DEMO_WEB_SCENARIO_POOL_ENABLED",
         )
         for key in required_demo_keys:
             if key not in values:
                 errors.append(f"{key}: required when DEMO_WEB_ENABLED=true")
+    identity_pool_enabled = values.get("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "false")
+    web_pool_enabled = values.get("DEMO_WEB_SCENARIO_POOL_ENABLED", "false")
+    if identity_pool_enabled != web_pool_enabled:
+        errors.append(
+            "DEMO_WEB_SCENARIO_POOL_ENABLED: must match IDENTITY_MOCK_SCENARIO_POOL_ENABLED"
+        )
+    if identity_pool_enabled == "true":
+        if values.get("DEMO_WEB_ENABLED") != "true":
+            errors.append("DEMO_WEB_ENABLED: must be true when the scenario pool is enabled")
+        for key in (
+            "IDENTITY_MOCK_SCENARIO_FIXTURES_PATH",
+            "DEMO_WEB_SCENARIO_FIXTURES_PATH",
+        ):
+            if not values.get(key):
+                errors.append(f"{key}: required when the scenario pool is enabled")
     for key, value in values.items():
         if key.endswith("_PORT") and value.isdigit() and int(value) > 65535:
             errors.append(f"{key}: port exceeds 65535")
@@ -73,9 +89,7 @@ def validate(path: Path) -> list[str]:
     free_start = values.get("DEMO_WEB_FREE_START_DELAY_SECONDS", "")
     if paid_start.isdigit() and activity_duration.isdigit() and free_start.isdigit():
         if int(free_start) <= int(paid_start) + int(activity_duration):
-            errors.append(
-                "DEMO_WEB_FREE_START_DELAY_SECONDS: must follow the paid activity"
-            )
+            errors.append("DEMO_WEB_FREE_START_DELAY_SECONDS: must follow the paid activity")
     demo_bounds = {
         "DEMO_WEB_SESSION_TTL_SECONDS": 86400,
         "DEMO_WEB_MAX_SESSIONS": 500,
@@ -90,9 +104,14 @@ def validate(path: Path) -> list[str]:
     if demo_port.isdigit() and not 1024 <= int(demo_port) <= 65535:
         errors.append("DEMO_WEB_PORT: must be between 1024 and 65535")
     host_port_keys = (
-        "POSTGRES_PORT", "RABBITMQ_HOST_PORT", "RABBITMQ_MANAGEMENT_PORT",
-        "EVENT_MANAGEMENT_PORT", "REGISTRATION_PORT", "ATTENDANCE_PORT",
-        "REPORTING_PORT", "DEMO_WEB_PORT",
+        "POSTGRES_PORT",
+        "RABBITMQ_HOST_PORT",
+        "RABBITMQ_MANAGEMENT_PORT",
+        "EVENT_MANAGEMENT_PORT",
+        "REGISTRATION_PORT",
+        "ATTENDANCE_PORT",
+        "REPORTING_PORT",
+        "DEMO_WEB_PORT",
     )
     ports = [values[key] for key in host_port_keys if key in values]
     if len(ports) != len(set(ports)):
@@ -101,7 +120,9 @@ def validate(path: Path) -> list[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate EventHub configuration without printing secrets")
+    parser = argparse.ArgumentParser(
+        description="Validate EventHub configuration without printing secrets"
+    )
     parser.add_argument("path", type=Path)
     args = parser.parse_args()
     errors = validate(args.path)

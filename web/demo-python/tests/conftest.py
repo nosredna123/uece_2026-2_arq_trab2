@@ -57,4 +57,6 @@ def web_environment(identity_fixtures):
         "DEMO_WEB_ATTENDANCE_BASE_URL": "http://attendance:8080",
         "DEMO_WEB_REPORTING_BASE_URL": "http://reporting:8080",
         "DEMO_WEB_IDENTITY_FIXTURES_PATH": str(identity_fixtures),
+        "IDENTITY_MOCK_SCENARIO_POOL_ENABLED": "false",
+        "DEMO_WEB_SCENARIO_POOL_ENABLED": "false",
     }

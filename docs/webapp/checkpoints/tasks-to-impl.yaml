@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 24
+  completed_tasks: 26
   in_progress_tasks: 0
-  pending_tasks: 12
-  completion_percentage: 66.7
+  pending_tasks: 10
+  completion_percentage: 72.2
 
 tasks:
   - task_id: "T045"
@@ -639,10 +639,74 @@ tasks:
       plan_item: "5.2"
       requirements: ["REQ-002", "REQ-003", "REQ-011", "REQ-014", "REQ-017"]
       full_trace: "REQ-002/003/011/014/017 → Phase-5.2 → T068 → scoped eventual-consistency report views"
+  - task_id: "T069"
+    description: "Specify fixture authorization and limit tests."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mocks/identity-access/tests/test_scenario_identities.py"
+          changes: ["Verify four baseline identities remain the default, disabled pool tokens are rejected, enabled actors remain participant-only, and malformed, duplicate, oversized, or colliding fixtures fail closed."]
+        - file: "web/demo-python/tests/test_lab_settings.py"
+          changes: ["Verify matching opt-in settings, twenty-actor validation, fixture bounds, baseline collisions, missing paths, and no scenario credential output in browser HTML."]
+        - file: "tests/configuration/test_demo_web_environment.py"
+          changes: ["Verify mock/client pool opt-ins must match and both fixture paths are required when the pool is enabled."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 367
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "The six skipped tests require external integration or concurrency infrastructure."
+    upstream_trace:
+      plan_item: "5.3"
+      requirements: ["REQ-003", "REQ-015", "REQ-019", "REQ-021"]
+      full_trace: "REQ-003/015/019/021 → Phase-5.3 → T069 → opt-in identity pool and browser confidentiality tests"
+  - task_id: "T070"
+    description: "Implement finite opt-in fixture pool."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "mocks/identity-access/scenario-participants.json"
+          changes: ["Define exactly twenty fictitious participants with unique opaque tokens and UUID subjects."]
+        - file: "mocks/identity-access/src/identity_access_mock/settings.py"
+          changes: ["Parse explicit scenario-pool opt-in and require a fixture path when enabled."]
+        - file: "mocks/identity-access/src/identity_access_mock/app.py"
+          changes: ["Load the finite pool only when enabled and reject invalid size, shape, role, scope, token, or subject collisions."]
+        - file: "mocks/identity-access/Dockerfile"
+          changes: ["Include the fixed fixture in build and runtime stages and run the new contract tests in the test stage."]
+        - file: "web/demo-python/src/demo_web/settings.py"
+          changes: ["Require matching mock/web opt-in values and validate the same finite server-side scenario fixtures."]
+        - file: "infra/environment.schema.json"
+          changes: ["Validate opt-in flags, enforce matching enablement, and require fixture paths only for an enabled pool."]
+        - file: "infra/.env.example"
+          changes: ["Document disabled-by-default mock and web flags and server-side fixture paths."]
+        - file: "infra/docker-compose.yml"
+          changes: ["Pass explicit mock pool settings to the identity service."]
+        - file: "scripts/validate-environment.py"
+          changes: ["Enforce matching opt-in and fixture-path requirements without echoing credentials."]
+        - file: "mocks/identity-access/README.md"
+          changes: ["Document the fixed actor count, file-size ceiling, fail-closed checks, and server-only tokens."]
+        - file: "docs/adr/ADR-006-demo-webapp.md"
+          changes: ["Record finite pool bounds, role limitations, opt-in agreement, and credential confidentiality."]
+        - file: "docs/rationales/ADR-006.json"
+          changes: ["Bump the rationale version and record the opt-in participant-pool invariant."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target test -f mocks/identity-access/Dockerfile mocks/identity-access"
+        passed: 30
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Full root suite also passed with 367 passed and 6 infrastructure-dependent skips; Ruff, formatting, JSON, environment validation, and diff checks passed."
+    upstream_trace:
+      plan_item: "5.3"
+      requirements: ["REQ-003", "REQ-015", "REQ-019", "REQ-021"]
+      full_trace: "REQ-003/015/019/021 → Phase-5.3 → T070 → explicit, bounded server-side identity fixtures"
 
 pending_tasks:
-  - {task_id: "T069", description: "Specify fixture authorization and limit tests", blocked_by: ["T052", "T068"], priority: "P1"}
-  - {task_id: "T070", description: "Implement finite opt-in fixture pool", blocked_by: ["T069"], priority: "P1"}
   - {task_id: "T071", description: "Specify scenario workload and oracle tests", blocked_by: ["T070"], priority: "P1"}
   - {task_id: "T072", description: "Implement supervised bounded scenario runner", blocked_by: ["T071"], priority: "P1"}
   - {task_id: "T073", description: "Specify visual and real lab acceptance", blocked_by: ["T072"], priority: "P1"}

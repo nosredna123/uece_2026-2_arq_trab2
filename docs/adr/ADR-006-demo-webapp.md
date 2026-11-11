@@ -2,7 +2,7 @@
 
 **Status:** Accepted for the presentation prototype  
 **Date:** 2026-11-10  
-**Version:** 1.0.0  
+**Version:** 1.1.0
 **Traceability:** REQ-001, REQ-002, REQ-003, REQ-015, REQ-017, REQ-019,
 REQ-021; [webapp plan](../webapp/plan.md), plans 0.1, 1.1, 2.1, 5.3-5.5,
 6.1-6.3
@@ -62,6 +62,12 @@ The Scenario Lab is opt-in and limited to fixed, finite scenarios and an
 explicitly bounded synthetic identity pool. It exercises existing service
 APIs and reports observations; it does not modify domain data outside those
 APIs, expose arbitrary traffic generation, or claim production load evidence.
+Its twenty fixture identities are unique, unscoped participants and are
+accepted by the identity mock only when both the mock and web client are
+explicitly configured for the pool. The fixed fixture is size-bounded and
+validated at startup; its tokens remain server-side and are never included in
+browser responses or exported observations. The pool adds no credential
+minting endpoint and grants no organizer or administrator authority.
 
 The presentation adapter, templates and browser behavior are excluded from
 the domain-core mutation-score calculation because they contain no domain
@@ -104,5 +110,7 @@ and rationales.
 T046 validates rationale inventory and governance without weakening existing
 checks. Subsequent tasks test settings and sessions, HTTP contracts, CSRF,
 persona isolation, browser behavior, fixed Scenario Lab bounds and the
-existing service regression suite. No production identity, multi-worker
-session support, or general-purpose load-testing capability is implied.
+existing service regression suite. T070 adds fail-closed validation of the
+opt-in, finite participant pool without changing service contracts. No
+production identity, multi-worker session support, or general-purpose
+load-testing capability is implied.

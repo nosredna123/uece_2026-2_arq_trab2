@@ -16,6 +16,7 @@ IDENTITY_URL = "/internal/identity/validate"
 def client(monkeypatch):
     monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
     monkeypatch.setenv("IDENTITY_MOCK_AVAILABLE", "true")
+    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "false")
     with TestClient(create_app()) as test_client:
         yield test_client
 
@@ -39,13 +40,8 @@ def test_health_is_available_without_exposing_identity_configuration(client):
         ("globalAdmin", "GLOBAL_ADMIN", None),
     ],
 )
-def test_valid_synthetic_token_returns_trusted_principal_only(
-    client, name, role, organization_id
-):
-    fixtures_path = (
-        Path(__file__).resolve().parents[1]
-        / "src/identity_access_mock/fixtures.json"
-    )
+def test_valid_synthetic_token_returns_trusted_principal_only(client, name, role, organization_id):
+    fixtures_path = Path(__file__).resolve().parents[1] / "src/identity_access_mock/fixtures.json"
     token = json.loads(fixtures_path.read_text())[name]["token"]
     response = client.post(
         IDENTITY_URL,
@@ -138,9 +134,20 @@ def test_identity_settings_are_required_and_secret_is_not_represented(monkeypatc
     assert SERVICE_KEY not in repr(Settings.from_environment())
 
 
-def test_every_response_has_a_correlation_id_and_invalid_ids_are_rejected(
-    client, caplog
-):
+def test_scenario_pool_settings_require_explicit_boolean_and_path(monkeypatch):
+    monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
+    monkeypatch.setenv("IDENTITY_MOCK_AVAILABLE", "true")
+    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "yes")
+    with pytest.raises(RuntimeError, match="IDENTITY_MOCK_SCENARIO_POOL_ENABLED"):
+        Settings.from_environment()
+
+    monkeypatch.setenv("IDENTITY_MOCK_SCENARIO_POOL_ENABLED", "true")
+    monkeypatch.delenv("IDENTITY_MOCK_SCENARIO_FIXTURES_PATH", raising=False)
+    with pytest.raises(RuntimeError, match="IDENTITY_MOCK_SCENARIO_FIXTURES_PATH"):
+        Settings.from_environment()
+
+
+def test_every_response_has_a_correlation_id_and_invalid_ids_are_rejected(client, caplog):
     correlation_id = "90000000-0000-0000-0000-000000000001"
     valid = client.post(
         IDENTITY_URL,
