@@ -4,7 +4,7 @@ from typing import Annotated
 from urllib.parse import parse_qs
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import ValidationError
 
@@ -25,6 +25,7 @@ from demo_web.presentation import (
     ORGANIZER_PERSONAS,
     PAGE_METADATA,
     PERSONA_LABELS,
+    SIGN_IN_GROUPS,
     format_datetime,
     format_money,
     format_observation_age,
@@ -58,6 +59,11 @@ MAX_REGISTRATION_LIMIT = 50
 MAX_PAGE_OFFSET = 10000
 SERVICE_ERRORS = (ServiceError, TransportError, InvalidResponseError)
 POLLABLE_STATUSES = frozenset({"WAITLISTED", "OFFERED", "PENDING_PAYMENT"})
+SIGNED_IN_LANDING = "/events"
+
+
+class SignInRequired(Exception):
+    """Raised when a page is requested before a synthetic user is selected."""
 
 
 def _session_store(request: Request) -> SessionStore:
@@ -69,6 +75,15 @@ def _existing_session(request: Request) -> BrowserSession:
     if session is None:
         raise HTTPException(status_code=403, detail="A valid demo session is required.")
     return session
+
+
+def _require_sign_in(request: Request) -> None:
+    session = _session_store(request).get(request.cookies.get(SESSION_COOKIE))
+    if session is None or not session.signed_in:
+        raise SignInRequired()
+
+
+SIGNED_IN_PAGE = [Depends(_require_sign_in)]
 
 
 def _session_or_create(request: Request) -> tuple[BrowserSession, bool]:
@@ -256,7 +271,6 @@ def _demo_response(
                 else "Preparation progress is retained in this browser session."
             ),
             "session": session,
-            "persona_options": PERSONA_LABELS,
             "csrf_token": session.csrf_token,
             "can_prepare": session.persona in ORGANIZER_PERSONAS,
             "new_run_key": new_run_key,
@@ -393,7 +407,7 @@ def _report_failure_json(error) -> dict[str, object]:
     }
 
 
-@router.get("/reports", response_class=HTMLResponse)
+@router.get("/reports", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
 async def organization_reports(
     request: Request,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
@@ -814,21 +828,23 @@ def _checkout_response(
 
 
 @router.get("/", response_class=HTMLResponse)
-async def home(request: Request) -> HTMLResponse:
+async def home(request: Request) -> Response:
     store = _session_store(request)
     session, is_new = _session_or_create(request)
-    entries = request.app.state.clients.history_for(session.id)
+    if session.signed_in:
+        return Response(
+            status_code=303,
+            headers={"Location": SIGNED_IN_LANDING, "Cache-Control": "no-store"},
+        )
     response = templates.TemplateResponse(
         request=request,
         name="home.html",
         context={
             "page": PAGE_METADATA["home"],
-            "operational_status": "Browser session active; backend services not queried.",
-            "persona_options": PERSONA_LABELS,
-            "current_persona": session.persona,
-            "persona_label": PERSONA_LABEL_BY_ID[session.persona],
+            "operational_status": "Waiting for a synthetic user; backend services not queried.",
+            "sign_in_groups": SIGN_IN_GROUPS,
+            "persona_labels": PERSONA_LABEL_BY_ID,
             "csrf_token": session.csrf_token,
-            "entries": entries,
         },
     )
     response.headers["Cache-Control"] = "no-store"
@@ -836,7 +852,7 @@ async def home(request: Request) -> HTMLResponse:
     return response
 
 
-@router.get("/events", response_class=HTMLResponse)
+@router.get("/events", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
 async def published_events(
     request: Request,
     search: Annotated[str | None, Query(alias="q", max_length=200)] = None,
@@ -908,7 +924,7 @@ async def published_events(
     return response
 
 
-@router.get("/events/{event_id}", response_class=HTMLResponse)
+@router.get("/events/{event_id}", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
 async def published_event_detail(
     request: Request,
     event_id: UUID,
@@ -1016,7 +1032,11 @@ async def published_event_detail(
     return response
 
 
-@router.get("/activities/{activity_id}/checkout", response_class=HTMLResponse)
+@router.get(
+    "/activities/{activity_id}/checkout",
+    response_class=HTMLResponse,
+    dependencies=SIGNED_IN_PAGE,
+)
 async def checkout(request: Request, activity_id: UUID) -> HTMLResponse:
     session = _existing_session(request)
     _participant_identity(request, session)
@@ -1129,7 +1149,7 @@ async def confirm_checkout(request: Request, activity_id: UUID) -> Response:
     )
 
 
-@router.get("/registrations", response_class=HTMLResponse)
+@router.get("/registrations", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
 async def registrations(
     request: Request,
     limit: Annotated[int, Query(ge=1, le=MAX_REGISTRATION_LIMIT)] = 20,
@@ -1178,7 +1198,11 @@ async def registrations(
     return response
 
 
-@router.get("/registrations/{registration_id}", response_class=HTMLResponse)
+@router.get(
+    "/registrations/{registration_id}",
+    response_class=HTMLResponse,
+    dependencies=SIGNED_IN_PAGE,
+)
 async def registration_detail(request: Request, registration_id: UUID) -> HTMLResponse:
     session = _existing_session(request)
     identity = _participant_identity(request, session)
@@ -1362,7 +1386,7 @@ async def accept_registration_offer(request: Request, registration_id: UUID) -> 
     return await _registration_action(request, registration_id, action="accept-offer")
 
 
-@router.get("/organizer", response_class=HTMLResponse)
+@router.get("/organizer", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
 async def organizer_page(request: Request) -> HTMLResponse:
     session = _existing_session(request)
     identity = _organizer_identity(request, session)
@@ -1653,7 +1677,7 @@ async def organizer_publish_event(request: Request, event_id: UUID) -> Response:
     return Response(status_code=303, headers={"Location": "/organizer"})
 
 
-@router.get("/demo", response_class=HTMLResponse)
+@router.get("/demo", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
 async def guided_demo(
     request: Request,
     run_id: Annotated[UUID | None, Query()] = None,
@@ -1996,6 +2020,7 @@ async def issue_registration_certificate(
 @router.get(
     "/registrations/{registration_id}/certificate",
     response_class=HTMLResponse,
+    dependencies=SIGNED_IN_PAGE,
 )
 async def registration_certificate(request: Request, registration_id: UUID) -> HTMLResponse:
     session = _existing_session(request)
@@ -2056,7 +2081,7 @@ async def session_info(request: Request, response: Response) -> dict[str, str]:
     return result
 
 
-@router.get("/scenario-lab", response_class=HTMLResponse)
+@router.get("/scenario-lab", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
 async def scenario_lab_page(request: Request) -> HTMLResponse:
     store = _session_store(request)
     session, is_new = _session_or_create(request)
@@ -2254,18 +2279,36 @@ async def accept_scenario_offer(request: Request, run_id: UUID) -> JSONResponse:
     return response
 
 
+def _reject_if_scenario_running(request: Request, session: BrowserSession, detail: str) -> None:
+    manager = getattr(request.app.state, "scenario_manager", None)
+    if manager is not None and manager.is_running_for(session.id):
+        raise HTTPException(status_code=409, detail=detail)
+
+
 @router.post("/persona/{persona}")
 async def select_persona(request: Request, persona: str) -> Response:
     session = _existing_session(request)
     await _validate_csrf(request, session)
-    manager = getattr(request.app.state, "scenario_manager", None)
-    if manager is not None and manager.is_running_for(session.id):
-        raise HTTPException(
-            status_code=409,
-            detail="Persona cannot change while this session owns an active Scenario Lab run.",
-        )
+    _reject_if_scenario_running(
+        request,
+        session,
+        "Persona cannot change while this session owns an active Scenario Lab run.",
+    )
     try:
         _session_store(request).set_persona(session, persona)
     except InvalidPersonaError:
         raise HTTPException(status_code=400, detail="The selected persona is invalid.") from None
+    return Response(status_code=303, headers={"Location": SIGNED_IN_LANDING})
+
+
+@router.post("/logout")
+async def sign_out(request: Request) -> Response:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    _reject_if_scenario_running(
+        request,
+        session,
+        "Sign out is unavailable while this session owns an active Scenario Lab run.",
+    )
+    _session_store(request).sign_out(session)
     return Response(status_code=303, headers={"Location": "/"})

@@ -14,9 +14,11 @@ expect = playwright_api.expect
 def test_missing_identity_invalid_persona_and_stale_form_are_rejected(browser_page):
     page = browser_page
     missing_session = page.goto(f"{BASE_URL}/organizer")
-    assert missing_session.status == 403
+    assert missing_session.status == 200
+    assert page.url == f"{BASE_URL}/"
+    expect(page.get_by_role("button", name="Sign out", exact=True)).to_have_count(0)
 
-    page.goto(f"{BASE_URL}/demo")
+    select_persona(page, "Visitante")
     no_persona = page.goto(f"{BASE_URL}/organizer")
     assert no_persona.status == 403
 
@@ -28,7 +30,7 @@ def test_missing_identity_invalid_persona_and_stale_form_are_rejected(browser_pa
 
     select_persona(page, "Participante simulado 01")
     invalid_persona_csrf = page.locator(
-        'form[action="/persona/organizer"] input[name="csrf_token"]'
+        'form[action="/logout"] input[name="csrf_token"]'
     ).input_value()
     invalid_persona = page.request.post(
         f"{BASE_URL}/persona/not-a-fixture",

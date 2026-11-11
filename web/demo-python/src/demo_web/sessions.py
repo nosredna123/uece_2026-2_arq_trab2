@@ -45,6 +45,7 @@ class BrowserSession:
     created_at: float
     last_used_at: float
     persona: str = "visitor"
+    signed_in: bool = False
     persona_version: int = 0
     commands: OrderedDict[str, object] = field(default_factory=OrderedDict)
     drafts: OrderedDict[str, SessionEventDraft] = field(default_factory=OrderedDict)
@@ -128,13 +129,23 @@ class SessionStore:
         if persona not in PERSONAS:
             raise InvalidPersonaError("The selected persona is not available.")
         with session.lock:
+            session.signed_in = True
             if session.persona == persona:
                 return
-            session.persona = persona
-            session.persona_version += 1
-            session.csrf_token = secrets.token_urlsafe(32)
-            session.attendance_flashes.clear()
-            session.report_observations.clear()
+            self._switch_persona(session, persona)
+
+    def sign_out(self, session: BrowserSession) -> None:
+        with session.lock:
+            session.signed_in = False
+            self._switch_persona(session, "visitor")
+
+    @staticmethod
+    def _switch_persona(session: BrowserSession, persona: str) -> None:
+        session.persona = persona
+        session.persona_version += 1
+        session.csrf_token = secrets.token_urlsafe(32)
+        session.attendance_flashes.clear()
+        session.report_observations.clear()
 
     def _remove_expired(self, now: float) -> None:
         expired = [

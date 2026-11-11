@@ -1530,12 +1530,6 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
-.persona-switches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
 .report-filter-form {
   display: flex;
   flex-wrap: wrap;
@@ -1598,4 +1592,88 @@ h2 {
 
 .report-refresh-controls {
   margin-top: 1.2rem;
+}
+
+.site-header {
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+}
+
+.signed-in-user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.signed-in-user form {
+  margin: 0;
+}
+
+.signed-in-label strong {
+  color: var(--forest-dark);
+}
+
+.sign-out-button {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--forest);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--forest);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+
+.sign-out-button:hover {
+  background: var(--forest-dark);
+}
+
+.sign-in-card {
+  max-width: 40rem;
+  margin: 1rem auto 0;
+}
+
+.sign-in-card h1 {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+}
+
+.sign-in-group {
+  margin-top: 1.4rem;
+}
+
+.sign-in-group-title {
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.persona-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.persona-detail {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.visitor-sign-in {
+  margin: 1.4rem 0 0;
+  text-align: center;
+}
+
+.link-button {
+  padding: 0.3rem;
+  border: 0;
+  color: var(--forest-dark);
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  text-decoration: underline;
 }

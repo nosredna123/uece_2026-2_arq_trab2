@@ -25,19 +25,21 @@ def test_badge_template_uses_central_visible_text_and_icon(kind, label):
     assert f'data-badge-kind="{kind}"' in badge
 
 
-def test_home_page_labels_each_functional_section_and_explains_badges(web_environment):
+def test_sign_in_page_is_labelled_and_signed_in_pages_explain_badges(web_environment, sign_in):
     with TestClient(create_app(environ=web_environment)) as client:
         response = client.get("/", headers={"Accept": "text/html"})
+        sign_in(client)
+        page = client.get("/scenario-lab", headers={"Accept": "text/html"})
 
     html = response.text
     assert response.status_code == 200
-    assert 'data-section="persona" data-provenance="demo_presentation"' in html
-    assert 'data-section="payment" data-provenance="simulated_dependency"' in html
-    assert 'data-section="request-history" data-provenance="live_service"' in html
-    assert "<details" in html
-    assert "<summary>" in html
+    assert 'data-section="sign-in" data-provenance="demo_presentation"' in html
+    assert "<details" not in html
+    assert page.status_code == 200
+    assert "<details" in page.text
+    assert "<summary>" in page.text
     for definition in BADGE_DEFINITIONS.values():
-        assert definition.label in html
+        assert definition.label in page.text
 
 
 def test_request_history_partial_escapes_service_content():

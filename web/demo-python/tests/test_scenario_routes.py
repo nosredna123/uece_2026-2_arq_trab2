@@ -155,6 +155,8 @@ def test_scenario_routes_require_organizer_csrf_and_session_ownership(
             follow_redirects=False,
         )
         assert blocked_persona.status_code == 409
+        blocked_sign_out = client.post("/logout", headers=headers, follow_redirects=False)
+        assert blocked_sign_out.status_code == 409
         manager.active_owner = None
 
         client.cookies.clear()

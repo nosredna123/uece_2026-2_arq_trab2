@@ -19,6 +19,7 @@
         <span class="brand-mark" aria-hidden="true">E</span>
         <span>EventHub <span class="brand-subtitle">DEMO</span></span>
       </a>
+      {% if signed_in_user %}
       <nav class="primary-nav" aria-label="Primary">
         <a href="/events">Browse events</a>
         <a href="/registrations">My registrations</a>
@@ -26,9 +27,19 @@
         <a href="/scenario-lab">Scenario Lab</a>
         <a href="/reports">Organizer reports</a>
       </nav>
+      <div class="signed-in-user" data-section="signed-in-user">
+        <span class="signed-in-label">Signed in as <strong>{{ signed_in_user.label }}</strong></span>
+        <form method="post" action="/logout">
+          <input type="hidden" name="csrf_token" value="{{ signed_in_user.csrf_token }}">
+          <button class="sign-out-button" type="submit">Sign out</button>
+        </form>
+      </div>
+      {% else %}
       <p class="header-note">Service boundaries, made visible</p>
+      {% endif %}
     </header>
     <main id="main-content" class="page-shell">
+      {% block page_header %}
       <section class="page-intro" aria-labelledby="page-title">
         <p class="eyebrow">{{ page.eyebrow }}</p>
         <h1 id="page-title">{{ page.heading }}</h1>
@@ -58,6 +69,8 @@
         </ul>
         <p class="guide-note">The text labels carry the meaning; color and icon are supporting cues.</p>
       </details>
+
+      {% endblock %}
 
       {% block content %}{% endblock %}
     </main>

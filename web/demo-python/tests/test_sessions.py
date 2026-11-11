@@ -78,7 +78,7 @@ def test_persona_change_requires_csrf_and_same_origin(web_environment):
         )
 
         assert changed.status_code == 303
-        assert changed.headers["location"] == "/"
+        assert changed.headers["location"] == "/events"
         selected = client.get("/session").json()
         assert selected["persona"] == "participant"
         assert selected["role"] == "PARTICIPANT"

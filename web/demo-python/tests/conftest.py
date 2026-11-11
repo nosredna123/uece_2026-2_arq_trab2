@@ -72,3 +72,19 @@ def web_environment(identity_fixtures):
         "IDENTITY_LAB_ENABLED": "false",
         "DEMO_LAB_ENABLED": "false",
     }
+
+
+def _sign_in(client, persona="visitor"):
+    csrf_token = client.get("/session").json()["csrf_token"]
+    response = client.post(
+        f"/persona/{persona}",
+        headers={"Origin": "http://testserver", "X-CSRF-Token": csrf_token},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    return response
+
+
+@pytest.fixture
+def sign_in():
+    return _sign_in

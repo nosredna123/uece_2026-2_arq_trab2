@@ -52,14 +52,14 @@ BADGE_DEFINITIONS = {
 
 PAGE_METADATA = {
     "home": PageMetadata(
-        title="EventHub demonstration",
-        eyebrow="A guided view of the EventHub prototype",
-        heading="See the journey, understand the boundaries",
+        title="Sign in",
+        eyebrow="Simulated sign-in",
+        heading="Who is using EventHub?",
         description=(
-            "Explore how the presentation client distinguishes service evidence, "
-            "simulated dependencies, and demo-only guidance."
+            "Choose a synthetic user. There is no password: these fictional identities "
+            "only select which demo credentials the app sends to the services."
         ),
-        implementation_status="Catalog and shell available",
+        implementation_status="Simulated sign-in",
     ),
     "events": PageMetadata(
         title="Published events",
@@ -182,11 +182,50 @@ ORGANIZER_PERSONAS = {
     "organizerUece": "UECE",
     "organizerAcademicSim": "IASC",
 }
+SIGN_IN_GROUPS = (
+    (
+        "Organizers",
+        (
+            ("organizer", "GESAD/UECE", "Grupo de pesquisa GESAD — UECE"),
+            ("organizerUece", "UECE", "Universidade Estadual do Ceará"),
+            (
+                "organizerAcademicSim",
+                "IASC (simulada)",
+                "Instituto Acadêmico Simulado do Ceará — fictício",
+            ),
+        ),
+    ),
+    (
+        "Participants",
+        (
+            ("participant", "Participante simulado 01", "Synthetic participant"),
+            ("participantTwo", "Participante simulado 02", "Synthetic participant"),
+        ),
+    ),
+)
 
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
 STATIC_DIRECTORY = Path(__file__).parent / "static"
 
-templates = Jinja2Templates(directory=str(TEMPLATE_DIRECTORY))
+
+def _signed_in_user(request) -> dict:
+    store = getattr(request.app.state, "sessions", None)
+    if store is None:
+        return {}
+    session = store.get(request.cookies.get("demo_session"))
+    if session is None or not session.signed_in:
+        return {}
+    return {
+        "signed_in_user": {
+            "label": dict(PERSONA_LABELS)[session.persona],
+            "csrf_token": session.csrf_token,
+        }
+    }
+
+
+templates = Jinja2Templates(
+    directory=str(TEMPLATE_DIRECTORY), context_processors=[_signed_in_user]
+)
 templates.env.globals["badge_definitions"] = BADGE_DEFINITIONS
 
 

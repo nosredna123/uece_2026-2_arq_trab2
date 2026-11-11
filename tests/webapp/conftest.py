@@ -71,8 +71,13 @@ def browser_page(browser_context_factory):
 
 
 def select_persona(page, label):
-    page.goto(f"{BASE_URL}/demo")
+    page.goto(f"{BASE_URL}/")
+    sign_out = page.get_by_role("button", name="Sign out", exact=True)
+    if sign_out.count():
+        sign_out.click()
+        page.wait_for_url(f"{BASE_URL}/")
     page.get_by_role("button", name=label, exact=True).click()
+    page.wait_for_url(f"{BASE_URL}/events**")
     page.goto(f"{BASE_URL}/demo")
 
 

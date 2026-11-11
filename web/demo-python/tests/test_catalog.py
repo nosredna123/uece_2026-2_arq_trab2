@@ -72,7 +72,7 @@ def _test_client(monkeypatch, web_environment, handler):
     return TestClient(create_app(environ=web_environment))
 
 
-def test_catalog_search_pagination_and_no_registration_side_effect(monkeypatch, web_environment):
+def test_catalog_search_pagination_and_no_registration_side_effect(monkeypatch, web_environment, sign_in):
     requests = []
     events = [
         _event("10000000-0000-4000-8000-000000000011", "First event"),
@@ -91,6 +91,7 @@ def test_catalog_search_pagination_and_no_registration_side_effect(monkeypatch, 
         return httpx.Response(200, json=events[offset : offset + limit])
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get("/events?q=music&limit=2&offset=2")
 
     assert response.status_code == 200
@@ -105,7 +106,7 @@ def test_catalog_search_pagination_and_no_registration_side_effect(monkeypatch, 
 
 
 def test_catalog_escapes_backend_content_and_filters_unpublished_events(
-    monkeypatch, web_environment
+    monkeypatch, web_environment, sign_in
 ):
     events = [
         _event(title='<script>alert("unsafe")</script>'),
@@ -120,6 +121,7 @@ def test_catalog_escapes_backend_content_and_filters_unpublished_events(
         return httpx.Response(200, json=events)
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get("/events")
 
     assert response.status_code == 200
@@ -130,7 +132,7 @@ def test_catalog_escapes_backend_content_and_filters_unpublished_events(
 
 
 def test_event_detail_formats_schedule_and_minor_units_and_labels_stale_or_unavailable(
-    monkeypatch, web_environment
+    monkeypatch, web_environment, sign_in
 ):
     now = datetime.now(timezone.utc)
     stale_as_of = (now - timedelta(minutes=3)).isoformat()
@@ -161,6 +163,7 @@ def test_event_detail_formats_schedule_and_minor_units_and_labels_stale_or_unava
         raise AssertionError(f"Unexpected service request: {request.method} {request.url}")
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get(f"/events/{EVENT_ID}")
 
     assert response.status_code == 200
@@ -189,7 +192,7 @@ def test_price_formatting_preserves_large_integer_minor_units():
 
 
 def test_event_detail_fetches_availability_only_for_displayed_activity_page(
-    monkeypatch, web_environment
+    monkeypatch, web_environment, sign_in
 ):
     activity_one = _activity(ACTIVITY_ONE, "First page", amount_minor=1000)
     activity_two = _activity(ACTIVITY_TWO, "Second page", amount_minor=2000)
@@ -225,6 +228,7 @@ def test_event_detail_fetches_availability_only_for_displayed_activity_page(
         raise AssertionError(f"Unexpected service request: {request.method} {request.url}")
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get(f"/events/{EVENT_ID}?limit=1&offset=1")
 
     assert response.status_code == 200
@@ -237,11 +241,12 @@ def test_event_detail_fetches_availability_only_for_displayed_activity_page(
     assert availability_requests[0].url.path == (f"/activities/{ACTIVITY_TWO}/availability")
 
 
-def test_unpublished_event_is_not_visible_and_keeps_not_found_status(monkeypatch, web_environment):
+def test_unpublished_event_is_not_visible_and_keeps_not_found_status(monkeypatch, web_environment, sign_in):
     def respond(request):
         return httpx.Response(404, json=_error("NOT_FOUND"))
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get(
             f"/events/{EVENT_ID}",
             headers={"Accept": "text/html"},
@@ -251,7 +256,7 @@ def test_unpublished_event_is_not_visible_and_keeps_not_found_status(monkeypatch
     assert "The requested page was not found." in response.text
 
 
-def test_activity_program_failure_does_not_hide_valid_event(monkeypatch, web_environment):
+def test_activity_program_failure_does_not_hide_valid_event(monkeypatch, web_environment, sign_in):
     def respond(request):
         if request.url.path == f"/events/{EVENT_ID}":
             return httpx.Response(200, json=_event())
@@ -260,6 +265,7 @@ def test_activity_program_failure_does_not_hide_valid_event(monkeypatch, web_env
         raise AssertionError(f"Unexpected service request: {request.method} {request.url}")
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get(f"/events/{EVENT_ID}")
 
     assert response.status_code == 200
@@ -268,11 +274,12 @@ def test_activity_program_failure_does_not_hide_valid_event(monkeypatch, web_env
     assert "PROGRAM_DOWN" in response.text
 
 
-def test_catalog_service_failure_is_not_rendered_as_an_empty_catalog(monkeypatch, web_environment):
+def test_catalog_service_failure_is_not_rendered_as_an_empty_catalog(monkeypatch, web_environment, sign_in):
     def respond(request):
         return httpx.Response(503, json=_error("CATALOG_DOWN"))
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get("/events")
 
     assert response.status_code == 503
@@ -289,7 +296,7 @@ def test_catalog_service_failure_is_not_rendered_as_an_empty_catalog(monkeypatch
     ],
 )
 def test_catalog_query_bounds_are_validated_before_service_calls(
-    monkeypatch, web_environment, query
+    monkeypatch, web_environment, query, sign_in
 ):
     requests = []
 
@@ -298,6 +305,7 @@ def test_catalog_query_bounds_are_validated_before_service_calls(
         return httpx.Response(200, json=[])
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get("/events", params=query)
 
     assert response.status_code == 422

@@ -128,7 +128,7 @@ def _create_event_data(csrf_token, idempotency_key, *, title="Organizer event"):
 
 
 def test_organizer_page_requires_organizer_persona_before_service_access(
-    monkeypatch, web_environment
+    monkeypatch, web_environment, sign_in
 ):
     requests = []
 
@@ -137,6 +137,7 @@ def test_organizer_page_requires_organizer_persona_before_service_access(
         raise AssertionError("Unauthorized organizer page must not call services.")
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get("/organizer")
 
     assert response.status_code == 403

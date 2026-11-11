@@ -165,7 +165,7 @@ def test_checkout_explains_free_and_paid_registration(
     assert "Confirm registration" in response.text
 
 
-def test_checkout_requires_participant_before_loading_service_data(monkeypatch, web_environment):
+def test_checkout_requires_participant_before_loading_service_data(monkeypatch, web_environment, sign_in):
     requests = []
 
     def respond(request):
@@ -173,6 +173,7 @@ def test_checkout_requires_participant_before_loading_service_data(monkeypatch, 
         raise AssertionError("Visitor checkout must not query service data.")
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get(f"/activities/{ACTIVITY_ID}/checkout")
 
     assert response.status_code == 403

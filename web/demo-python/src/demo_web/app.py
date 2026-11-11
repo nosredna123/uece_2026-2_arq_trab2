@@ -12,7 +12,7 @@ from starlette.staticfiles import StaticFiles
 from demo_web.clients import DemoClients
 from demo_web.commands import CommandLedger
 from demo_web.presentation import PAGE_METADATA, STATIC_DIRECTORY, templates
-from demo_web.routes import router
+from demo_web.routes import SignInRequired, router
 from demo_web.scenarios import ScenarioManager
 from demo_web.seed import run_seed
 from demo_web.sessions import SessionStore
@@ -75,6 +75,12 @@ def create_app(environ: Mapping[str, str] | None = None) -> FastAPI:
         name="static",
     )
     app.include_router(router)
+
+    @app.exception_handler(SignInRequired)
+    async def redirect_to_sign_in(request: Request, exception: SignInRequired) -> StarletteResponse:
+        return StarletteResponse(
+            status_code=303, headers={"Location": "/", "Cache-Control": "no-store"}
+        )
 
     @app.exception_handler(StarletteHTTPException)
     async def render_html_http_error(

@@ -83,7 +83,7 @@ def _poll_params(html):
     return {"persona_version": match.group(1)}
 
 
-def test_reports_require_organizer_before_any_reporting_call(monkeypatch, web_environment):
+def test_reports_require_organizer_before_any_reporting_call(monkeypatch, web_environment, sign_in):
     requests = []
 
     def respond(request):
@@ -91,6 +91,7 @@ def test_reports_require_organizer_before_any_reporting_call(monkeypatch, web_en
         raise AssertionError("A visitor must not access organization reports.")
 
     with _test_client(monkeypatch, web_environment, respond) as client:
+        sign_in(client)
         response = client.get("/reports")
 
     assert response.status_code == 403

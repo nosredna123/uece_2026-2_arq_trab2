@@ -187,9 +187,10 @@ def test_lab_page_renders_fixed_predictions_and_provenance_without_mutations(
     assert manager.start_calls == 0
 
 
-def test_preset_cards_expose_the_fixed_workload_values(web_environment):
+def test_preset_cards_expose_the_fixed_workload_values(web_environment, sign_in):
     app, client, manager = _test_client(web_environment)
     try:
+        sign_in(client)
         response = client.get("/scenario-lab")
     finally:
         app.state.scenario_manager = None
@@ -213,8 +214,9 @@ def test_preset_cards_expose_the_fixed_workload_values(web_environment):
     assert manager.start_calls == 0
 
 
-def test_disabled_lab_is_preview_only(web_environment):
+def test_disabled_lab_is_preview_only(web_environment, sign_in):
     with TestClient(create_app(web_environment)) as client:
+        sign_in(client)
         response = client.get("/scenario-lab")
 
     assert response.status_code == 200
@@ -264,9 +266,10 @@ def test_active_run_has_safe_stop_and_refresh_does_not_restart(web_environment):
     assert manager.start_calls == 0
 
 
-def test_non_organizer_sees_preview_but_no_mutation_controls(web_environment):
+def test_non_organizer_sees_preview_but_no_mutation_controls(web_environment, sign_in):
     app, client, manager = _test_client(web_environment)
     try:
+        sign_in(client)
         response = client.get("/scenario-lab")
     finally:
         app.state.scenario_manager = None

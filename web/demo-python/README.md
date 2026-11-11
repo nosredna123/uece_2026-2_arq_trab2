@@ -29,7 +29,13 @@ Open the printed localhost URL. The ordinary service journeys use the
 synthetic Identity fixture and existing service APIs; the app has no database,
 broker, Docker socket, or arbitrary target access.
 
-The persona selector includes separate synthetic organizer tenants for
+The home page is a simulated sign-in: choose an organizer (GESAD/UECE, UECE,
+or IASC), a synthetic participant, or continue as visitor. There is no
+password. The selected user stays active on every page, shown in the header as
+**Signed in as …**, until **Sign out** returns to the sign-in page. Pages
+opened before signing in redirect to it.
+
+The sign-in page includes separate synthetic organizer tenants for
 GESAD/UECE, UECE, and the fictional Instituto Acadêmico Simulado do Ceará
 (IASC). GESAD is a UECE research group; IASC is fictional and does not imply a
 real partnership. Guided preparation creates records under the selected
