@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 14
+  completed_tasks: 16
   in_progress_tasks: 0
-  pending_tasks: 22
-  completion_percentage: 38.9
+  pending_tasks: 20
+  completion_percentage: 44.4
 
 tasks:
   - task_id: "T045"
@@ -379,10 +379,62 @@ tasks:
       plan_item: "3.2"
       requirements: ["REQ-002", "REQ-003", "REQ-005", "REQ-006", "REQ-013"]
       full_trace: "REQ-002/003/005/006/013 → Phase-3.2 → T058 → simulated checkout with real registration command"
+  - task_id: "T059"
+    description: "Specify registration states, ownership, polling, and action retries."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_registrations.py"
+          changes: ["Cover all seven states, pending refunds, offer deadlines/acceptance, participant scope, polling pause/terminal/error semantics, CSRF, and lost-response idempotent retry."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 300
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "The tests verify no inferred global queue position and ensure unavailable poll results do not replace the last observed record."
+    upstream_trace:
+      plan_item: "3.3"
+      requirements: ["REQ-003", "REQ-006", "REQ-007", "REQ-013", "REQ-014", "REQ-017"]
+      full_trace: "REQ-003/006/007/013/014/017 → Phase-3.3 → T059 → registration UI contract tests"
+  - task_id: "T060"
+    description: "Implement scoped registration pages, actions, and bounded refresh."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add own-registration list/detail, participant-scoped polling, persona-version invalidation, cancel/accept commands, safe unknown-outcome retries, and PRG redirects."]
+        - file: "web/demo-python/src/demo_web/presentation.py"
+          changes: ["Add registration list/detail page metadata."]
+        - file: "web/demo-python/src/demo_web/templates/base.html"
+          changes: ["Add My registrations navigation."]
+        - file: "web/demo-python/src/demo_web/templates/registrations.html"
+          changes: ["Render the backend-scoped registration list and pagination."]
+        - file: "web/demo-python/src/demo_web/templates/registration_detail.html"
+          changes: ["Render backend states, deadlines, refund/offer semantics, action forms, last-observed labels, and polling controls."]
+        - file: "web/demo-python/src/demo_web/static/status.js"
+          changes: ["Implement bounded non-overlapping refresh, pause/resume, explicit refresh, pagehide cancellation, persona-change stop, and safe last-observed retention on failures."]
+        - file: "web/demo-python/src/demo_web/static/app.css"
+          changes: ["Style registration summaries, status facts, refresh controls, and responsive actions."]
+        - file: "web/demo-python/pyproject.toml"
+          changes: ["Include JavaScript assets in packaged wheels."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+        passed: 106
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The complete root suite passed; Ruff, JavaScript syntax, and packaged runtime tests passed."
+    upstream_trace:
+      plan_item: "3.3"
+      requirements: ["REQ-003", "REQ-006", "REQ-007", "REQ-013", "REQ-014"]
+      full_trace: "REQ-003/006/007/013/014 → Phase-3.3 → T060 → scoped registration status and actions"
 
 pending_tasks:
-  - {task_id: "T059", description: "Specify registration state and polling transitions", blocked_by: ["T058"], priority: "P1"}
-  - {task_id: "T060", description: "Implement own registrations and actions", blocked_by: ["T059"], priority: "P1"}
   - {task_id: "T061", description: "Specify organizer workflow tests", blocked_by: ["T054", "T052"], priority: "P1"}
   - {task_id: "T062", description: "Implement create, add, and publish pages", blocked_by: ["T061"], priority: "P1"}
   - {task_id: "T063", description: "Specify attendance, eligibility, and print tests", blocked_by: ["T060"], priority: "P1"}

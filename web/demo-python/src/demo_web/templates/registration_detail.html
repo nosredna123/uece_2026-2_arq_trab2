@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="content-card registration-detail"
+         data-section="registration-status" data-provenance="live_service"
+         aria-labelledby="registration-heading">
+  {% set kind = "live_service" %}
+  {% include "partials/badge.html" %}
+  <p class="eyebrow">Registration record {{ registration_id }}</p>
+  <h2 id="registration-heading">Registration status</h2>
+  {% if registration %}
+  <div id="registration-panel"
+       data-poll-url="/registrations/{{ registration_id }}/poll"
+       data-persona-version="{{ persona_version }}"
+       data-poll-interval-ms="{{ poll_interval_ms }}"
+       data-poll-timeout-ms="{{ poll_timeout_ms }}"
+       data-polling="{{ 'true' if pollable else 'false' }}">
+    <dl class="registration-facts">
+      <div>
+        <dt>Status</dt>
+        <dd data-registration-status>{{ registration.status }}</dd>
+      </div>
+      <div>
+        <dt>Refund status</dt>
+        <dd data-refund-status>{{ registration.refund_status }}</dd>
+      </div>
+      <div>
+        <dt>Created</dt>
+        <dd>{{ created_at }}</dd>
+      </div>
+      <div data-expires-container {% if not registration.expires_at %}hidden{% endif %}>
+        <dt>Payment deadline</dt>
+        <dd data-expires-at>{{ expires_at or "No deadline" }}</dd>
+      </div>
+      <div data-offer-expires-container {% if not registration.offer_expires_at %}hidden{% endif %}>
+        <dt>Offer expires</dt>
+        <dd data-offer-expires-at>{{ offer_expires_at or "No active offer" }}</dd>
+      </div>
+      {% if price %}
+      <div>
+        <dt>Backend registration price</dt>
+        <dd>{{ price }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+    <p class="notice-box refund-note" data-refund-note
+       {% if registration.status != "CONFIRMED" or registration.refund_status != "PENDING" %}hidden{% endif %}>
+      Refund pending; this registration remains confirmed and still occupies capacity.
+    </p>
+    <p class="notice-box offer-note" data-offer-note
+       {% if registration.status != "OFFERED" %}hidden{% endif %}>
+      This is an offer from Registration. Accept before its backend deadline to claim it.
+    </p>
+    <p class="last-observed" data-last-observed>Last observed {{ observed_at }}</p>
+  </div>
+  {% else %}
+  <p class="service-error" role="alert">
+    {{ message or "The current registration state was not returned." }}
+    {% if retry_action %} Retry the same command below; the action result is unknown.{% endif %}
+  </p>
+  {% endif %}
+
+  {% if action_error %}
+  <div class="service-error" role="alert">
+    <p>{{ message }}</p>
+    <p><strong>{{ action_error.service }}</strong>
+      {% if action_error.status_code %}returned HTTP {{ action_error.status_code }}{% else %}could not be reached{% endif %}.
+      Code <code>{{ action_error.code }}</code>
+      · correlation <code>{{ action_error.correlation_id }}</code>
+    </p>
+  </div>
+  {% endif %}
+
+  <section class="poll-controls" data-provenance="demo_presentation" aria-label="Status refresh controls">
+    {% set kind = "demo_presentation" %}
+    {% include "partials/badge.html" %}
+    {% if pollable %}
+    <button class="secondary-button" type="button" data-poll-toggle aria-pressed="false">Pause updates</button>
+    {% endif %}
+    <button class="secondary-button" type="button" data-poll-refresh>Refresh now</button>
+    <p data-poll-message role="status">
+      {% if pollable %}Automatic refresh is bounded and may be paused at any time.
+      {% else %}Automatic refresh is stopped for this state. Use Refresh now for another observation.{% endif %}
+    </p>
+  </section>
+</section>
+
+<section class="content-card registration-actions"
+         data-section="registration-actions" data-provenance="live_service"
+         aria-labelledby="registration-actions-heading">
+  {% set kind = "live_service" %}
+  {% include "partials/badge.html" %}
+  <h2 id="registration-actions-heading">Available service actions</h2>
+  {% if cancel_key %}
+  <form method="post" action="/registrations/{{ registration_id }}/cancel"
+        data-action-form="cancel" {% if not can_cancel %}hidden{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ cancel_key }}">
+    <button class="secondary-button action-button" type="submit">
+      {% if retry_action == "cancel" %}Retry same cancellation{% else %}Cancel registration{% endif %}
+    </button>
+  </form>
+  {% endif %}
+  {% if accept_key %}
+  <form method="post" action="/registrations/{{ registration_id }}/accept-offer"
+        data-action-form="accept-offer" {% if not can_accept_offer %}hidden{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ accept_key }}">
+    <button class="primary-button action-button" type="submit">
+      {% if retry_action == "accept-offer" %}Retry same offer acceptance{% else %}Accept offer{% endif %}
+    </button>
+  </form>
+  {% endif %}
+  {% if not cancel_key and not accept_key %}
+  <p class="card-copy">No mutation is available for this current state.</p>
+  {% endif %}
+</section>
+
+<script src="/static/status.js" defer></script>
+{% endblock %}

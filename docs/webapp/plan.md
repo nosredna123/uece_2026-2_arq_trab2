@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Implementation in progress; T045-T058 are complete.
+**Status:** Implementation in progress; T045-T060 are complete.
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T058 are complete; T059-T080 remain unimplemented. Tests belong before the
+T045-T060 are complete; T061-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -469,8 +469,8 @@ success page, fake provider call, or hidden automatic registration is possible.
 
 **Requirements:** REQ-003, REQ-006, REQ-007, REQ-013, REQ-014, REQ-017.
 
-- [ ] T059 [Plan:3.3] Write `web/demo-python/tests/test_registrations.py` for all seven registration states, refund PENDING while CONFIRMED, offer deadline/acceptance, foreign-resource concealment, paused polling, terminal-state stops, errors retaining last-observed data labels, and lost mutation responses.
-- [ ] T060 [Plan:3.3] Implement `templates/registrations.html`, `templates/registration_detail.html`, registration routes/poll responses in `routes.py`, and `static/status.js`; provide cancel/accept actions, UTC-derived readable times, bounded non-overlapping GET polling, explicit refresh/retry, and no global waitlist-position inference. Stop old polling on navigation/persona change.
+- [x] T059 [Plan:3.3] Write `web/demo-python/tests/test_registrations.py` for all seven registration states, refund PENDING while CONFIRMED, offer deadline/acceptance, foreign-resource concealment, paused polling, terminal-state stops, errors retaining last-observed data labels, and lost mutation responses.
+- [x] T060 [Plan:3.3] Implement `templates/registrations.html`, `templates/registration_detail.html`, registration routes/poll responses in `routes.py`, and `static/status.js`; provide cancel/accept actions, UTC-derived readable times, bounded non-overlapping GET polling, explicit refresh/retry, and no global waitlist-position inference. Stop old polling on navigation/persona change.
 
 **Done when:** states are backend-derived; timeout says unknown/pending rather
 than refused; free FIFO promotion works through actual commands; refunds do not

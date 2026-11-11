@@ -853,6 +853,129 @@ h2 {
   }
 }
 
+.registration-list {
+  margin: 0;
+  padding: 0;
+}
+
+.registration-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.registration-row h3 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.registration-row p,
+.registration-summary span {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.registration-summary {
+  display: grid;
+  justify-items: end;
+  gap: 0.15rem;
+  font-size: 0.84rem;
+}
+
+.registration-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.5rem;
+  margin: 1.2rem 0;
+}
+
+.registration-facts div {
+  min-width: 9rem;
+}
+
+.registration-facts dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.registration-facts dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.last-observed,
+[data-poll-message] {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.poll-controls {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: #f7f9f6;
+}
+
+.poll-controls [data-poll-message] {
+  margin: 0.6rem 0 0;
+}
+
+.registration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+}
+
+.registration-actions h2,
+.registration-actions > .provenance-badge {
+  flex-basis: 100%;
+}
+
+.registration-actions h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.action-button {
+  min-height: 2.7rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.6rem;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.refund-note,
+.offer-note {
+  display: block;
+  margin: 0.8rem 0;
+  color: #33423a;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 560px) {
+  .registration-row {
+    display: block;
+  }
+
+  .registration-summary {
+    justify-items: start;
+    margin-top: 0.5rem;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .persona-button,
   .skip-link {

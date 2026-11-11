@@ -20,7 +20,7 @@ test = ["pytest==8.3.5"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-demo_web = ["templates/*.html", "templates/partials/*.html", "static/*.css"]
+demo_web = ["templates/*.html", "templates/partials/*.html", "static/*.css", "static/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

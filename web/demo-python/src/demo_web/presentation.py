@@ -91,6 +91,25 @@ PAGE_METADATA = {
         ),
         implementation_status="Catalog and checkout available",
     ),
+    "registrations": PageMetadata(
+        title="My registrations",
+        eyebrow="Your participant journey",
+        heading="My registrations",
+        description=(
+            "Current states come from Registration. A list is scoped to the selected "
+            "synthetic participant."
+        ),
+        implementation_status="Registration status available",
+    ),
+    "registration_detail": PageMetadata(
+        title="Registration status",
+        eyebrow="Live registration record",
+        heading="Registration status",
+        description=(
+            "This page shows the last observed backend state. Refresh is bounded and can be paused."
+        ),
+        implementation_status="Registration status available",
+    ),
     "error": PageMetadata(
         title="Request not completed",
         eyebrow="The prototype could not complete this page",

@@ -1,0 +1,148 @@
+batch_id: "B08"
+completed_tasks: ["T059", "T060"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T059:
+    - file: "web/demo-python/tests/test_registrations.py"
+      change_type: "created"
+      description: "Test all registration states, refund/offer behavior, participant ownership, polling controls and stopping rules, safe unavailable observations, CSRF, and idempotent retry after a lost response."
+  T060:
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Add bounded own-registration list, detail, polling, cancel, and offer-acceptance routes using participant identity and the session command ledger."
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "modified"
+      description: "Add registration list/detail page metadata."
+    - file: "web/demo-python/src/demo_web/templates/base.html"
+      change_type: "modified"
+      description: "Add navigation to participant registrations."
+    - file: "web/demo-python/src/demo_web/templates/registrations.html"
+      change_type: "created"
+      description: "Render the participant-scoped registration list and bounded pagination."
+    - file: "web/demo-python/src/demo_web/templates/registration_detail.html"
+      change_type: "created"
+      description: "Render backend states, refund and offer semantics, backend deadlines, cancellation/acceptance actions, last-observed label, and refresh controls."
+    - file: "web/demo-python/src/demo_web/static/status.js"
+      change_type: "created"
+      description: "Implement bounded non-overlapping refresh, pause/resume, explicit refresh, visibility/pagehide handling, persona-change stop, and safe retention of last observed data on errors."
+    - file: "web/demo-python/src/demo_web/static/app.css"
+      change_type: "modified"
+      description: "Style registration lists, details, status facts, refresh controls, and responsive actions."
+    - file: "web/demo-python/pyproject.toml"
+      change_type: "modified"
+      description: "Include packaged JavaScript resources."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T059-T060 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T059-T060 evidence and update completion counts."
+    - file: "docs/webapp/checkpoints/batch-report-T059-T060.yaml"
+      change_type: "created"
+      description: "Record batch scope, verification, endpoint probes, and skip explanation."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "State coverage, refund semantics, user-scoped records, polling bounds, action retry, and concealment requirements."
+  - artifact: "docs/contracts/openapi/registration.yaml"
+    used_for: "Registration status/refund contract, participant-only list/detail operations, cancel/accept response contracts, and non-resurrection of terminal states."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "Opaque session/persona boundaries and session-retained idempotent command behavior."
+evidence_mapping:
+  T059:
+    - upstream: "docs/webapp/plan.md#Plan-3.3"
+      output: "web/demo-python/tests/test_registrations.py"
+      evidence: "Twenty-five HTTP contract tests cover all seven states, pending refund, FIFO offer deadline and acceptance, hidden foreign-resource 404, CSRF, terminal poll stop, persona invalidation, poll failure data retention, and same-key cancel retry."
+  T060:
+    - upstream: "docs/contracts/openapi/registration.yaml"
+      output: "web/demo-python/src/demo_web/routes.py and registration UI"
+      evidence: "TestClient/MockTransport checks service paths, participant bearer identity, response status/PRG, no inferred waitlist position, bounded poll response rules, and action idempotency; Node validates script syntax."
+traceability:
+  - requirement: "REQ-003"
+    plan_item: "3.3"
+    task: "T060"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/registrations.html"]
+    status: "completed"
+  - requirement: "REQ-006"
+    plan_item: "3.3"
+    task: "T059-T060"
+    files: ["web/demo-python/tests/test_registrations.py", "web/demo-python/src/demo_web/templates/registration_detail.html", "web/demo-python/src/demo_web/static/status.js"]
+    status: "completed"
+  - requirement: "REQ-007"
+    plan_item: "3.3"
+    task: "T059-T060"
+    files: ["web/demo-python/tests/test_registrations.py", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-013"
+    plan_item: "3.3"
+    task: "T059-T060"
+    files: ["web/demo-python/tests/test_registrations.py", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-014"
+    plan_item: "3.3"
+    task: "T060"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/static/status.js"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "3.3"
+    task: "T059"
+    files: ["web/demo-python/tests/test_registrations.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six existing backend integration/concurrency tests were skipped because their external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 300
+    failed: 0
+    skipped: 6
+    failures: []
+  docker_runtime:
+    command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+    passed: 106
+    failed: 0
+    skipped: 0
+    failures: []
+  quality:
+    commands:
+      - "ruff check --no-cache and ruff format --check"
+      - "node --check web/demo-python/src/demo_web/static/status.js"
+    passed: 2
+    failed: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/registrations"
+    status: 200
+    result: "PASS (participant-scoped list contract uses only the authenticated own-registration endpoint)"
+  - method: "GET"
+    path: "/registrations/{registration_id}"
+    status: 200
+    result: "PASS (state detail, backend deadlines, and action eligibility verified)"
+  - method: "GET"
+    path: "/registrations/{registration_id}"
+    status: 404
+    result: "PASS (foreign/missing records remain concealed)"
+  - method: "GET"
+    path: "/registrations/{registration_id}/poll"
+    status: 200
+    result: "PASS (active status refreshes; terminal status returns polling=false)"
+  - method: "GET"
+    path: "/registrations/{registration_id}/poll"
+    status: 503
+    result: "PASS (sanitized unavailable response leaves last-observed HTML state intact)"
+  - method: "POST"
+    path: "/registrations/{registration_id}/accept-offer"
+    status: 303
+    result: "PASS (backend offer-acceptance command uses idempotency and PRG)"
+  - method: "POST"
+    path: "/registrations/{registration_id}/cancel"
+    status: 503
+    result: "PASS (unknown result renders same-command retry)"
+  - method: "POST"
+    path: "/registrations/{registration_id}/cancel"
+    status: 303
+    result: "PASS (retry preserves service idempotency/correlation and redirects to current record)"
