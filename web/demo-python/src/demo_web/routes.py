@@ -22,6 +22,7 @@ from demo_web.models import (
     Report,
 )
 from demo_web.presentation import (
+    ORGANIZER_PERSONAS,
     PAGE_METADATA,
     PERSONA_LABELS,
     format_datetime,
@@ -170,6 +171,11 @@ def _organizer_identity(request: Request, session: BrowserSession) -> dict[str, 
 
 def _scenario_manager(request: Request, session: BrowserSession) -> ScenarioManager:
     _organizer_identity(request, session)
+    if session.persona != "organizer":
+        raise HTTPException(
+            status_code=403,
+            detail="Scenario Lab records are scoped to the GESAD/UECE synthetic organization.",
+        )
     manager = getattr(request.app.state, "scenario_manager", None)
     if manager is None:
         raise HTTPException(status_code=404, detail="Scenario Lab is not available.")
@@ -250,8 +256,9 @@ def _demo_response(
                 else "Preparation progress is retained in this browser session."
             ),
             "session": session,
+            "persona_options": PERSONA_LABELS,
             "csrf_token": session.csrf_token,
-            "can_prepare": session.persona == "organizer",
+            "can_prepare": session.persona in ORGANIZER_PERSONAS,
             "new_run_key": new_run_key,
             "run": run,
             "runs": runs,
@@ -620,6 +627,7 @@ def _organizer_response(
             "operational_status": "Organizer actions use existing Event Management APIs.",
             "csrf_token": session.csrf_token,
             "organization_id": identity["organizationId"],
+            "organization_label": ORGANIZER_PERSONAS[session.persona],
             "drafts": drafts,
             "create_event_key": retry_key
             if retry_action == "create-event"
@@ -1711,6 +1719,7 @@ async def prepare_demo(request: Request) -> Response:
                 run = create_preparation(
                     run_id=uuid4(),
                     organization_id=UUID(identity["organizationId"]),
+                    organization_label=ORGANIZER_PERSONAS[session.persona],
                     settings=request.app.state.settings,
                     now=datetime.now(timezone.utc),
                 )
@@ -2053,7 +2062,14 @@ async def scenario_lab_page(request: Request) -> HTMLResponse:
     session, is_new = _session_or_create(request)
     manager = getattr(request.app.state, "scenario_manager", None)
     identity = store.identity_for(session)
-    enabled = manager is not None
+    configured = manager is not None
+    tenant_allowed = session.persona == "organizer"
+    enabled = configured and tenant_allowed
+    unavailable_reason = (
+        "Scenario Lab is disabled by configuration."
+        if not configured
+        else "Scenario Lab requires the GESAD/UECE organizer persona."
+    )
     presets = [
         manager.preview(preset_key)
         if enabled
@@ -2066,7 +2082,7 @@ async def scenario_lab_page(request: Request) -> HTMLResponse:
             "concurrency": preset.required_concurrency,
             "priceMinor": preset.price_minor,
             "available": False,
-            "unavailableReason": "Scenario Lab is disabled by the application configuration.",
+            "unavailableReason": unavailable_reason,
         }
         for preset_key, preset in PRESETS.items()
     ]
@@ -2080,7 +2096,7 @@ async def scenario_lab_page(request: Request) -> HTMLResponse:
             "concurrency": 0,
             "priceMinor": 0,
             "available": enabled,
-            "unavailableReason": None,
+            "unavailableReason": None if enabled else unavailable_reason,
         }
     )
     timeout = getattr(request.app.state.settings, "lab_run_timeout_seconds", None) or 60
@@ -2089,9 +2105,10 @@ async def scenario_lab_page(request: Request) -> HTMLResponse:
         name="lab.html",
         context={
             "page": PAGE_METADATA["lab"],
-            "operational_status": (
-                "Preview only; no run has been started." if enabled else "Scenario Lab is disabled."
-            ),
+            "operational_status": "Preview only; no run has been started."
+            if enabled
+            else unavailable_reason,
+            "lab_unavailable_reason": unavailable_reason,
             "lab_enabled": enabled,
             "can_run": enabled and identity is not None and identity["role"] == "ORGANIZER",
             "csrf_token": session.csrf_token,

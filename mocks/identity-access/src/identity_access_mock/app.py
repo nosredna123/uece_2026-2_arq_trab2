@@ -33,6 +33,8 @@ EXPECTED_ROLES = {
     "participant": "PARTICIPANT",
     "participantTwo": "PARTICIPANT",
     "organizer": "ORGANIZER",
+    "organizerUece": "ORGANIZER",
+    "organizerAcademicSim": "ORGANIZER",
     "globalAdmin": "GLOBAL_ADMIN",
 }
 LOGGER = logging.getLogger(__name__)
@@ -93,6 +95,14 @@ def load_fixtures() -> dict[str, IdentityFixture]:
     tokens = [fixture.token.get_secret_value() for fixture in fixtures.values()]
     if len(tokens) != len(set(tokens)):
         raise ValueError("identity fixture tokens must be unique")
+    subjects = [fixture.subject_id for fixture in fixtures.values()]
+    organizations = [
+        fixture.organization_id
+        for fixture in fixtures.values()
+        if fixture.role == "ORGANIZER"
+    ]
+    if len(subjects) != len(set(subjects)) or len(organizations) != len(set(organizations)):
+        raise ValueError("identity fixture subjects and organizations must be unique")
 
     return fixtures
 

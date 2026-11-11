@@ -2,6 +2,7 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi.testclient import TestClient
+import pytest
 
 from demo_web.app import create_app
 
@@ -77,10 +78,10 @@ class StubScenarioManager:
         return {"id": run_id, "fifo": {"verdict": "EXPECTED"}}
 
 
-def _select_organizer(client):
+def _select_organizer(client, persona="organizer"):
     initial = client.get("/session").json()
     changed = client.post(
-        "/persona/organizer",
+        f"/persona/{persona}",
         headers={
             "Origin": "http://testserver",
             "X-CSRF-Token": initial["csrf_token"],
@@ -168,3 +169,29 @@ def test_scenario_routes_require_organizer_csrf_and_session_ownership(
         "cancel",
         "accept",
     ]
+
+
+@pytest.mark.parametrize("persona", ["organizerUece", "organizerAcademicSim"])
+def test_scenario_lab_rejects_non_gesad_organizer_tenants(web_environment, persona):
+    app = create_app(_enabled_lab(web_environment))
+    with TestClient(app) as client:
+        manager = StubScenarioManager()
+        app.state.scenario_manager = manager
+        csrf = _select_organizer(client, persona)
+
+        page = client.get("/scenario-lab")
+        preview = client.get("/scenario-lab/presets/last-seat")
+        run = client.post(
+            "/scenario-lab/runs/last-seat",
+            headers={
+                "Origin": "http://testserver",
+                "X-CSRF-Token": csrf,
+            },
+        )
+
+    assert page.status_code == 200
+    assert "requires the GESAD/UECE organizer persona" in page.text
+    assert "Preparar e executar:" not in page.text
+    assert preview.status_code == 403
+    assert run.status_code == 403
+    assert manager.calls == []

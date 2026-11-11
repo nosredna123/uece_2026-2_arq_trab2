@@ -103,8 +103,14 @@ def create_activity(
         correlation_id=correlation_id,
         body={
             "organizationId": ORGANIZATION_ID,
-            "title": f"Failure scenario {run_id}",
-            "description": "Synthetic integration event",
+            "title": (
+                f"[CENÁRIO DE FALHA][SIMULADO][GESAD/UECE] "
+                f"Teste de inscrição · {str(run_id)[:8]}"
+            ),
+            "description": (
+                "Evento acadêmico fictício para validação de falhas no "
+                "fluxo de inscrição do GESAD/UECE."
+            ),
             "startsAt": iso(event_start),
             "endsAt": iso(activity_end + timedelta(minutes=1)),
         },
@@ -119,11 +125,14 @@ def create_activity(
         idempotency_key=f"failure-activity-{run_id}",
         correlation_id=correlation_id,
         body={
-            "title": f"Failure activity {run_id}",
+            "title": (
+                f"[CENÁRIO DE FALHA][SIMULADO][GESAD/UECE] "
+                f"Atividade de teste · {str(run_id)[:8]}"
+            ),
             "startsAt": iso(activity_start),
             "endsAt": iso(activity_end),
-            "location": "Synthetic integration venue",
-            "responsible": "Synthetic organizer",
+            "location": "Espaço simulado de demonstração",
+            "responsible": "Equipe simulada do GESAD/UECE",
             "capacity": 1,
             "price": {"amountMinor": price_minor, "currency": "BRL"},
         },

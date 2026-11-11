@@ -32,11 +32,11 @@ def test_paid_registration_certificate_and_projection(browser_page, browser_erro
     save_screenshot(page, "webapp-mobile.png")
 
     page.set_viewport_size({"width": 1366, "height": 768})
-    select_persona(page, "Organizer")
+    select_persona(page, "Organizador — GESAD/UECE")
 
     consent = page.get_by_role(
         "checkbox",
-        name="I intend to create a fresh run; previously created backend records will remain.",
+        name="Confirmo a criação de novos dados simulados; registros anteriores serão mantidos.",
     )
     consent.focus()
     page.keyboard.press("Space")
@@ -51,7 +51,9 @@ def test_paid_registration_certificate_and_projection(browser_page, browser_erro
     page.locator(".demo-run").wait_for(state="visible", timeout=60_000)
     event_link = page.get_by_role("link", name="Open published event", exact=True)
     event_link.wait_for(timeout=60_000)
-    paid_card = page.locator(".demo-activity-card").filter(has_text="Paid registration journey")
+    paid_card = page.locator(".demo-activity-card").filter(
+        has_text="Oficina de Engenharia de Software"
+    )
     checkout_url = BASE_URL + paid_card.get_by_role(
         "link",
         name="Open participant checkout",
@@ -65,7 +67,7 @@ def test_paid_registration_certificate_and_projection(browser_page, browser_erro
         paid_card.get_attribute("data-ends-at").replace("Z", "+00:00")
     )
 
-    select_persona(page, "Participant 1")
+    select_persona(page, "Participante simulado 01")
     page.goto(checkout_url)
     assert page.locator('[data-badge-kind="live_service"]').count() > 0
     assert page.locator('[data-badge-kind="simulated_dependency"]').count() > 0
@@ -140,7 +142,7 @@ def test_paid_registration_certificate_and_projection(browser_page, browser_erro
     assert not page.get_by_role("link", name="Back to registration").is_visible()
     page.emulate_media(media="screen")
 
-    select_persona(page, "Organizer")
+    select_persona(page, "Organizador — GESAD/UECE")
     page.goto(f"{BASE_URL}/reports")
     report_row = page.locator("tbody tr").filter(has_text=paid_activity_id)
     expect(report_row).to_be_visible(timeout=60_000)

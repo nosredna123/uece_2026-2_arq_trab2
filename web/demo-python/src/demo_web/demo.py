@@ -37,6 +37,7 @@ def create_preparation(
     *,
     run_id: UUID,
     organization_id: UUID,
+    organization_label: str,
     settings,
     now: datetime,
 ) -> DemoPreparation:
@@ -53,29 +54,38 @@ def create_preparation(
         created_at=started_at,
         event_input=EventInput(
             organizationId=organization_id,
-            title=f"EventHub guided run {run_id}",
+            title=(
+                f"[APRESENTAÇÃO][SIMULADO][{organization_label}] "
+                f"Jornada de Engenharia de Software · {str(run_id)[:8]}"
+            ),
             description=(
-                "Synthetic presentation data. Existing runs are retained; "
-                "this event was created by the guided preparation workflow."
+                "Evento acadêmico fictício para demonstração. "
+                "Os registros de execuções anteriores são mantidos."
             ),
             startsAt=event_start,
             endsAt=event_end,
         ),
         paid_activity_input=ActivityInput(
-            title=f"Paid registration journey {run_id}",
+            title=(
+                f"[FLUXO PAGO][SIMULADO][{organization_label}] "
+                f"Oficina de Engenharia de Software · {str(run_id)[:8]}"
+            ),
             startsAt=paid_start,
             endsAt=paid_end,
-            location="Demo room A",
-            responsible="Synthetic organizer",
+            location="Sala de demonstração A",
+            responsible=f"Equipe acadêmica simulada — {organization_label}",
             capacity=10,
             price=Money(amountMinor=2500, currency="BRL"),
         ),
         free_activity_input=ActivityInput(
-            title=f"Free waiting-list journey {run_id}",
+            title=(
+                f"[LISTA DE ESPERA][SIMULADO][{organization_label}] "
+                f"Oficina de Sistemas Autoadaptativos · {str(run_id)[:8]}"
+            ),
             startsAt=free_start,
             endsAt=free_end,
-            location="Demo room B",
-            responsible="Synthetic organizer",
+            location="Sala de demonstração B",
+            responsible=f"Equipe acadêmica simulada — {organization_label}",
             capacity=1,
             price=Money(amountMinor=0, currency="BRL"),
         ),

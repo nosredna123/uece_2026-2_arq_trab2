@@ -6,10 +6,10 @@
          aria-labelledby="demo-preview-heading">
   {% set kind = "demo_presentation" %}
   {% include "partials/badge.html" %}
-  <h2 id="demo-preview-heading">Prepare a real service-backed journey</h2>
+  <h2 id="demo-preview-heading">Preparar uma jornada acadêmica simulada</h2>
   <p class="card-copy">
-    Preparation creates one event, a paid activity, and a one-seat free activity through Event Management.
-    Existing runs are never deleted or reset.
+    A preparação cria um evento, uma atividade paga e uma atividade gratuita com uma vaga, usando a organização do perfil selecionado.
+    Os dados são fictícios; execuções anteriores não são removidas nem redefinidas.
   </p>
   <p class="notice-box">
     Before the demonstration, the operator must configure Billing approval and enable Registration waiting-list
@@ -24,12 +24,12 @@
     <input type="hidden" name="intent" value="new">
     <label class="confirmation-control">
       <input type="checkbox" name="confirm_new_run" value="yes" required>
-      I intend to create a fresh run; previously created backend records will remain.
+      Confirmo a criação de novos dados simulados; registros anteriores serão mantidos.
     </label>
     <button class="primary-button action-button" type="submit">Prepare a new run</button>
   </form>
   {% else %}
-  <p class="card-copy">Select the Organizer persona to prepare records. Previewing this guide makes no service calls.</p>
+  <p class="card-copy">Selecione um perfil de organização simulado para preparar registros. A visualização não chama os serviços.</p>
   {% endif %}
 </section>
 
@@ -85,17 +85,17 @@
       {% set kind = "live_service" if item.returned else "demo_presentation" %}
       {% include "partials/badge.html" %}
       <h3>{{ item.activity.title }}</h3>
-      <p>{{ item.label }} · {{ item.price }} · capacity {{ item.activity.capacity }}</p>
+      <p>{{ item.label }} · {{ item.price }} · capacidade {{ item.activity.capacity }}</p>
       {% if item.activity.id %}
       <p>Activity ID <code>{{ item.activity.id }}</code></p>
       {% else %}
       <p>Activity ID is pending the Event Management response.</p>
       {% endif %}
       <dl>
-        <div><dt>Starts</dt><dd>{{ item.starts_at }}</dd></div>
-        <div><dt>Ends</dt><dd>{{ item.ends_at }}</dd></div>
-        <div><dt>Schedule countdown</dt><dd data-countdown>{{ item.countdown }}</dd></div>
-        <div><dt>Schedule source</dt><dd>{{ "Event Management response" if item.returned else "Configured plan; not yet confirmed" }}</dd></div>
+        <div><dt>Início</dt><dd>{{ item.starts_at }}</dd></div>
+        <div><dt>Término</dt><dd>{{ item.ends_at }}</dd></div>
+        <div><dt>Contagem do cronograma</dt><dd data-countdown>{{ item.countdown }}</dd></div>
+        <div><dt>Origem do cronograma</dt><dd>{{ "Resposta do Event Management" if item.returned else "Planejamento configurado; ainda não confirmado" }}</dd></div>
       </dl>
       {% if run.published_event and item.activity.id %}
       <a class="text-link" href="/activities/{{ item.activity.id }}/checkout">Open participant checkout</a>
@@ -138,12 +138,12 @@
   {% include "partials/badge.html" %}
   <h2 id="demo-guide-heading">Presenter sequence</h2>
   <ol>
-    <li>Switch to Participant 1, open the paid activity checkout, and submit only when ready.</li>
-    <li>Switch between Participant 1 and Participant 2 to demonstrate the one-seat free journey.</li>
+    <li>Selecione Participante simulado 01, abra a inscrição paga e confirme somente quando estiver pronto.</li>
+    <li>Alterne entre Participante simulado 01 e 02 para demonstrar a atividade gratuita com uma vaga.</li>
     <li>Use the registration pages to observe actual states; cancel, accept, check in, and request a certificate only through explicit forms.</li>
   </ol>
-  <div class="persona-switches" aria-label="Select a synthetic persona">
-    {% for persona, label in [("organizer", "Organizer"), ("participant", "Participant 1"), ("participantTwo", "Participant 2")] %}
+  <div class="persona-switches" aria-label="Selecionar perfil simulado">
+    {% for persona, label in persona_options %}
     <form method="post" action="/persona/{{ persona }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button class="secondary-button action-button" type="submit">{{ label }}</button>

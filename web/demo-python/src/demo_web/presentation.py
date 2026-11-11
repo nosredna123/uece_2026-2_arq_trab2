@@ -170,11 +170,18 @@ PAGE_METADATA = {
 }
 
 PERSONA_LABELS = (
-    ("visitor", "Visitor"),
-    ("participant", "Participant 1"),
-    ("participantTwo", "Participant 2"),
-    ("organizer", "Organizer"),
+    ("visitor", "Visitante"),
+    ("participant", "Participante simulado 01"),
+    ("participantTwo", "Participante simulado 02"),
+    ("organizer", "Organizador — GESAD/UECE"),
+    ("organizerUece", "Organizador — UECE"),
+    ("organizerAcademicSim", "Organizador — IASC (simulada)"),
 )
+ORGANIZER_PERSONAS = {
+    "organizer": "GESAD/UECE",
+    "organizerUece": "UECE",
+    "organizerAcademicSim": "IASC",
+}
 
 TEMPLATE_DIRECTORY = Path(__file__).parent / "templates"
 STATIC_DIRECTORY = Path(__file__).parent / "static"

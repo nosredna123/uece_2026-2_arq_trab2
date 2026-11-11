@@ -77,10 +77,10 @@ def select_persona(page, label):
 
 
 def prepare_demo(page):
-    select_persona(page, "Organizer")
+    select_persona(page, "Organizador — GESAD/UECE")
     consent = page.get_by_role(
         "checkbox",
-        name="I intend to create a fresh run; previously created backend records will remain.",
+        name="Confirmo a criação de novos dados simulados; registros anteriores serão mantidos.",
     )
     consent.check()
     page.get_by_role("button", name="Prepare a new run", exact=True).click()
@@ -91,8 +91,12 @@ def prepare_demo(page):
     event_link = page.get_by_role("link", name="Open published event", exact=True)
     event_id = urlsplit(urljoin(BASE_URL, event_link.get_attribute("href"))).path.rsplit("/", 1)[1]
 
-    paid_card = page.locator(".demo-activity-card").filter(has_text="Paid registration journey")
-    free_card = page.locator(".demo-activity-card").filter(has_text="Free waiting-list journey")
+    paid_card = page.locator(".demo-activity-card").filter(
+        has_text="Oficina de Engenharia de Software"
+    )
+    free_card = page.locator(".demo-activity-card").filter(
+        has_text="Oficina de Sistemas Autoadaptativos"
+    )
 
     def activity_values(card):
         checkout = card.get_by_role("link", name="Open participant checkout", exact=True)

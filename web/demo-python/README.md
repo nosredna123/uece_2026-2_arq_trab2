@@ -29,6 +29,15 @@ Open the printed localhost URL. The ordinary service journeys use the
 synthetic Identity fixture and existing service APIs; the app has no database,
 broker, Docker socket, or arbitrary target access.
 
+The persona selector includes separate synthetic organizer tenants for
+GESAD/UECE, UECE, and the fictional Instituto Acadêmico Simulado do Ceará
+(IASC). GESAD is a UECE research group; IASC is fictional and does not imply a
+real partnership. Guided preparation creates records under the selected
+organizer's organization. Scenario Lab runs are currently limited to the
+GESAD/UECE persona because its fixed workload identities and records use that
+organization. Generated records carry a Portuguese test-purpose prefix and
+`SIMULADO` label.
+
 ## Test without host runtimes
 
 Run the bounded, fail-fast repository Python suite in the dedicated test image:

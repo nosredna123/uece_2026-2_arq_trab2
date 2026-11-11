@@ -12,7 +12,7 @@
   {% include "partials/badge.html" %}
   <h2 id="lab-introduction-heading">Fixed workloads, observed outcomes</h2>
   <p class="card-copy">
-    Previews make no service calls. Only an explicit Organizer action starts a run; refresh and polling
+    Previews make no service calls. Only an explicit GESAD/UECE organizer action starts a run; refresh and polling
     only retrieve retained observations. A timeout is unknown until a public read-back resolves it.
   </p>
   <ul class="lab-provenance-key" aria-label="Scenario evidence labels">
@@ -22,12 +22,12 @@
   </ul>
   {% if not lab_enabled %}
   <p class="notice-box" role="status">
-    Scenario Lab is disabled by configuration. Presets below are read-only descriptions; no run controls
+    {{ lab_unavailable_reason }} Presets below are read-only descriptions; no run controls
     or service mutations are available.
   </p>
   {% elif not can_run %}
   <p class="notice-box">
-    Select the Organizer persona to run a fixed workload. Previewing this page does not contact backend services.
+    Select the GESAD/UECE organizer persona to run a fixed workload. Previewing this page does not contact backend services.
   </p>
   {% endif %}
 </section>
@@ -70,7 +70,7 @@
     {% endif %}
     {% if can_run and preset.available and preset.preset != "seat-opens" %}
     <button class="primary-button action-button" type="button"
-            data-run-preset="{{ preset.preset }}">Prepare and run {{ preset.title }}</button>
+            data-run-preset="{{ preset.preset }}">Preparar e executar: {{ preset.title }}</button>
     {% elif preset.unavailableReason %}
     <p class="lab-unavailable" role="status">{{ preset.unavailableReason }}</p>
     {% elif preset.preset == "seat-opens" %}

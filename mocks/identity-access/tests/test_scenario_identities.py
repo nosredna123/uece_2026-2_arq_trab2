@@ -34,7 +34,7 @@ def _write_scenario(tmp_path, data):
     return path
 
 
-def test_default_behavior_remains_limited_to_the_four_baseline_fixtures(
+def test_default_behavior_remains_limited_to_the_six_baseline_fixtures(
     monkeypatch,
 ):
     monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
@@ -48,6 +48,8 @@ def test_default_behavior_remains_limited_to_the_four_baseline_fixtures(
             "participant",
             "participantTwo",
             "organizer",
+            "organizerUece",
+            "organizerAcademicSim",
             "globalAdmin",
         }
         response = client.post(
@@ -96,6 +98,8 @@ def test_enabled_pool_preserves_the_baseline_persona_roles(monkeypatch):
             ("synthetic-participant-001", "PARTICIPANT"),
             ("synthetic-participant-002", "PARTICIPANT"),
             ("synthetic-organizer-org-a", "ORGANIZER"),
+            ("synthetic-organizer-uece", "ORGANIZER"),
+            ("synthetic-organizer-instituto-academico-simulado", "ORGANIZER"),
             ("synthetic-global-admin", "GLOBAL_ADMIN"),
         ):
             response = client.post(

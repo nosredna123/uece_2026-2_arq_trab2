@@ -1,6 +1,7 @@
 import json
 
 from fastapi.testclient import TestClient
+import pytest
 
 from demo_web.app import create_app
 from demo_web.sessions import SessionStore
@@ -138,3 +139,29 @@ def test_activity_check_does_not_extend_session_lifetime(identity_fixtures):
     assert session.last_used_at == 0.0
     now[0] = 10.0
     assert not store.is_active(session.id)
+
+
+@pytest.mark.parametrize(
+    ("persona", "fixture_name", "organization_id"),
+    [
+        ("organizer", "organizer", "30000000-0000-4000-8000-000000000001"),
+        ("organizerUece", "organizerUece", "30000000-0000-4000-8000-000000000002"),
+        (
+            "organizerAcademicSim",
+            "organizerAcademicSim",
+            "30000000-0000-4000-8000-000000000003",
+        ),
+    ],
+)
+def test_organizer_personas_resolve_to_distinct_organization_fixtures(
+    identity_fixtures, persona, fixture_name, organization_id
+):
+    fixtures = json.loads(identity_fixtures.read_text(encoding="utf-8"))
+    store = SessionStore(fixtures, ttl_seconds=60, max_sessions=10)
+    session = store.create()
+    store.set_persona(session, persona)
+
+    identity = store.identity_for(session)
+
+    assert identity == fixtures[fixture_name]
+    assert identity["organizationId"] == organization_id

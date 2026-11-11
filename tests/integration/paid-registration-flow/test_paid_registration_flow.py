@@ -91,8 +91,14 @@ def test_paid_registration_checkin_certificate_and_report():
             correlation_id=correlation_id,
             body={
                 "organizationId": ORGANIZATION_ID,
-                "title": f"Paid flow {run_id}",
-                "description": "Synthetic integration event",
+                "title": (
+                    f"[INTEGRAÇÃO PAGA][SIMULADO][GESAD/UECE] "
+                    f"Jornada de inscrição · {str(run_id)[:8]}"
+                ),
+                "description": (
+                    "Evento acadêmico fictício para teste de integração "
+                    "do fluxo de inscrição paga do GESAD/UECE."
+                ),
                 "startsAt": iso(event_start),
                 "endsAt": iso(event_end),
             },
@@ -107,11 +113,14 @@ def test_paid_registration_checkin_certificate_and_report():
             idempotency_key=f"paid-flow-activity-{run_id}",
             correlation_id=correlation_id,
             body={
-                "title": f"Paid activity {run_id}",
+                "title": (
+                    f"[INTEGRAÇÃO PAGA][SIMULADO][GESAD/UECE] "
+                    f"Oficina de Engenharia de Software · {str(run_id)[:8]}"
+                ),
                 "startsAt": iso(activity_start),
                 "endsAt": iso(activity_end),
-                "location": "Synthetic integration venue",
-                "responsible": "Synthetic organizer",
+                "location": "Espaço simulado de demonstração",
+                "responsible": "Equipe simulada do GESAD/UECE",
                 "capacity": 1,
                 "price": {"amountMinor": 1250, "currency": "BRL"},
             },

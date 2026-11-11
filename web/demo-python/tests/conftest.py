@@ -25,6 +25,18 @@ def identity_fixtures(tmp_path):
                     "role": "ORGANIZER",
                     "organizationId": "30000000-0000-4000-8000-000000000001",
                 },
+                "organizerUece": {
+                    "token": "synthetic-organizer-uece",
+                    "subjectId": "20000000-0000-4000-8000-000000000002",
+                    "role": "ORGANIZER",
+                    "organizationId": "30000000-0000-4000-8000-000000000002",
+                },
+                "organizerAcademicSim": {
+                    "token": "synthetic-organizer-iasc",
+                    "subjectId": "20000000-0000-4000-8000-000000000003",
+                    "role": "ORGANIZER",
+                    "organizationId": "30000000-0000-4000-8000-000000000003",
+                },
                 "globalAdmin": {
                     "token": "synthetic-admin",
                     "subjectId": "40000000-0000-4000-8000-000000000001",

@@ -39,7 +39,7 @@ class ScenarioPreset:
 PRESETS = {
     "last-seat": ScenarioPreset(
         "last-seat",
-        "The last seat",
+        "Última vaga",
         participants=2,
         capacity=1,
         submissions_per_participant=1,
@@ -47,7 +47,7 @@ PRESETS = {
     ),
     "registration-rush": ScenarioPreset(
         "registration-rush",
-        "Registration rush",
+        "Pico de inscrições",
         participants=20,
         capacity=5,
         submissions_per_participant=1,
@@ -55,7 +55,7 @@ PRESETS = {
     ),
     "duplicate-submission": ScenarioPreset(
         "duplicate-submission",
-        "Double-click storm",
+        "Envios repetidos",
         participants=1,
         capacity=1,
         submissions_per_participant=10,
@@ -570,7 +570,7 @@ class ScenarioManager:
         duplicate_key = f"lab-{run.id}-duplicate"
         duplicate_correlation = uuid4()
         for index, identity in enumerate(participants, start=1):
-            participant_label = f"Participant {index:02}"
+            participant_label = f"Participante simulado {index:02}"
             for _ in range(run.preset.submissions_per_participant):
                 observation = _Observation(participant=participant_label)
                 run.observations.append(observation)
@@ -761,7 +761,7 @@ class ScenarioManager:
         if compare_dispatch_results:
             observed_by_id = {registration.id: registration for registration in run.registrations}
             subjects_by_participant = {
-                f"Participant {index:02}": UUID(fixture["subjectId"])
+                f"Participante simulado {index:02}": UUID(fixture["subjectId"])
                 for index, (_, fixture) in enumerate(participant_identities, start=1)
             }
             for observation in run.observations:
@@ -831,8 +831,14 @@ class ScenarioManager:
         ends_at = starts_at + timedelta(hours=1)
         event_input = EventInput(
             organizationId=self._organization_id,
-            title=f"Scenario Lab {run.preset.key} {run.id}",
-            description="Synthetic Scenario Lab data; retained after the run.",
+            title=(
+                f"[CENÁRIO][SIMULADO][GESAD/UECE] "
+                f"{run.preset.title} · {str(run.id)[:8]}"
+            ),
+            description=(
+                "Evento acadêmico fictício do GESAD/UECE para experimento controlado. "
+                "Os registros são mantidos após a execução."
+            ),
             startsAt=starts_at,
             endsAt=ends_at + timedelta(minutes=5),
         )
@@ -844,11 +850,11 @@ class ScenarioManager:
             correlation_id=run.id,
         )
         activity_input = ActivityInput(
-            title=f"{run.preset.title} {run.id}",
+            title=f"[CENÁRIO][SIMULADO][GESAD/UECE] {run.preset.title} · {str(run.id)[:8]}",
             startsAt=starts_at,
             endsAt=ends_at,
-            location="Scenario Lab",
-            responsible="Synthetic organizer",
+            location="Laboratório de demonstração GESAD/UECE",
+            responsible="Equipe simulada do GESAD/UECE",
             capacity=run.preset.capacity,
             price=Money(amountMinor=0, currency="BRL"),
         )

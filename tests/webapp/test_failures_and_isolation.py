@@ -20,13 +20,13 @@ def test_missing_identity_invalid_persona_and_stale_form_are_rejected(browser_pa
     no_persona = page.goto(f"{BASE_URL}/organizer")
     assert no_persona.status == 403
 
-    select_persona(page, "Organizer")
+    select_persona(page, "Organizador — GESAD/UECE")
     page.goto(f"{BASE_URL}/organizer")
     old_csrf = page.locator(
         'form[action="/organizer/events"] input[name="csrf_token"]'
     ).input_value()
 
-    select_persona(page, "Participant 1")
+    select_persona(page, "Participante simulado 01")
     invalid_persona_csrf = page.locator(
         'form[action="/persona/organizer"] input[name="csrf_token"]'
     ).input_value()
@@ -79,7 +79,7 @@ def test_missing_identity_invalid_persona_and_stale_form_are_rejected(browser_pa
 )
 def test_reporting_failure_is_visible_and_not_an_empty_projection(browser_page):
     page = browser_page
-    select_persona(page, "Organizer")
+    select_persona(page, "Organizador — GESAD/UECE")
     response = page.goto(f"{BASE_URL}/reports")
     assert response.status in {502, 503, 504}
     alert = page.get_by_role("alert")
@@ -94,7 +94,7 @@ def test_reporting_failure_is_visible_and_not_an_empty_projection(browser_page):
 )
 def test_identity_failure_is_visible_and_does_not_create_an_event(browser_page):
     page = browser_page
-    select_persona(page, "Organizer")
+    select_persona(page, "Organizador — GESAD/UECE")
     page.goto(f"{BASE_URL}/organizer")
     future = datetime.now(timezone.utc) + timedelta(hours=1)
     page.get_by_label("Event title").fill(f"identity-unavailable-{uuid4()}")

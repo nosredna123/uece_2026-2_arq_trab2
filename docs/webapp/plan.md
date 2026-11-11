@@ -62,7 +62,7 @@ out of scope. The existing services remain the authority for all business state.
 |---|---|
 | REQ-001 | One local Python presentation container serves HTML/CSS/JS and calls existing HTTP APIs. No new database, broker consumer, Node/npm workflow, shared domain import, or generic gateway. |
 | REQ-002 | Every page has a prototype banner and every functional section has a centrally defined icon plus text badge: LIVE SERVICE, SIMULATED DEPENDENCY, or DEMO PRESENTATION. Mixed pages label their sections separately; meaning never depends on color alone. |
-| REQ-003 | Visitor, Participant 1, Participant 2, and Organizer are explicit synthetic personas, not real login. Backend authorization remains enforced; browser sessions, CSRF, participant data, and persona switching are isolated. Global-admin UI is excluded from version one. |
+| REQ-003 | Visitor, two synthetic participants, and organizers for GESAD/UECE, UECE, and the fictional IASC are explicit synthetic personas, not real login. Each organizer maps to a distinct organization ID; generated records are tenant-scoped. Backend authorization remains enforced; browser sessions, CSRF, participant data, and persona switching are isolated. Global-admin UI is excluded from version one. |
 | REQ-004 | Browse/search/paginate published events and activities, render schedules/prices, and fetch authoritative availability. Failed availability is unavailable, not zero; an observation is not a reservation. |
 | REQ-005 | Checkout is a DEMO PRESENTATION before creating a paid registration. One explicit confirmation command creates the registration and initiates existing simulated Billing. No card/bank fields, fake charge, provider call, or browser-controlled outcome. |
 | REQ-006 | Display every Registration state, payment/offer expiry, refund state, and current own registrations. Provide bounded polling and explicit refresh; never interpret timeout or network failure as payment refusal or approval. |
@@ -302,9 +302,9 @@ An expected result is labeled **Prediction**, never displayed as an observation.
 
 | Preset | Bounded workload | What the audience should learn |
 |---|---|---|
-| **The last seat** | Two distinct synthetic participants, one free seat, concurrent start. | One should be CONFIRMED and the other WAITLISTED; the winner is not predetermined. |
-| **Registration rush** | Twenty distinct synthetic participants, five free seats, at most ten requests in flight. | If all commands succeed and settle: five confirmed, fifteen waiting; capacity is limited by the service, not by the animation. This is a small burst, not a production-scale benchmark. |
-| **Double-click storm** | One synthetic participant, one free seat, ten submissions sharing the same intent, idempotency key, and payload; bounded concurrency. | Repeated commands resolve to the same registration identity and a single occupied seat. Compare returned IDs and authoritative own-registration read-back. |
+| **Última vaga** | Two distinct synthetic participants, one free seat, concurrent start. | One should be CONFIRMED and the other WAITLISTED; the winner is not predetermined. |
+| **Pico de inscrições** | Twenty distinct synthetic participants, five free seats, at most ten requests in flight. | If all commands succeed and settle: five confirmed, fifteen waiting; capacity is limited by the service, not by the animation. This is a small burst, not a production-scale benchmark. |
+| **Envios repetidos** | One synthetic participant, one free seat, ten submissions sharing the same intent, idempotency key, and payload; bounded concurrency. | Repeated commands resolve to the same registration identity and a single occupied seat. Compare returned IDs and authoritative own-registration read-back. |
 | **A seat opens** | After a settled last-seat/rush run, explicit cancel of one confirmed free registration; observe the next actual offered registration, then explicitly accept it. | Backend FIFO promotion and OFFERED versus CONFIRMED. Determine the next candidate from backend queue sequence/current states, never from avatar index or client completion order. |
 
 Use fresh, uniquely named free activities sufficiently in the future for each

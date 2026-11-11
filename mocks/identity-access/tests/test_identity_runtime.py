@@ -37,6 +37,16 @@ def test_health_is_available_without_exposing_identity_configuration(client):
             "ORGANIZER",
             "30000000-0000-4000-8000-000000000001",
         ),
+        (
+            "organizerUece",
+            "ORGANIZER",
+            "30000000-0000-4000-8000-000000000002",
+        ),
+        (
+            "organizerAcademicSim",
+            "ORGANIZER",
+            "30000000-0000-4000-8000-000000000003",
+        ),
         ("globalAdmin", "GLOBAL_ADMIN", None),
     ],
 )
@@ -55,6 +65,8 @@ def test_valid_synthetic_token_returns_trusted_principal_only(client, name, role
             "participant": "10000000-0000-4000-8000-000000000001",
             "participantTwo": "10000000-0000-4000-8000-000000000002",
             "organizer": "20000000-0000-4000-8000-000000000001",
+            "organizerUece": "20000000-0000-4000-8000-000000000002",
+            "organizerAcademicSim": "20000000-0000-4000-8000-000000000003",
             "globalAdmin": "40000000-0000-4000-8000-000000000001",
         }[name],
         "role": role,

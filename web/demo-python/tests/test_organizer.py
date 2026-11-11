@@ -1,6 +1,7 @@
 import re
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 import demo_web.app as app_module
@@ -64,16 +65,39 @@ def _test_client(monkeypatch, web_environment, handler):
     return TestClient(create_app(environ=web_environment))
 
 
-def _select_organizer(client):
+def _select_organizer(client, persona="organizer"):
     initial = client.get("/session").json()
     changed = client.post(
-        "/persona/organizer",
+        f"/persona/{persona}",
         data={"csrf_token": initial["csrf_token"]},
         headers={"Origin": "http://testserver"},
         follow_redirects=False,
     )
     assert changed.status_code == 303
     return client.get("/session").json()["csrf_token"]
+
+
+@pytest.mark.parametrize(
+    ("persona", "label", "organization_id"),
+    [
+        ("organizer", "GESAD/UECE", "30000000-0000-4000-8000-000000000001"),
+        ("organizerUece", "UECE", "30000000-0000-4000-8000-000000000002"),
+        ("organizerAcademicSim", "IASC", "30000000-0000-4000-8000-000000000003"),
+    ],
+)
+def test_organizer_workspace_displays_selected_tenant(
+    monkeypatch, web_environment, persona, label, organization_id
+):
+    def unexpected_request(request):
+        raise AssertionError(f"Organizer preview must not call services: {request.url}")
+
+    with _test_client(monkeypatch, web_environment, unexpected_request) as client:
+        _select_organizer(client, persona)
+        response = client.get("/organizer")
+
+    assert response.status_code == 200
+    assert f"Organizador simulado — {label}" in response.text
+    assert organization_id in response.text
 
 
 def _form_fields(html, path):

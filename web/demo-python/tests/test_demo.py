@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 import demo_web.app as app_module
@@ -13,6 +14,11 @@ from demo_web.clients import DemoClients
 
 
 ORGANIZATION_ID = "30000000-0000-4000-8000-000000000001"
+ORGANIZER_TENANTS = (
+    ("organizer", ORGANIZATION_ID, "GESAD/UECE"),
+    ("organizerUece", "30000000-0000-4000-8000-000000000002", "UECE"),
+    ("organizerAcademicSim", "30000000-0000-4000-8000-000000000003", "IASC"),
+)
 
 
 def _event_reply(payload, event_id, *, status="DRAFT"):
@@ -36,16 +42,20 @@ def _test_client(monkeypatch, web_environment, handler):
     return TestClient(create_app(environ=web_environment))
 
 
-def _select_organizer(client):
+def _select_persona(client, persona="organizer"):
     initial = client.get("/session").json()
     changed = client.post(
-        "/persona/organizer",
+        f"/persona/{persona}",
         data={"csrf_token": initial["csrf_token"]},
         headers={"Origin": "http://testserver"},
         follow_redirects=False,
     )
     assert changed.status_code == 303
     return client.get("/session").json()["csrf_token"]
+
+
+def _select_organizer(client):
+    return _select_persona(client)
 
 
 def _hidden_fields(html, path="/demo/prepare"):
@@ -120,7 +130,7 @@ class _Service:
                 **payload,
                 "id": activity_id,
                 "eventId": match.group(1),
-                "organizationId": ORGANIZATION_ID,
+                "organizationId": self.events[match.group(1)]["organizationId"],
                 "version": 1,
                 "capacityFrozen": False,
             }
@@ -209,8 +219,11 @@ def test_preparation_uses_unique_valid_paid_and_one_seat_free_schedules(
     published = next(request for request in creates if request.url.path.endswith("/publish"))
 
     assert event["organizationId"] == ORGANIZATION_ID
-    assert str(run_id) in event["title"]
-    assert str(run_id) in paid["title"] and str(run_id) in free["title"]
+    assert str(run_id)[:8] in event["title"]
+    assert str(run_id)[:8] in paid["title"] and str(run_id)[:8] in free["title"]
+    assert event["title"].startswith("[APRESENTAÇÃO][SIMULADO][GESAD/UECE]")
+    assert paid["title"].startswith("[FLUXO PAGO][SIMULADO][GESAD/UECE]")
+    assert free["title"].startswith("[LISTA DE ESPERA][SIMULADO][GESAD/UECE]")
     assert len(activities) == 2
     assert paid["capacity"] > 0
     assert free["capacity"] == 1
@@ -233,6 +246,38 @@ def test_preparation_uses_unique_valid_paid_and_one_seat_free_schedules(
     assert "Registration status is not determined by countdowns" in response.text
     assert published.headers["idempotency-key"]
     assert all(request.method != "DELETE" for request in service.requests)
+
+
+@pytest.mark.parametrize(
+    ("persona", "organization_id", "organization_label"),
+    ORGANIZER_TENANTS,
+)
+def test_preparation_uses_the_selected_organizer_tenant(
+    monkeypatch,
+    web_environment,
+    persona,
+    organization_id,
+    organization_label,
+):
+    service = _Service()
+    with _test_client(monkeypatch, web_environment, service) as client:
+        csrf_token = _select_persona(client, persona)
+        fields = _new_run_fields(client)
+        fields["csrf_token"] = csrf_token
+        response = client.post(
+            "/demo/prepare",
+            data=fields,
+            headers={"Origin": "http://testserver"},
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    event_request = next(
+        request for request in service.requests if request.url.path == "/events"
+    )
+    event_payload = json.loads(event_request.content)
+    assert event_payload["organizationId"] == organization_id
+    assert f"[{organization_label}]" in event_payload["title"]
 
 
 def test_repeated_submit_resumes_same_run_and_fresh_intent_never_resets_data(

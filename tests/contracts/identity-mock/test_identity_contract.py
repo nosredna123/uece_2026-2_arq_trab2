@@ -18,6 +18,8 @@ def test_synthetic_fixtures_cover_approved_scopes():
         "participant",
         "participantTwo",
         "organizer",
+        "organizerUece",
+        "organizerAcademicSim",
         "globalAdmin",
     }
     tokens = [fixture["token"] for fixture in fixtures.values()]
@@ -28,6 +30,11 @@ def test_synthetic_fixtures_cover_approved_scopes():
         assert "organizationId" not in fixtures[participant]
     assert fixtures["organizer"]["role"] == "ORGANIZER"
     assert fixtures["organizer"]["organizationId"]
+    organizer_ids = {
+        fixtures[name]["organizationId"]
+        for name in ("organizer", "organizerUece", "organizerAcademicSim")
+    }
+    assert len(organizer_ids) == 3
     assert fixtures["globalAdmin"]["role"] == "GLOBAL_ADMIN"
     assert "organizationId" not in fixtures["globalAdmin"]
 

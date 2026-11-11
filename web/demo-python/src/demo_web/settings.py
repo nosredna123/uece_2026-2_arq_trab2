@@ -45,6 +45,8 @@ _FIXTURE_ROLES = {
     "participant": "PARTICIPANT",
     "participantTwo": "PARTICIPANT",
     "organizer": "ORGANIZER",
+    "organizerUece": "ORGANIZER",
+    "organizerAcademicSim": "ORGANIZER",
     "globalAdmin": "GLOBAL_ADMIN",
 }
 
@@ -65,6 +67,9 @@ def _validate_fixtures(path: Path) -> None:
         ) from None
     if not isinstance(fixtures, dict) or set(fixtures) != set(_FIXTURE_ROLES):
         raise SettingsError("Identity fixture roles or names are invalid.")
+    tokens = []
+    subjects = []
+    organizations = []
     for name, role in _FIXTURE_ROLES.items():
         fixture = fixtures[name]
         if (
@@ -76,8 +81,23 @@ def _validate_fixtures(path: Path) -> None:
             or not fixture["subjectId"]
         ):
             raise SettingsError("Identity fixture roles or entries are invalid.")
-        if role == "ORGANIZER" and not fixture.get("organizationId"):
-            raise SettingsError("Organizer identity fixture requires an organization.")
+        tokens.append(fixture["token"])
+        subjects.append(fixture["subjectId"])
+        if role == "ORGANIZER":
+            organization_id = fixture.get("organizationId")
+            try:
+                UUID(organization_id)
+            except (TypeError, ValueError):
+                raise SettingsError(
+                    "Organizer identity fixture requires a valid organization."
+                ) from None
+            organizations.append(organization_id)
+    if (
+        len(tokens) != len(set(tokens))
+        or len(subjects) != len(set(subjects))
+        or len(organizations) != len(set(organizations))
+    ):
+        raise SettingsError("Identity fixture tokens, subjects, and organizations must be unique.")
 
 
 def _validate_scenario_fixtures(path: Path, baseline_path: Path) -> None:

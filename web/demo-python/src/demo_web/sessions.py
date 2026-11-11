@@ -10,7 +10,16 @@ from demo_web.demo import DemoPreparation
 from demo_web.models import Activity, CheckIn, Event, Report
 
 
-PERSONAS = frozenset({"visitor", "participant", "participantTwo", "organizer"})
+PERSONAS = frozenset(
+    {
+        "visitor",
+        "participant",
+        "participantTwo",
+        "organizer",
+        "organizerUece",
+        "organizerAcademicSim",
+    }
+)
 
 
 class InvalidPersonaError(ValueError):
@@ -110,6 +119,8 @@ class SessionStore:
             "participant": "participant",
             "participantTwo": "participantTwo",
             "organizer": "organizer",
+            "organizerUece": "organizerUece",
+            "organizerAcademicSim": "organizerAcademicSim",
         }[session.persona]
         return self._identity_fixtures[fixture_name]
 

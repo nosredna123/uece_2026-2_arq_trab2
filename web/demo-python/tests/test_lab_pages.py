@@ -32,7 +32,7 @@ def _snapshot(*, state="COMPLETED"):
     return {
         "id": str(RUN_ID),
         "preset": "registration-rush",
-        "title": "Registration rush",
+        "title": "Pico de inscrições",
         "state": state,
         "verdict": "MISMATCH",
         "createdAt": OBSERVED_AT,
@@ -60,7 +60,7 @@ def _snapshot(*, state="COMPLETED"):
         },
         "observations": [
             {
-                "participant": "Participant 01",
+                "participant": "Participante simulado 01",
                 "state": "unknown",
                 "status": None,
                 "registrationId": None,
@@ -69,7 +69,7 @@ def _snapshot(*, state="COMPLETED"):
                 "latencyMs": 100,
             },
             {
-                "participant": "Participant 02",
+                "participant": "Participante simulado 02",
                 "state": "error",
                 "status": None,
                 "registrationId": None,
@@ -80,7 +80,7 @@ def _snapshot(*, state="COMPLETED"):
         ],
         "timeline": [
             {
-                "participant": "Participant 01",
+                "participant": "Participante simulado 01",
                 "state": "unknown",
                 "status": None,
                 "registrationId": None,
@@ -218,7 +218,7 @@ def test_disabled_lab_is_preview_only(web_environment):
         response = client.get("/scenario-lab")
 
     assert response.status_code == 200
-    assert "Scenario Lab is disabled." in response.text
+    assert "Scenario Lab is disabled by configuration." in response.text
     assert "Scenario Lab is disabled by configuration." in response.text
     assert "data-run-preset=" not in response.text
     assert "data-run-action=" not in response.text
@@ -274,7 +274,7 @@ def test_non_organizer_sees_preview_but_no_mutation_controls(web_environment):
 
     assert response.status_code == 200
     assert "last-seat" in response.text
-    assert "Prepare and run" not in response.text
+    assert "Preparar e executar:" not in response.text
     assert manager.start_calls == 0
 
 

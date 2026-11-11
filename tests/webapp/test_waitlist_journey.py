@@ -27,12 +27,12 @@ def test_two_person_waitlist_offer_acceptance_and_session_isolation(
     assert not participant_one_cookies
     assert not participant_two_cookies
 
-    select_persona(participant_one, "Participant 1")
+    select_persona(participant_one, "Participante simulado 01")
     participant_one.goto(prepared.free_checkout_url)
     participant_one.get_by_role("button", name="Confirm registration", exact=True).click()
     first_registration_id = wait_for_registration(participant_one, "CONFIRMED")
 
-    select_persona(participant_two, "Participant 2")
+    select_persona(participant_two, "Participante simulado 02")
     participant_two.goto(prepared.free_checkout_url)
     participant_two.get_by_role("button", name="Confirm registration", exact=True).click()
     second_registration_id = wait_for_registration(participant_two, "WAITLISTED")
@@ -81,11 +81,11 @@ def test_two_person_waitlist_offer_acceptance_and_session_isolation(
 
     participant_two.goto(f"{BASE_URL}/events/{prepared.event_id}")
     activity = participant_two.locator(".activity-row").filter(
-        has_text=f"Free waiting-list journey {prepared.event_id}"
+        has_text="Oficina de Sistemas Autoadaptativos"
     )
     if activity.count() == 0:
         activity = participant_two.locator(".activity-row").filter(
-            has_text="Free waiting-list journey"
+            has_text="Oficina de Sistemas Autoadaptativos"
         )
     expect(activity).to_contain_text("Available: 0")
     assert "synthetic-participant-001" not in participant_two.content()

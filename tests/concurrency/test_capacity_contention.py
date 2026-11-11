@@ -85,8 +85,11 @@ def create_capacity_one_activity(
         correlation_id=correlation_id,
         body={
             "organizationId": ORGANIZATION_ID,
-            "title": f"Concurrency test {run_id}",
-            "description": "Synthetic capacity contention integration test",
+            "title": f"[CONCORRÊNCIA][SIMULADO][GESAD/UECE] Disputa por vaga · {str(run_id)[:8]}",
+            "description": (
+                "Teste de integração simulado para disputa de capacidade "
+                "do GESAD/UECE."
+            ),
             "startsAt": iso(event_start),
             "endsAt": iso(activity_end + timedelta(minutes=1)),
         },
@@ -101,11 +104,14 @@ def create_capacity_one_activity(
         idempotency_key=f"concurrency-activity-{run_id}",
         correlation_id=correlation_id,
         body={
-            "title": f"Single-slot activity {run_id}",
+            "title": (
+                f"[CONCORRÊNCIA][SIMULADO][GESAD/UECE] Atividade com uma vaga "
+                f"· {str(run_id)[:8]}"
+            ),
             "startsAt": iso(activity_start),
             "endsAt": iso(activity_end),
-            "location": "Synthetic concurrency venue",
-            "responsible": "Synthetic organizer",
+            "location": "Espaço simulado de demonstração",
+            "responsible": "Equipe simulada do GESAD/UECE",
             "capacity": 1,
             "price": {"amountMinor": 0, "currency": "BRL"},
         },

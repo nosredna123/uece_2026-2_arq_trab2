@@ -6,8 +6,8 @@
          aria-labelledby="organizer-workspace-heading">
   {% set kind = "demo_presentation" %}
   {% include "partials/badge.html" %}
-  <h2 id="organizer-workspace-heading">Synthetic organizer</h2>
-  <p class="card-copy">This persona is not production authentication. Your organization scope is fixed by the selected fixture: <code>{{ organization_id }}</code>.</p>
+  <h2 id="organizer-workspace-heading">Organizador simulado — {{ organization_label }}</h2>
+  <p class="card-copy">Esta identidade é fictícia, não é uma autenticação de produção. O escopo organizacional é definido pelo perfil selecionado: <strong>{{ organization_label }}</strong> · <code>{{ organization_id }}</code>.</p>
   <p class="notice-box organizer-retention">Draft references exist only in this browser session. They disappear after session expiry or application restart; Event Management remains the source of truth.</p>
   {% if message %}
   <div class="service-error" role="alert">

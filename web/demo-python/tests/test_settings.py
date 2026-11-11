@@ -93,6 +93,17 @@ def test_rejects_unreadable_fixture_path(web_environment, tmp_path):
         Settings.from_environment(configured)
 
 
+def test_rejects_organizer_fixtures_that_share_an_organization(
+    web_environment, identity_fixtures
+):
+    fixtures = json.loads(identity_fixtures.read_text(encoding="utf-8"))
+    fixtures["organizerUece"]["organizationId"] = fixtures["organizer"]["organizationId"]
+    identity_fixtures.write_text(json.dumps(fixtures), encoding="utf-8")
+
+    with pytest.raises(SettingsError, match="organizations must be unique"):
+        Settings.from_environment(web_environment)
+
+
 def test_configuration_errors_do_not_echo_secret_values(web_environment):
     secret = "do-not-print-this-value"
     configured = {

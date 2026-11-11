@@ -65,8 +65,14 @@ def provision_workload(
         headers=event_headers,
         body={
             "organizationId": ORGANIZATION_ID,
-            "title": f"Load test {run_id}",
-            "description": "Synthetic performance-test event",
+            "title": (
+                f"[TESTE DE CARGA][SIMULADO][GESAD/UECE] "
+                f"Programa acadêmico · {run_id[:8]}"
+            ),
+            "description": (
+                "Evento acadêmico fictício para teste de carga do "
+                "GESAD/UECE; não representa atividade real."
+            ),
             "startsAt": iso(start),
             "endsAt": iso(event_end),
         },
@@ -87,11 +93,14 @@ def provision_workload(
             f"{event_management_url}/events/{event_id}/activities",
             headers=activity_headers,
             body={
-                "title": f"Load activity {index}",
+                "title": (
+                    f"[TESTE DE CARGA][SIMULADO][GESAD/UECE] "
+                    f"Atividade {index + 1:02} · {run_id[:8]}"
+                ),
                 "startsAt": iso(activity_start),
                 "endsAt": iso(activity_end),
-                "location": "Synthetic load-test venue",
-                "responsible": "Synthetic organizer",
+                "location": "Espaço simulado de demonstração",
+                "responsible": "Equipe simulada do GESAD/UECE",
                 "capacity": 10,
                 "price": {"amountMinor": 0, "currency": "BRL"},
             },

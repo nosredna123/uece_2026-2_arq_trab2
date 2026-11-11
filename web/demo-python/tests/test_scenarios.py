@@ -336,6 +336,14 @@ async def test_last_seat_uses_a_start_barrier_and_reconciles_real_results(web_en
 
     result = await _start_and_finish(manager, "last-seat")
 
+    event, _ = clients.events[0]
+    activity, _, _ = clients.activities[0]
+    assert event.organization_id == ORGANIZATION_ID
+    assert event.title.startswith("[CENÁRIO][SIMULADO][GESAD/UECE]")
+    assert activity.title.startswith("[CENÁRIO][SIMULADO][GESAD/UECE]")
+    assert "Participante simulado 01" in {
+        observation["participant"] for observation in result["observations"]
+    }
     assert len(clients.registration_calls) == 2
     assert clients.peak_requests == 2
     assert result["workload"]["dispatchCount"] == 2
@@ -435,7 +443,9 @@ async def test_partial_service_failures_are_not_success_shaped(web_environment):
     result = await _start_and_finish(manager, "registration-rush")
 
     failed = next(
-        item for item in result["observations"] if item["participant"] == "Participant 01"
+        item
+        for item in result["observations"]
+        if item["participant"] == "Participante simulado 01"
     )
     assert failed["state"] == "error"
     assert failed["errorCode"] == "WAITLIST_DISABLED"
@@ -467,7 +477,9 @@ async def test_unknown_mutation_outcome_stays_unknown(web_environment):
     result = await _start_and_finish(manager, "registration-rush")
 
     unknown = next(
-        item for item in result["observations"] if item["participant"] == "Participant 01"
+        item
+        for item in result["observations"]
+        if item["participant"] == "Participante simulado 01"
     )
     assert unknown["state"] == "unknown"
     assert unknown["errorCode"] == "HTTP_TIMEOUT"
@@ -484,7 +496,9 @@ async def test_public_readback_resolves_a_committed_unknown_outcome(web_environm
     result = await _start_and_finish(manager, "registration-rush")
 
     resolved = next(
-        item for item in result["observations"] if item["participant"] == "Participant 01"
+        item
+        for item in result["observations"]
+        if item["participant"] == "Participante simulado 01"
     )
     assert resolved["state"] == "reconciled"
     assert resolved["status"] in {"CONFIRMED", "WAITLISTED"}
