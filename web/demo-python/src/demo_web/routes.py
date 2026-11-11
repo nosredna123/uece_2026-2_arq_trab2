@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse
 
+from demo_web.commands import CommandConflictError
 from demo_web.errors import InvalidResponseError, ServiceError, TransportError
 from demo_web.presentation import (
     PAGE_METADATA,
@@ -121,6 +122,59 @@ async def _validate_csrf(request: Request, session: BrowserSession) -> None:
     token = request.headers.get("x-csrf-token", "") or await _form_csrf_token(request)
     if origin != expected_origin or not secrets.compare_digest(token, session.csrf_token):
         raise HTTPException(status_code=403, detail="CSRF validation failed.")
+
+
+def _participant_identity(request: Request, session: BrowserSession) -> dict[str, str]:
+    identity = _session_store(request).identity_for(session)
+    if identity is None or identity.get("role") != "PARTICIPANT":
+        raise HTTPException(status_code=403, detail="Select a participant persona to continue.")
+    return dict(identity)
+
+
+def _checkout_response(
+    request: Request,
+    *,
+    session: BrowserSession,
+    activity=None,
+    event=None,
+    idempotency_key: str,
+    retry: bool = False,
+    service_error: ServiceError | TransportError | InvalidResponseError | None = None,
+    message: str | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    failure = service_failure(service_error) if service_error is not None else None
+    response = templates.TemplateResponse(
+        request=request,
+        name="checkout.html",
+        context={
+            "page": PAGE_METADATA["checkout"],
+            "operational_status": (
+                "Registration result is unknown; retry uses the same command."
+                if retry
+                else "Activity details loaded; no registration has been created."
+                if activity is not None
+                else "Registration command could not be confirmed."
+            ),
+            "activity": activity,
+            "event": event,
+            "price": format_money(activity.price) if activity is not None else None,
+            "activity_starts_at": (
+                format_datetime(activity.starts_at) if activity is not None else None
+            ),
+            "activity_ends_at": (
+                format_datetime(activity.ends_at) if activity is not None else None
+            ),
+            "csrf_token": session.csrf_token,
+            "idempotency_key": idempotency_key,
+            "retry": retry,
+            "service_failure": failure,
+            "message": message,
+        },
+        status_code=status_code,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -324,6 +378,119 @@ async def published_event_detail(
     response.headers["Cache-Control"] = "no-store"
     _set_cookie_if_new(response, is_new=is_new, session=session, store=store)
     return response
+
+
+@router.get("/activities/{activity_id}/checkout", response_class=HTMLResponse)
+async def checkout(request: Request, activity_id: UUID) -> HTMLResponse:
+    session = _existing_session(request)
+    _participant_identity(request, session)
+    clients = request.app.state.clients
+    try:
+        activity = await clients.get_activity(activity_id, session_id=session.id)
+        event = await clients.get_event(activity.event_id, session_id=session.id)
+    except SERVICE_ERRORS as error:
+        message = (
+            "The requested activity is not available."
+            if isinstance(error, ServiceError) and error.status_code == 404
+            else "Activity details are temporarily unavailable."
+        )
+        return _service_error_page(request, error=error, message=message)
+
+    if event.status != "PUBLISHED":
+        raise HTTPException(status_code=404, detail="The requested activity is not available.")
+    return _checkout_response(
+        request,
+        session=session,
+        activity=activity,
+        event=event,
+        idempotency_key=secrets.token_urlsafe(32),
+    )
+
+
+@router.post("/activities/{activity_id}/checkout")
+async def confirm_checkout(request: Request, activity_id: UUID) -> Response:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    identity = _participant_identity(request, session)
+
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip()
+    if content_type != "application/x-www-form-urlencoded":
+        raise HTTPException(status_code=400, detail="A valid checkout form is required.")
+    body = await request.body()
+    if len(body) > 4096:
+        raise HTTPException(status_code=400, detail="The checkout form is too large.")
+    try:
+        fields = parse_qs(
+            body.decode("utf-8"),
+            keep_blank_values=True,
+            strict_parsing=True,
+            max_num_fields=8,
+        )
+    except (UnicodeDecodeError, ValueError):
+        raise HTTPException(status_code=400, detail="A valid checkout form is required.") from None
+    keys = fields.get("idempotency_key", [])
+    if len(keys) != 1 or not 1 <= len(keys[0]) <= 200:
+        raise HTTPException(status_code=400, detail="A valid checkout command is required.")
+    idempotency_key = keys[0]
+    clients = request.app.state.clients
+
+    async def create_registration(key, correlation_id):
+        return await clients.request_registration(
+            activity_id,
+            token=identity["token"],
+            idempotency_key=key,
+            session_id=session.id,
+            correlation_id=correlation_id,
+        )
+
+    try:
+        outcome = await request.app.state.command_ledger.execute(
+            session,
+            idempotency_key=idempotency_key,
+            payload={"activityId": str(activity_id)},
+            operation=create_registration,
+        )
+    except CommandConflictError:
+        raise HTTPException(
+            status_code=409,
+            detail="This checkout command was already used for a different intent.",
+        ) from None
+    except OverflowError:
+        raise HTTPException(
+            status_code=429,
+            detail="This browser session has reached its command limit.",
+        ) from None
+    except (TransportError, InvalidResponseError) as error:
+        if error.outcome_unknown:
+            return _checkout_response(
+                request,
+                session=session,
+                idempotency_key=idempotency_key,
+                retry=True,
+                service_error=error,
+                message=(
+                    "The registration result is unknown. Retry this same command; "
+                    "do not start a new registration."
+                ),
+                status_code=503,
+            )
+        return _service_error_page(
+            request,
+            error=error,
+            message="Registration could not be completed.",
+        )
+    except ServiceError as error:
+        return _service_error_page(
+            request,
+            error=error,
+            message="Registration could not be completed.",
+        )
+
+    registration = outcome.result
+    return Response(
+        status_code=303,
+        headers={"Location": f"/registrations/{registration.id}"},
+    )
 
 
 @router.get("/session")

@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Implementation in progress; T045-T056 are complete.
+**Status:** Implementation in progress; T045-T058 are complete.
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T056 are complete; T057-T080 remain unimplemented. Tests belong before the
+T045-T058 are complete; T059-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -459,8 +459,8 @@ or unbounded catalog fetch; backend content is escaped and amounts are not float
 
 **Requirements:** REQ-002, REQ-003, REQ-005, REQ-006, REQ-013.
 
-- [ ] T057 [Plan:3.2] Write `web/demo-python/tests/test_checkout.py` covering no pre-submit side effects, free/paid wording, required participant, CSRF, backend price authority, duplicate submission, lost response/retry, and pending/refused outcomes.
-- [ ] T058 [Plan:3.2] Implement `templates/checkout.html` and checkout GET/POST routes in `routes.py`; show LIVE SERVICE activity/registration sections and SIMULATED DEPENDENCY Billing disclosure inside a DEMO PRESENTATION checkout. Submit only `activityId` via the retained command, redirect to current registration state, and never collect card data or offer payment-outcome controls.
+- [x] T057 [Plan:3.2] Write `web/demo-python/tests/test_checkout.py` covering no pre-submit side effects, free/paid wording, required participant, CSRF, backend price authority, duplicate submission, lost response/retry, and pending/refused outcomes.
+- [x] T058 [Plan:3.2] Implement `templates/checkout.html` and checkout GET/POST routes in `routes.py`; show LIVE SERVICE activity/registration sections and SIMULATED DEPENDENCY Billing disclosure inside a DEMO PRESENTATION checkout. Submit only `activityId` via the retained command, redirect to current registration state, and never collect card data or offer payment-outcome controls.
 
 **Done when:** one explicit click initiates the actual paid protocol; no premature
 success page, fake provider call, or hidden automatic registration is possible.

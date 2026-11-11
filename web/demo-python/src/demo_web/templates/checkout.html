@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="checkout-grid">
+  <section class="content-card checkout-activity"
+           data-section="checkout-activity" data-provenance="live_service"
+           aria-labelledby="checkout-activity-heading">
+    {% set kind = "live_service" %}
+    {% include "partials/badge.html" %}
+    <p class="eyebrow">Activity details from Event Management</p>
+    {% if activity %}
+    <h2 id="checkout-activity-heading">{{ activity.title }}</h2>
+    <p class="card-copy">{{ event.title }} · {{ activity.location }} · {{ activity.responsible }}</p>
+    <dl class="activity-facts">
+      <div><dt>Starts</dt><dd>{{ activity_starts_at }}</dd></div>
+      <div><dt>Ends</dt><dd>{{ activity_ends_at }}</dd></div>
+      <div><dt>Capacity</dt><dd>{{ activity.capacity }}</dd></div>
+      <div><dt>Published price</dt><dd>{{ price }}</dd></div>
+    </dl>
+    {% else %}
+    <h2 id="checkout-activity-heading">Activity {{ request.path_params.activity_id }}</h2>
+    <p class="card-copy">The registration service has not confirmed the command result.</p>
+    {% endif %}
+    <p class="notice-box checkout-notice">
+      {% if retry %}
+      {{ message }}
+      {% elif activity and activity.price.amount_minor == 0 %}
+      No payment step is needed for this free activity.
+      {% else %}
+      Billing is simulated by the existing mock dependency after the registration is created.
+      {% endif %}
+    </p>
+    {% if service_failure %}
+    <p class="service-error-details">
+      <strong>{{ service_failure.service }}</strong>
+      {% if service_failure.status_code %}returned HTTP {{ service_failure.status_code }}{% else %}could not be reached{% endif %}.
+      Code <code>{{ service_failure.code }}</code>
+      · correlation <code>{{ service_failure.correlation_id }}</code>
+    </p>
+    {% endif %}
+  </section>
+
+  <section class="content-card checkout-confirmation"
+           data-section="registration-command" data-provenance="live_service"
+           aria-labelledby="checkout-confirmation-heading">
+    {% set kind = "live_service" %}
+    {% include "partials/badge.html" %}
+    <p class="eyebrow">Registration service</p>
+    <h2 id="checkout-confirmation-heading">Create your registration</h2>
+    <p class="card-copy">
+      {% if retry %}
+      Retry this same command to resolve an unknown outcome. The service idempotency key is retained.
+      {% else %}
+      Nothing is created until you explicitly confirm. The Registration service decides the current price and outcome.
+      {% endif %}
+    </p>
+    {% if message and not retry %}
+    <div class="service-error" role="alert">
+      <p>{{ message }}</p>
+    </div>
+    {% endif %}
+    <form method="post" action="/activities/{{ request.path_params.activity_id }}/checkout">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+      <button class="primary-button checkout-submit" type="submit">
+        {% if retry %}Retry same command{% else %}Confirm registration{% endif %}
+      </button>
+    </form>
+    <p class="card-footnote">No card details are collected. This page cannot control payment approval or refusal.</p>
+  </section>
+
+  <section class="content-card simulated-card checkout-billing"
+           data-section="billing-disclosure" data-provenance="simulated_dependency"
+           aria-labelledby="checkout-billing-heading">
+    {% set kind = "simulated_dependency" %}
+    {% include "partials/badge.html" %}
+    <p class="eyebrow">After the real registration command</p>
+    <h2 id="checkout-billing-heading">Simulated Billing</h2>
+    <p class="card-copy">The existing Billing mock may produce a pending or refused payment outcome. This presentation does not call a payment provider.</p>
+  </section>
+</div>
+{% endblock %}

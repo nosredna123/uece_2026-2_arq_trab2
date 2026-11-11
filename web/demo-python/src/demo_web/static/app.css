@@ -518,6 +518,59 @@ h1 {
 .service-error code,
 .service-error-details code {
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.8fr);
+  gap: 1rem;
+}
+
+.checkout-activity,
+.checkout-confirmation,
+.checkout-billing {
+  align-self: start;
+}
+
+.checkout-billing {
+  grid-column: 1 / -1;
+}
+
+.checkout-notice {
+  display: block;
+  margin: 1rem 0 0;
+  color: #33423a;
+  font-size: 0.9rem;
+}
+
+.checkout-submit,
+.checkout-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.8rem;
+  margin-top: 0.75rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.checkout-link {
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 720px) {
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-billing {
+    grid-column: auto;
+  }
   font-size: 0.78rem;
 }
 

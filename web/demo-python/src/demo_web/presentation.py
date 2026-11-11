@@ -81,6 +81,16 @@ PAGE_METADATA = {
         ),
         implementation_status="Catalog and shell available",
     ),
+    "checkout": PageMetadata(
+        title="Confirm registration",
+        eyebrow="One explicit service command",
+        heading="Review your registration",
+        description=(
+            "The activity details come from Event Management. Registration is "
+            "created only when you confirm below."
+        ),
+        implementation_status="Catalog and checkout available",
+    ),
     "error": PageMetadata(
         title="Request not completed",
         eyebrow="The prototype could not complete this page",

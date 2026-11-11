@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 12
+  completed_tasks: 14
   in_progress_tasks: 0
-  pending_tasks: 24
-  completion_percentage: 33.3
+  pending_tasks: 22
+  completion_percentage: 38.9
 
 tasks:
   - task_id: "T045"
@@ -329,10 +329,58 @@ tasks:
       plan_item: "3.1"
       requirements: ["REQ-002", "REQ-004", "REQ-014", "REQ-017"]
       full_trace: "REQ-002/004/014/017 → Phase-3.1 → T056 → published catalog and detail pages"
+  - task_id: "T057"
+    description: "Specify checkout side effects, confirmation, and retry behavior."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_checkout.py"
+          changes: ["Verify read-only preview, free/paid copy, participant gating, CSRF, service-owned price, duplicate suppression, unknown-result retries, and backend pending/refused outcomes."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 275
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "Tests use HTTPX MockTransport to assert the registration POST contains only activityId and preserves its idempotency/correlation headers on retry."
+    upstream_trace:
+      plan_item: "3.2"
+      requirements: ["REQ-002", "REQ-003", "REQ-005", "REQ-006", "REQ-013", "REQ-017"]
+      full_trace: "REQ-002/003/005/006/013/017 → Phase-3.2 → T057 → checkout command contract tests"
+  - task_id: "T058"
+    description: "Implement an explicitly confirmed checkout using the retained session command."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/app.py"
+          changes: ["Initialize the bounded command ledger using the configured per-session limit."]
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add participant-only checkout preview and CSRF-protected POST; submit the authoritative activity ID through the retained command, preserve uncertain retries, and redirect to the returned registration."]
+        - file: "web/demo-python/src/demo_web/presentation.py"
+          changes: ["Add checkout page metadata."]
+        - file: "web/demo-python/src/demo_web/templates/checkout.html"
+          changes: ["Render live activity/registration sections, simulated billing disclosure, free/paid copy, explicit confirmation, and same-command retry."]
+        - file: "web/demo-python/src/demo_web/templates/event_detail.html"
+          changes: ["Link published activities to checkout."]
+        - file: "web/demo-python/src/demo_web/static/app.css"
+          changes: ["Add responsive checkout layout and explicit action styling."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+        passed: 81
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The complete root suite passed; Ruff check and formatting passed. Checkout GET/POST HTTP contracts are covered by TestClient with MockTransport."
+    upstream_trace:
+      plan_item: "3.2"
+      requirements: ["REQ-002", "REQ-003", "REQ-005", "REQ-006", "REQ-013"]
+      full_trace: "REQ-002/003/005/006/013 → Phase-3.2 → T058 → simulated checkout with real registration command"
 
 pending_tasks:
-  - {task_id: "T057", description: "Specify checkout side-effect and retry tests", blocked_by: ["T056"], priority: "P1"}
-  - {task_id: "T058", description: "Implement pre-registration checkout", blocked_by: ["T057"], priority: "P1"}
   - {task_id: "T059", description: "Specify registration state and polling transitions", blocked_by: ["T058"], priority: "P1"}
   - {task_id: "T060", description: "Implement own registrations and actions", blocked_by: ["T059"], priority: "P1"}
   - {task_id: "T061", description: "Specify organizer workflow tests", blocked_by: ["T054", "T052"], priority: "P1"}

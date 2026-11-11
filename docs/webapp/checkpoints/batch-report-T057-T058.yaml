@@ -1,0 +1,127 @@
+batch_id: "B07"
+completed_tasks: ["T057", "T058"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T057:
+    - file: "web/demo-python/tests/test_checkout.py"
+      change_type: "created"
+      description: "Test read-only checkout preview, free/paid disclosure, participant and CSRF requirements, backend-owned price, duplicate suppression, unknown-result retry, and pending/refused registration outcomes."
+  T058:
+    - file: "web/demo-python/src/demo_web/app.py"
+      change_type: "modified"
+      description: "Initialize a bounded per-session command ledger from validated settings."
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Add participant-only checkout GET/POST routes, explicit confirmation, idempotent retry, and redirect to the returned registration."
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "modified"
+      description: "Define checkout page metadata."
+    - file: "web/demo-python/src/demo_web/templates/checkout.html"
+      change_type: "created"
+      description: "Present live service activity/registration sections, simulated Billing, free/paid explanations, and explicit confirmation or same-key retry."
+    - file: "web/demo-python/src/demo_web/templates/event_detail.html"
+      change_type: "modified"
+      description: "Link activities to the checkout page."
+    - file: "web/demo-python/src/demo_web/static/app.css"
+      change_type: "modified"
+      description: "Style the responsive checkout layout and explicit action."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T057-T058 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T057-T058 evidence and update completion counts."
+    - file: "docs/webapp/checkpoints/batch-report-T057-T058.yaml"
+      change_type: "created"
+      description: "Record batch scope, verification, endpoint probes, and skip explanation."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Checkout scope, one explicit registration command, free/paid language, CSRF, and PRG acceptance."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "Synthetic personas, session-scoped command intent, and server-rendered presentation boundaries."
+  - artifact: "docs/contracts/openapi/event-management.yaml"
+    used_for: "Activity and event details shown in the read-only checkout preview."
+  - artifact: "docs/contracts/openapi/registration.yaml"
+    used_for: "Registration request fields, response statuses, and backend-owned outcome/price."
+evidence_mapping:
+  T057:
+    - upstream: "docs/webapp/plan.md#Plan-3.2"
+      output: "web/demo-python/tests/test_checkout.py"
+      evidence: "Ten TestClient cases assert zero registration POSTs before confirmation, participant/CSRF gates, activityId-only submission, duplicate suppression, same-key/correlation retry, and pending/refused result redirects."
+  T058:
+    - upstream: "docs/webapp/plan.md#Plan-3.2"
+      output: "web/demo-python/src/demo_web/routes.py and checkout template"
+      evidence: "HTTP tests verify GET displays live activity details without mutation; POST calls the Registration service once through the session command ledger and uses PRG to the returned registration ID."
+traceability:
+  - requirement: "REQ-002"
+    plan_item: "3.2"
+    task: "T058"
+    files: ["web/demo-python/src/demo_web/templates/checkout.html", "web/demo-python/src/demo_web/presentation.py"]
+    status: "completed"
+  - requirement: "REQ-003"
+    plan_item: "3.2"
+    task: "T058"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/tests/test_checkout.py"]
+    status: "completed"
+  - requirement: "REQ-005"
+    plan_item: "3.2"
+    task: "T057-T058"
+    files: ["web/demo-python/tests/test_checkout.py", "web/demo-python/src/demo_web/templates/checkout.html"]
+    status: "completed"
+  - requirement: "REQ-006"
+    plan_item: "3.2"
+    task: "T057-T058"
+    files: ["web/demo-python/tests/test_checkout.py", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-013"
+    plan_item: "3.2"
+    task: "T057-T058"
+    files: ["web/demo-python/src/demo_web/app.py", "web/demo-python/src/demo_web/routes.py", "web/demo-python/tests/test_checkout.py"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "3.2"
+    task: "T057"
+    files: ["web/demo-python/tests/test_checkout.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six existing backend integration/concurrency tests were skipped because their external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 275
+    failed: 0
+    skipped: 6
+    failures: []
+  docker_runtime:
+    command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+    passed: 81
+    failed: 0
+    skipped: 0
+    failures: []
+  lint:
+    command: "ruff check and format --check on modified Python files"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/activities/{activity_id}/checkout"
+    status: 200
+    result: "PASS (participant TestClient contract; activity/event GET only)"
+  - method: "POST"
+    path: "/activities/{activity_id}/checkout"
+    status: 303
+    result: "PASS (explicit registration command redirects to the returned registration)"
+  - method: "POST"
+    path: "/activities/{activity_id}/checkout"
+    status: 403
+    result: "PASS (missing same-origin CSRF proof rejected before registration mutation)"
+  - method: "POST"
+    path: "/activities/{activity_id}/checkout"
+    status: 503
+    result: "PASS (unknown outcome retains the original idempotency key and correlation ID for retry)"

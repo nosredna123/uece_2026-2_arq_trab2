@@ -9,6 +9,7 @@ from starlette.responses import Response as StarletteResponse
 from starlette.staticfiles import StaticFiles
 
 from demo_web.clients import DemoClients
+from demo_web.commands import CommandLedger
 from demo_web.presentation import PAGE_METADATA, STATIC_DIRECTORY, templates
 from demo_web.routes import router
 from demo_web.sessions import SessionStore
@@ -26,6 +27,9 @@ def create_app(environ: Mapping[str, str] | None = None) -> FastAPI:
             max_sessions=app.state.settings.max_sessions,
         )
         app.state.clients = DemoClients(app.state.settings)
+        app.state.command_ledger = CommandLedger(
+            max_commands_per_session=app.state.settings.max_commands_per_session
+        )
         try:
             yield
         finally:
