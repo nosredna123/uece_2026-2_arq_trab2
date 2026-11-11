@@ -166,8 +166,8 @@ uses the example file for omitted settings with your `infra/.env` taking
 precedence, never creates or overwrites `infra/.env`, and does not require a
 separate backend startup command. Re-run the same script after changing
 settings; Compose recreates only services whose configuration changed. See
-[the presentation setup guide](web/demo-python/README.md) for optional
-Scenario Lab settings.
+[the presentation setup guide](web/demo-python/README.md) for the optional
+terminal load scenarios (`bash scripts/cenario.sh <scenario>`).
 
 The browser runner uses `infra/.env.example` plus bounded synthetic settings
 in a uniquely named Compose project. It publishes no host ports, uses fresh

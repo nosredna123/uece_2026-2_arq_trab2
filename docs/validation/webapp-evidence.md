@@ -7,6 +7,13 @@ Lab read-back exports, recovery behavior, the presentation adapter architecture
 view, and a fresh-data browser rehearsal. This is local prototype evidence, not
 a production readiness or security certification.
 
+> **Revision:** this record documents the run before the role-based
+> restructure. The guided demo page and the in-browser Scenario Lab described
+> below were later removed. The same fixed scenarios now run from the terminal
+> (`bash scripts/cenario.sh …`), and the browser acceptance suite now drives
+> the organizer pages (3 passed, 2 skipped; both outage probes passed). See the
+> [presentation script](./webapp-presentation-script.md).
+
 ## Environment and versions
 
 | Component | Version / configuration |

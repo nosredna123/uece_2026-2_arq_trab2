@@ -30,19 +30,21 @@ synthetic Identity fixture and existing service APIs; the app has no database,
 broker, Docker socket, or arbitrary target access.
 
 The home page is a simulated sign-in: choose an organizer (GESAD/UECE, UECE,
-or IASC), a synthetic participant, or continue as visitor. There is no
-password. The selected user stays active on every page, shown in the header as
+or IASC) or a synthetic participant. There is no password. The selected user stays active on every page, shown in the header as
 **Signed in as …**, until **Sign out** returns to the sign-in page. Pages
 opened before signing in redirect to it.
 
 The sign-in page includes separate synthetic organizer tenants for
 GESAD/UECE, UECE, and the fictional Instituto Acadêmico Simulado do Ceará
 (IASC). GESAD is a UECE research group; IASC is fictional and does not imply a
-real partnership. Guided preparation creates records under the selected
-organizer's organization. Scenario Lab runs are currently limited to the
-GESAD/UECE persona because its fixed workload identities and records use that
-organization. Generated records carry a Portuguese test-purpose prefix and
-`SIMULADO` label.
+real partnership.
+
+Each role sees only its own pages:
+- **Organizers** land on **My events**. From there they can create and edit
+  events and their activities, publish or cancel events, and open **Reports**
+  for their own organization's events only.
+- **Participants** land on **Events**. From there they can register, follow
+  **My registrations**, and open the certificate for an attended activity.
 
 ## Initial presentation data
 
@@ -104,8 +106,9 @@ bash tests/webapp/run.sh
 The runner builds the pinned browser image, uses the synthetic
 `infra/.env.example` rather than `infra/.env`, assigns a unique Compose project,
 publishes no service ports, and removes only that project's containers and
-volumes. It exercises paid registration/check-in/certificate read-back,
-two-person waitlist promotion, the real Scenario Lab, and bounded
+volumes. An organizer creates and publishes the event through the UI. The
+runner then exercises paid registration, check-in, certificate read-back and
+the organizer report, two-person waitlist promotion, role isolation, and bounded
 Reporting/Identity outage probes; the probes restore their services before
 cleanup, including on failure. Browser screenshots are saved under
 `docs/validation/artifacts/webapp/`.
@@ -114,20 +117,47 @@ For presenter timing, exact UI actions, narration, failure branches, and
 non-destructive shutdown, follow the
 [browser presentation script](../../docs/validation/webapp-presentation-script.md).
 
-## Optional Scenario Lab
+## Load scenarios (terminal)
 
-The Scenario Lab is disabled by default. To enable it, set both
+Pre-defined load scenarios run from the terminal while the organizer watches
+**Reports** in the browser:
+
+```sh
+bash scripts/cenario.sh pico-inscricoes   # many participants, 5 seats
+bash scripts/cenario.sh ultima-vaga       # two participants, one seat
+bash scripts/cenario.sh envios-repetidos  # same request 10 times (idempotency)
+```
+
+Each run publishes a fresh `[CENÁRIO] …` event in the GESAD/UECE organization,
+because the fixed scenario identities belong to it. It submits the
+registrations through the real Registration API and prints each outcome, then
+a Portuguese verdict (`Veredito: OK` or `Veredito: VERIFICAR`). The script runs
+inside the running `demo-web` container (`python -m demo_web.scenarios`). It
+fails clearly if the app is not running or the scenarios are disabled.
+
+The peak scenario reads two optional settings, from the shell or `infra/.env`
+(defaults come from `infra/.env.example`):
+- `SCENARIO_PEAK_PARTICIPANTS`: 1–20, default 20.
+- `SCENARIO_PEAK_DURATION_SECONDS`: 1–300, default 30. Use a longer value to
+  watch the numbers change in Reports while you refresh it.
+
+For example:
+
+```sh
+SCENARIO_PEAK_DURATION_SECONDS=60 bash scripts/cenario.sh pico-inscricoes
+```
+
+The scenarios are disabled by default. To enable them, set both
 `IDENTITY_LAB_ENABLED=true` and `DEMO_LAB_ENABLED=true` in `infra/.env`, then
-provide the fixed fixture path and all six bounded limits required by
-`scripts/validate-environment.py`. In the container, the scenario fixture path
-is `/run/eventhub/scenario-participants.json`; the corresponding bind mount is
-read-only and is added only by the lab Compose overlay. Registration must have
-waiting-list support enabled before running FIFO scenarios.
+provide the fixed fixture path and all six bounded `DEMO_LAB_*` limits required
+by `scripts/validate-environment.py`. In the container, the scenario fixture
+path is `/run/eventhub/scenario-participants.json`; the corresponding bind
+mount is read-only and is added only by the lab Compose overlay. Registration
+must have waiting-list support enabled, or the peak scenario reports
+`WAITLIST_DISABLED` errors.
 
-When enabling the lab after the backend is already running, update both flags
-and run `bash scripts/run-demo-web.sh` again. Compose detects the changed
+When enabling the scenarios after the backend is already running, update both
+flags and run `bash scripts/run-demo-web.sh` again. Compose detects the changed
 Identity configuration and recreates the affected service; unchanged
-containers are left running, and persistent volumes are preserved. No special
-restart flag or browser action is needed. Billing and Registration scenarios
-remain those selected by the operator; the web app does not change mock state
-or service configuration.
+containers are left running, and persistent volumes are preserved. The web
+app does not change mock state or service configuration.

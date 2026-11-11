@@ -134,9 +134,12 @@ Use a documented explicit setup step to add missing web settings.
   (positive bounds; expired/evicted session shows an explicit restart warning).
 - `DEMO_WEB_POLL_INTERVAL_SECONDS`, `DEMO_WEB_POLL_TIMEOUT_SECONDS`
   (positive, timeout greater than interval; examples 2 and 60).
-- `DEMO_WEB_PAID_START_DELAY_SECONDS`, `DEMO_WEB_ACTIVITY_DURATION_SECONDS`,
-  `DEMO_WEB_FREE_START_DELAY_SECONDS` (examples 180, 60, 900; enforce positive
-  values and ordering so the two journeys fit within a generated event).
+- ~~`DEMO_WEB_PAID_START_DELAY_SECONDS`, `DEMO_WEB_ACTIVITY_DURATION_SECONDS`,
+  `DEMO_WEB_FREE_START_DELAY_SECONDS`~~ — removed with the guided demo (see the
+  revision in section 5); organizers now set activity times in the event form.
+- `SCENARIO_PEAK_PARTICIPANTS` (1–20, default 20) and
+  `SCENARIO_PEAK_DURATION_SECONDS` (1–300, default 30), optional settings for
+  the terminal peak scenario.
 - `DEMO_WEB_EVENT_BASE_URL`, `DEMO_WEB_REGISTRATION_BASE_URL`,
   `DEMO_WEB_ATTENDANCE_BASE_URL`, `DEMO_WEB_REPORTING_BASE_URL`
   (explicit internal HTTP origins; no caller-supplied URLs).
@@ -191,6 +194,16 @@ patterns, HTTP contracts, and runtime-validation test-tier guidance instead.
 
 Navigation: **Home / Guided demo / Events / My registrations / Organizer /
 Scenario Lab**. The lab is organizer-only and visibly opt-in.
+> **Revision (role-based restructure):** at the product owner's request the
+> navigation is now split by role after a simulated sign-in. Organizers see
+> **My events** (create/edit events and activities, publish, cancel) and
+> **Reports** (their organization only). Participants see **Events** and **My
+> registrations** (register, follow status, open certificates). The guided demo
+> page and the in-browser Scenario Lab were removed. The fixed scenarios now run
+> from the terminal (`bash scripts/cenario.sh pico-inscricoes|ultima-vaga|envios-repetidos`)
+> while the organizer watches Reports. The cancellation/FIFO promotion preset of
+> REQ-019 is shown through the participant waitlist journey instead.
+
 > **Revision:** at the product owner's request the badges, badge legend, and
 > implementation/operational status indicators described below were removed
 > from the UI so internal pages focus on the core business flow. The prototype

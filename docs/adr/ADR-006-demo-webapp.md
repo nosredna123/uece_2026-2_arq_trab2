@@ -2,7 +2,7 @@
 
 **Status:** Accepted for the presentation prototype  
 **Date:** 2026-11-10  
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Traceability:** REQ-001, REQ-002, REQ-003, REQ-015, REQ-017, REQ-019,
 REQ-021; [webapp plan](../webapp/plan.md), plans 0.1, 1.1, 2.1, 5.3-5.5,
 6.1-6.3
@@ -47,8 +47,13 @@ operational status indicators; these were removed at the product owner's
 request so the internal pages stay focused on the core business flow.
 Error messages still name the failing service and correlation id.
 
-Visitor, Participant 1, Participant 2 and Organizer are synthetic presentation
-personas, not user accounts or authentication. Persona identity and session
+Organizers of three synthetic organizations (GESAD/UECE, UECE and the
+fictional IASC) and a few participants are synthetic presentation personas,
+chosen on a simulated sign-in page. They are not user accounts or
+authentication. Pages are separated by role: organizers create, edit, publish
+and cancel their organization's events and activities and read reports scoped
+to that organization; participants browse events, register and read their own
+registrations and certificates. Persona identity and session
 state stay server-side; the browser receives only an opaque session
 identifier. Protected requests still use the existing identity and service
 authorization contracts. CSRF protection, participant isolation, bounded
@@ -61,9 +66,12 @@ silent scaling option. Browser mutations call existing APIs with their
 established authorization and idempotency behavior; uncertain outcomes remain
 explicitly uncertain rather than being represented as a successful fallback.
 
-The Scenario Lab is opt-in and limited to fixed, finite scenarios and an
-explicitly bounded synthetic identity pool. It exercises existing service
-APIs and reports observations; it does not modify domain data outside those
+The load scenarios are opt-in and limited to fixed, finite scenarios and an
+explicitly bounded synthetic identity pool. Revision 1.2.0 replaced the
+in-browser Scenario Lab with terminal scripts (`scripts/cenario.sh`, running
+`python -m demo_web.scenarios` inside the presentation container), so the
+presenter can watch the effects on the organizer's Reports page. They exercise
+existing service APIs and print observations and a verdict; it does not modify domain data outside those
 APIs, expose arbitrary traffic generation, or claim production load evidence.
 Its twenty fixture identities are unique, unscoped participants and are
 accepted by the identity mock only when both the mock and web client are
@@ -81,7 +89,7 @@ existing domain tests and the minimum 95% domain mutation gate remain intact.
 ## Evidence and justification
 
 - The [webapp plan](../webapp/plan.md) records the agreed requirements,
-  architecture boundaries, session limits, test gates and Scenario Lab scope.
+  architecture boundaries, session limits, test gates and load-scenario scope.
 - [Constitution](../../constitution.md), sections 1.2-1.7, requires KISS,
   service data ownership, fail-closed authorization, validated configuration,
   traceable tests and retained domain quality gates.
@@ -90,8 +98,10 @@ existing domain tests and the minimum 95% domain mutation gate remain intact.
   [ADR-004](ADR-004-messaging-and-resilience.md), and
   [ADR-005](ADR-005-prototype-scope.md) retain authority for service
   boundaries, data ownership, messaging, authorization and prototype scope.
-- Existing HTTP contracts remain authoritative; this decision adds no domain
-  endpoint or business rule.
+- Existing HTTP contracts remain authoritative; this decision adds no business
+  rule. The organizer pages use the read-only, organization-scoped event
+  listing that Event Management owns and authorizes
+  (`GET /organizations/{organizationId}/events` and its activities).
 
 ## Consequences
 
@@ -112,7 +122,7 @@ and rationales.
 
 T046 validates rationale inventory and governance without weakening existing
 checks. Subsequent tasks test settings and sessions, HTTP contracts, CSRF,
-persona isolation, browser behavior, fixed Scenario Lab bounds and the
+persona and role isolation, browser behavior, fixed load-scenario bounds and the
 existing service regression suite. T070 adds fail-closed validation of the
 opt-in, finite participant pool without changing service contracts. No
 production identity, multi-worker session support, or general-purpose

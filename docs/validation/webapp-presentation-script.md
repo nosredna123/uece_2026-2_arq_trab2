@@ -3,20 +3,22 @@
 ## Purpose and timing
 
 This is the live, local-browser presentation for the EventHub teaching
-prototype. It demonstrates real service-owned registration and attendance
-records, while clearly identifying simulated dependencies and presentation-only
-guidance. It is not a production demonstration.
+prototype. It shows five short demonstrations built on real service-owned
+records. Identity, Billing and Notification are mocks; this is not a production
+demonstration.
 
-| Version | Target duration | Includes |
-|---|---:|---|
-| Full | 14–16 minutes, including the Scenario Lab | Paid journey, attendance/certificate, waiting list, report, three bounded lab workloads, and Q&A. |
-| Happy path | 10–12 minutes | Paid journey, attendance/certificate, waiting list, organizer projection, and Q&A; no lab workloads. |
-| Short | 4–5 minutes | One fresh paid registration and the organizer report only; preflight the run and omit attendance/certificate, waiting list, print, lab, and failure demonstrations. |
+| # | Demonstration | Who | Target |
+|---|---|---|---:|
+| 1 | Create or edit an event and its activities | Organizer | 3 min |
+| 2 | Simple reports for the organization's events | Organizer | 1.5 min |
+| 3 | Browse events and register | Participant | 2.5 min |
+| 4 | Get the certificate for an attended activity | Participant | 1.5 min |
+| 5 | Registration peak run from the terminal, watched in Reports | Presenter + organizer | 3 min |
 
-These are presentation targets, not measured rehearsal times. T080 records
-actual end-to-end timings. Configuration and service readiness are completed
-before the clock starts. The countdowns shown by the app are the returned
-activity schedule, not promises that a registration or payment has happened.
+With a one-minute opening and a short close and Q&A, the full run takes about
+**14 minutes**. For a **short version (about 6 minutes)**, present
+demonstrations 2, 3 and 5 only. These are targets, not measured rehearsal
+times.
 
 ## Preflight
 
@@ -30,7 +32,7 @@ activity schedule, not promises that a registration or payment has happened.
    if [ ! -e infra/.env ]; then cp infra/.env.example infra/.env; fi
    ```
 
-2. Edit only the local synthetic configuration. For the full script, verify:
+2. Edit only the local synthetic configuration. Verify:
 
    ```text
    DEMO_WEB_ENABLED=true
@@ -48,189 +50,233 @@ activity schedule, not promises that a registration or payment has happened.
    DEMO_LAB_MAX_RETAINED_RUNS=5
    ```
 
-   Keep the existing synthetic service credentials private even though they are
-   examples. Do not copy `.env` values into slides, chat, logs, screenshots, or
-   the recording. The example schedule is a paid start 180 seconds after
-   preparation, a 60-second paid activity, and a free activity starting 900
-   seconds after preparation. If the local file differs, use the actual
-   `Starts` and `Ends` returned in Guided demo; do not alter dates mid-run.
+   The two lab flags enable the terminal scenarios (demonstration 5). Optional:
+   set `SCENARIO_PEAK_DURATION_SECONDS=60` so the peak lasts long enough to
+   watch. Keep the synthetic service credentials private: do not show `.env`
+   values on slides, in chat, logs, screenshots or the recording.
 
-3. Validate the selected file without printing its values:
+3. Validate the file without printing its values:
 
    ```sh
    python scripts/validate-environment.py infra/.env
    ```
 
-   The launcher starts/builds the normal backend services and waits for their
-   health checks; Billing and Notification remain the existing mocks. When
-   enabling the Scenario Lab on an already-running stack, Compose reconciles
-   Identity to the opted-in configuration automatically. The operator action
-   is limited to setting both lab flags and bounded values in `infra/.env`.
-   Do not restart Identity during the presentation or to manufacture a
-   workload result.
-
-4. Start the optional app:
+4. Start (or restart) everything:
 
    ```sh
    bash scripts/run-demo-web.sh
    ```
 
-   This command prepares the backend stack, then starts the presentation app;
-   no separate backend `docker compose up` command is needed. It preserves
-   existing service volumes and never runs `down`. Open the localhost URL
-   printed by the launcher (default:
-   `http://localhost:8085`). If the launcher reports a port collision, choose
-   another unused `DEMO_WEB_PORT` in `infra/.env`; never stop an unknown
-   listener.
+   This builds and starts the backend services, waits for their health checks,
+   then starts the presentation app. It keeps existing data and never runs
+   `down`. Open the printed URL (default `http://localhost:8085`). If the
+   launcher reports a port collision, choose another `DEMO_WEB_PORT`; never
+   stop an unknown listener.
 
-   On the first start with empty volumes, the app pre-fills the initial
-   presentation data from `web/demo-python/seed-data.json`. This includes
-   events titled `[DADOS INICIAIS][SIMULADO][…]` for GESAD/UECE, UECE, and
-   IASC, with registrations, check-ins, and certificates. Start at least 6
-   minutes before presenting: the certificates exist only once their short
-   seeded activities have ended. The data is created once and is never
+5. **Start at least 6 minutes before presenting.** On the first start with
+   empty volumes, the app pre-fills the initial data from
+   `web/demo-python/seed-data.json`: events titled
+   `[DADOS INICIAIS][SIMULADO][…]` for GESAD/UECE, UECE and IASC, with
+   registrations, check-ins and certificates. Certificates appear only after
+   the short seeded activities end. The data is created once and is never
    duplicated by later restarts. See the
    [Demo Web README](../../web/demo-python/README.md#initial-presentation-data).
 
-5. Before presenting, confirm the home page shows the **Who is using EventHub?**
-   simulated sign-in, the banner says
-   **“EventHub prototype · local demonstration · not production”**, both
-   participant contexts are clean, and no secret-bearing terminal or `.env`
-   window is visible. Use a 1366×768 projector viewport. For the waiting-list
-   segment, prepare a second private/incognito browser window (or a separate
-   browser profile) so Participante simulado 01 and 02 retain independent
-   sessions. Do not use two tabs sharing one persona cookie.
+6. Before presenting, confirm:
+   - the home page shows the **Who is using EventHub?** simulated sign-in;
+   - the banner reads **“EventHub prototype · local demonstration · not
+     production”**;
+   - a terminal is open at the repository root, with no `.env` content
+     visible;
+   - the projector viewport is 1366×768.
 
 ### Data and control boundaries
 
-- **LIVE SERVICE** means observed from an existing EventHub service API.
-- **SIMULATED DEPENDENCY** means an existing mock/simulator supplies the
-  behavior; Billing is not a payment provider.
-- **DEMO PRESENTATION** means guidance or synthetic browser state only.
-- Event Management owns event/activity data; Registration owns admission,
-  payment state, capacity transitions, and offers; Attendance owns check-in and
-  certificate records; Reporting owns an asynchronous projection.
-- Preparation and participant commands create real prototype records. The app
-  never deletes or resets existing domain records. Stop the app without deleting
-  volumes.
-- Keep the prepared event/activity IDs and dates available for the presenter,
-  but do not read UUIDs aloud. They are evidence references, not presentation
-  content.
+- Event Management owns events and activities. Registration owns admission,
+  payment state, capacity and the waiting list. Attendance owns check-ins and
+  certificates. Reporting owns an asynchronous, event-fed projection.
+- Every page action calls the existing service APIs. The app never deletes or
+  resets domain records. Stop the app without deleting volumes.
+- The sign-in is simulated: each organizer sees only their own organization's
+  events and reports, and each participant sees only their own registrations.
 
-## Full 15-minute run of show
+## Run of show
 
-The time ranges are targets; service responses and actual timestamps are
-authoritative. The full script includes one minute of Q&A in the final segment.
+The service responses and the actual timestamps are authoritative; the times
+below are targets.
 
-| Elapsed | Page | Persona | Exact click/action or value | Expected observed state | Speaker line | Capability | Evidence |
-|---|---|---|---|---|---|---|---|
-| 0:00–1:00 | `/demo` (Guided demo) | Organizador — GESAD/UECE | Point to the prototype banner and the signed-in persona in the header. | The banner says this is a local demonstration, not production. | “Four executable domain services own business state. Identity, Billing, and Notification are mocks. This Python app is an optional presentation client, not a fifth domain service. GESAD is a UECE research group; the other organizer profiles are separate synthetic tenants.” | Presentation shell | [Context map](../architecture/context-map.md); [validation evidence](./webapp-evidence.md) |
-| 1:00–2:00 | `/demo` | Organizador — GESAD/UECE | On the sign-in page choose **Organizador — GESAD/UECE** (header shows **Signed in as …**), then open **Guided demo**. Check **Confirmo a criação de novos dados simulados; registros anteriores serão mantidos.** Click **Prepare a new run** once. | **Setup progress** appears. The returned event is published; the paid and one-seat free activities show their actual IDs, start/end times, capacities, and schedule source. | “This explicit action asks Event Management to create and publish synthetic records in the GESAD/UECE tenant. It does not create a registration, payment, check-in, or certificate.” | Event Management / LIVE SERVICE; confirmation prompt / DEMO PRESENTATION | Prepared run status and returned dates; no preloaded-data claim |
-| 2:00–4:00 | `/demo`, then paid checkout | Participante simulado 01 | Click **Sign out** in the header and sign in as **Participante simulado 01**, then open **Guided demo**. On the paid activity card click **Open participant checkout**. Before posting, point to **Simulated Billing** and the statement that no card details are collected. Click **Confirm registration** once. | The registration page shows the current service state, commonly `PENDING_PAYMENT` before an approved mock result or `CONFIRMED` if approval has already arrived. Follow the actual value; do not promise a visible pending interval. | “The registration command is real; payment behavior is simulated. The label on the page is ‘Confirm registration’; approval is controlled by the existing Billing mock.” | Registration / LIVE SERVICE; Billing / SIMULATED DEPENDENCY | Registration status; later, **Organizer reports** → **Service request history** (same browser session, kept across sign-out) shows service, method, status, elapsed time, and correlation ID |
-| 4:00–6:00 | Registration status and certificate | Participante simulado 01 | Open **My registrations** and select the paid registration. Wait for the returned `Starts` time. When the service allows it, click **Check in**. If still before the returned `Ends` time, click **Request certificate** once to show the actual early rejection; after the returned end time, click **Request certificate** and then **View issued certificate**. Use the browser **Print** command only after the record is issued. | Attendance returns a check-in record. Certificate issuance is allowed only after the actual eligibility window; the certificate page says it is an Attendance record, not a signed credential. Print changes presentation, not service state. | “Check-in is an explicit Attendance command. The displayed clock is not eligibility proof. The record comes from Attendance; the printable layout is not independent proof of attendance.” | Attendance & Certification / LIVE SERVICE | Registration **Check-in observation**; certificate record and returned issue time |
-| 6:00–8:00 | `/demo`, checkout, registrations | Participante simulado 01 and 02 in separate browser contexts | In the normal window stay signed in as **Participante simulado 01**, open the free activity checkout, click **Confirm registration**. In the separate private/profile window sign in as **Participante simulado 02**, open the same free activity checkout, click **Confirm registration**. Return to Participante simulado 01 and click **Cancel registration**. In the second window, wait for the service status `OFFERED`, then click **Accept offer**. | Participante simulado 01 is confirmed, Participante simulado 02 is waitlisted, cancellation returns `CANCELLED`, Registration returns an offer, and explicit acceptance returns `CONFIRMED`. The event page reports actual availability. | “These are independent browser sessions. Capacity is enforced by Registration; FIFO is established by the service’s offer, not by which browser I clicked first.” | Registration / LIVE SERVICE; no payment step for free activity | Both status pages; event page **Available: 0**; offer expiry if present |
-| 8:00–9:00 | **Organizer reports** | Organizador — GESAD/UECE | In the normal window click **Sign out** and sign in as **Organizador — GESAD/UECE**, open **Organizer reports**, and filter by the actual activity ID if the table has multiple rows. Click **Apply report filters** or **Refresh now**. Point to **projectedAt (UTC)** and the counts. | Reporting returns its current event-fed projection. It can lag; a stale/empty/unavailable projection remains visibly distinct from service state. | “This is an eventually consistent projection, not admission authority, a payment receipt, or notification receipt. There is no direct SQL read.” | Reporting / LIVE SERVICE; polling controls / DEMO PRESENTATION | Report row, `projectedAt (UTC)`, **Service request history**; [known projection gap](./webapp-evidence.md#architecture-and-known-limits) |
-| 9:00–13:00 | **Scenario Lab** | Organizador — GESAD/UECE | Stay signed in as **Organizador — GESAD/UECE**. Run **Última vaga**, then **Pico de inscrições**, then **Envios repetidos** using each **Preparar e executar …** button. After a completed last-seat run, click **Open a seat and observe FIFO promotion**; when the observed offer appears, click **Explicitly accept the observed offer**. If time permits, click **Export this observation**. | Last-seat: 2 participants contend for 1 place; inspect actual confirmed/waitlisted results. Rush: 20 requests for 5 places; inspect actual occupancy and waitlist. Duplicate: 10 same-key submissions should read back as one registration. The board displays `EXPECTED`, `MISMATCH`, or `INCONCLUSIVE` based on service responses/read-back. | “This is a bounded local burst against real Registration using synthetic identities scoped to GESAD/UECE. The other organizer tenants have separate records and cannot run this fixed-tenant lab. The winner is not predicted; the observations do not prove production-scale safety.” | Registration / LIVE SERVICE; synthetic actors / SIMULATED DEPENDENCY; preview and controls / DEMO PRESENTATION | Run board counters, statuses, elapsed time, samples, errors, and read-back; [saved synthetic exports](./webapp-evidence.md#scenario-lab-run-exports) |
-| 13:00–14:00 | **Scenario Lab**, then `/` | Organizer | Point to **Recorded observations**, request history, architecture links, and the evidence report. Do not start another run. | The run record is available for review; a refresh/poll only reads retained observations. | “We can inspect the evidence without replaying it. The services remain the owners of business state.” | App history / DEMO PRESENTATION; API requests / LIVE SERVICE | [Architecture](../architecture/context-map.md); [browser evidence](./webapp-evidence.md) |
-| 14:00–15:00 | No new mutation | Presenter | Deliver the AI-use disclosure and take one or two questions. | No state change. | “Generative AI assisted implementation and documentation; automated checks provide evidence, not proof. This prototype is not production-ready.” | Delivery disclosure | This script; [final delivery guide](./final-delivery.md) |
+### Opening (0:00–1:00)
 
-### Timing adjustments during the full version
+On the sign-in page, point to the banner and the two groups of users.
 
-- With the example settings, the paid activity starts three minutes after
-  preparation and lasts one minute. Use the actual countdown and `Ends` value.
-  If preparation or narration runs long, move the waiting-list segment before
-  attendance and return to the paid activity when its real window opens.
-- The example free activity starts after fifteen minutes. Registration and the
-  one-seat waitlist may be demonstrated before that time; a schedule countdown
-  is never presented as a Registration outcome.
-- Billing can approve too quickly to display `PENDING_PAYMENT`. Say what the
-  page actually returned and continue; never delay a request to manufacture a
-  pending interval.
-- If an expected state or projection is not available within its bounded
-  polling window, show the current/unknown state and use the recovery branches
-  below instead of extending the act with repeated submissions.
+> “Four domain services own the business state. Identity, Billing and
+> Notification are mocks. This Python app is only a presentation client — not
+> a fifth service. GESAD is a UECE research group; the other organizations are
+> separate synthetic tenants.”
 
-## Happy-path version (10–12 minutes)
+### Demonstration 1 — Organizer creates or edits an event (1:00–4:00)
 
-Use the same preflight and one fresh run. Target **11 minutes**:
+1. Choose **Organizador — GESAD/UECE**. The header shows **Signed in as …**,
+   and the page lists **My events** for GESAD/UECE only, including the seeded
+   draft.
+2. Click **New event**. Fill **Title** (for example
+   `Workshop de Arquitetura de Software`), **Description**, **Starts at (UTC)**
+   and **Ends at (UTC)**. Click **Create event**.
+3. On the event page, under **Add an activity**, fill **Title**, the start and
+   end times, **Location**, **Responsible**, **Capacity** (for example `30`) and
+   **Price (R$, 0 = free)**. Click **Add activity**. Add a second activity if
+   time allows.
+4. Edit one field of the event (**Save event**) or of an activity
+   (**Save activity**) to show editing.
+5. Click **Publish event**. The status changes to published, and the event now
+   appears to participants.
 
-1. **0:00–1:00 — Orient:** banner, prototype boundary, and which services are mocks.
-2. **1:00–2:00 — Prepare:** Organizador — GESAD/UECE, consent checkbox, **Prepare a new run**,
-   returned event/activity IDs and actual dates.
-3. **2:00–4:00 — Paid registration:** Participante simulado 01, **Open participant
-   checkout**, **Confirm registration**, actual status, and request-history
-   correlation.
-4. **4:00–6:00 — Attendance/certificate:** use actual start/end, check in,
-   early rejection only if still eligible to demonstrate, then issue and print
-   only after the service allows it.
-5. **6:00–8:00 — Waiting list:** use separate Participante simulado 01 and 02
-   contexts; register, cancel, observe `OFFERED`, explicitly accept.
-6. **8:00–9:00 — Report:** show `projectedAt (UTC)` and actual counts.
-7. **9:00–10:00 — Conclusion:** explain mock boundaries, evidence limits, and
-   AI use.
-8. **10:00–11:00 — Q&A:** choose one or two questions below.
+> “Event Management owns the event and its program. While the event is a draft
+> it is invisible to participants; publishing freezes the admission snapshot
+> that Registration uses to protect capacity.”
 
-This version omits all Scenario Lab workloads, lab exports, and controlled
-failure demonstrations. It does not omit the actual end-time requirement for
-certificate issuance; if the run is not eligible within the time box, state
-that and omit certificate printing rather than changing the schedule.
+Alternative: open the seeded draft event with **Manage**, edit it and publish
+it.
 
-## Short version (4–5 minutes)
+### Demonstration 2 — Organizer reports (4:00–5:30)
 
-Preflight a fresh run immediately before the presentation so the returned
-paid-activity schedule is usable during the short slot. Target **4.5 minutes**:
+1. Click **Reports** in the header. The page lists the organization's
+   **Published events** with, per activity: **Capacity**, **Confirmed**,
+   **Pending payment**, **Waiting list**, **Checked in** and **Certificates**,
+   plus a **Total** row.
+2. Point to the seeded `[DADOS INICIAIS]…` events: they already have
+   registrations, check-ins and certificates.
+3. Point to **Updated at**: the table refreshes by itself.
 
-1. **0:00–0:45 — Orient:** local/not-production banner and the LIVE SERVICE,
-   SIMULATED DEPENDENCY, and DEMO PRESENTATION labels.
-2. **0:45–1:30 — Prepare:** one explicit **Prepare a new run** action; show the
-   returned paid activity and its actual schedule.
-3. **1:30–3:15 — Paid flow:** Participante simulado 01 opens checkout and clicks
-   **Confirm registration** once. State the actual registration outcome, then
-   show the corresponding organizer projection if it is available.
-4. **3:15–4:00 — Evidence/limits:** show `projectedAt (UTC)` and one correlation
-   entry; say that Billing is a mock and Reporting is eventually consistent.
-5. **4:00–4:30 — Close:** AI-use disclosure and questions.
+> “Reports come from Reporting’s event-fed projection. It is eventually
+> consistent: it can lag a few seconds behind Registration and Attendance,
+> which remain the authorities. Each organizer sees only their own
+> organization.”
 
-This is paid registration plus report only. It explicitly omits check-in,
-certificate request/print, waiting-list cancellation/acceptance, Scenario Lab,
-and failure branches. If the registration remains pending or the report has no
-row, show that exact state; do not claim completion or trigger another POST.
+### Demonstration 3 — Participant registers (5:30–8:00)
+
+1. Click **Sign out** and choose **Participante simulado 02**. The participant
+   lands on **Events**, which shows only published events from all
+   organizations.
+2. Open the event created in demonstration 1 (use **Search** if needed). The
+   activities show **Available: N**.
+3. Click **Register** on an activity, then **Confirm registration** once. For a
+   paid activity, point out that Billing is simulated and no card data is
+   collected.
+4. The **Registration** page shows the live status: `PENDING_PAYMENT` first, or
+   `CONFIRMED` if the mock has already approved. Follow the actual value; the
+   page refreshes by itself.
+5. Open **My registrations** to see the list.
+
+> “The registration command is real; only payment is simulated. Repeating the
+> same submission does not create a second registration, because the command
+> carries an idempotency key.”
+
+Optional: sign out, sign back in as the organizer and open **Reports** to see
+the new registration counted.
+
+### Demonstration 4 — Participant gets a certificate (8:00–9:30)
+
+Uses the seeded data: in the seeded GESAD/UECE seminar, Participante simulado
+02 attended the talk **Palestra: Arquitetura de Microsserviços na Prática**
+(checked in) but has not requested a certificate yet.
+
+1. Still as **Participante simulado 02**, open **My registrations** and select
+   that talk. The registration is `CONFIRMED` and its check-in was seeded.
+2. Click **Request certificate**, then **View certificate**.
+3. Show the **Certificate of participation**. Use the browser **Print** command
+   if you want.
+
+> “Attendance issues the certificate only after a check-in and after the
+> activity has ended. The record comes from Attendance; the printable layout
+> is not a signed credential.”
+
+Backup: **Participante simulado 01** already has issued certificates for the
+GESAD/UECE seminar activities; select one and click **View certificate**.
+
+### Demonstration 5 — Registration peak from the terminal (9:30–12:30)
+
+1. Sign out and choose **Organizador — GESAD/UECE**, then open **Reports**.
+   Keep this window visible.
+2. In the terminal, run:
+
+   ```sh
+   bash scripts/cenario.sh pico-inscricoes
+   ```
+
+   The script publishes a fresh event `[CENÁRIO] Pico de inscrições · HH:MM:SS`
+   with a 5-seat activity. Twenty synthetic participants then register over
+   the configured window (default 30 s), and the script prints each outcome:
+
+   ```text
+   [  2.0s] Participante de cenário 05 → CONFIRMED
+   [  2.5s] Participante de cenário 06 → WAITLISTED
+   ```
+
+3. Watch the Reports page refresh: **Confirmed** stops at 5 and **Waiting list**
+   grows to 15.
+4. The script ends with the verdict, for example:
+
+   ```text
+   Resultado: 5 CONFIRMED, 15 WAITLISTED
+   Vagas ocupadas: 5 de 5 — sem overbooking.
+   Veredito: OK
+   ```
+
+> “Registration serializes admission per activity, so a burst never
+> overbooks: the excess goes to the waiting list in arrival order. This is a
+> small local burst — evidence for this run, not a production capacity
+> guarantee.”
+
+Other scenarios, if time allows (each one creates its own fresh event):
+
+| Command | What it shows | Expected verdict |
+|---|---|---|
+| `bash scripts/cenario.sh ultima-vaga` | Two participants submit at the same time for the single seat. | Exactly 1 `CONFIRMED` and 1 `WAITLISTED`. |
+| `bash scripts/cenario.sh envios-repetidos` | One participant submits the same registration 10 times at once (double click). | One registration; all replies are the same `CONFIRMED`. |
+
+To make the peak slower or smaller for this run only:
+
+```sh
+SCENARIO_PEAK_DURATION_SECONDS=60 SCENARIO_PEAK_PARTICIPANTS=10 bash scripts/cenario.sh pico-inscricoes
+```
+
+### Close and Q&A (12:30–14:00)
+
+Deliver the AI-use disclosure below and take one or two questions.
 
 ## Failure and recovery branches
 
 | Situation | What to show / say | Safe recovery |
 |---|---|---|
-| Identity unavailable or a persona is rejected | Show the visible error, service name, and correlation ID. Do not call it an empty event list or a bad password. | Pause mutations. Check `docker compose --env-file infra/.env -f infra/docker-compose.yml ps` and the Identity logs. Restore only the known service; do not alter fixture credentials or stop an unknown stack. Retry only after service recovery and with the same current page/session intent. |
-| Reporting unavailable | Show **Reporting unavailable** and the correlation ID; if a prior projection is shown it is marked stale. | Do not say there are zero registrations or query a database. Restore Reporting and click **Refresh now** once readiness returns. |
-| No visible pending payment | Read out the actual status (`PENDING_PAYMENT` or `CONFIRMED`). Explain that the mock may approve asynchronously or immediately. | Do not click **Confirm registration** again or change Billing configuration to force a delay. |
-| Paid activity has already started or ended | Show returned `Starts`/`Ends`. Explain that an early-certificate rejection applies only before the returned end time. | Skip the early-rejection demonstration if the window has closed. Do not edit the date or issue a certificate before eligibility. |
-| Offer is expired or no longer `OFFERED` | Show the current Registration status; do not promise the offer is still valid. | Use **Refresh now** or reload to observe state. Do not accept an expired offer or replay the command with a new key. Use a new run only after explicit consent; retain the old records. |
-| Report projection has no row yet | Show the empty, stale, or unavailable presentation and explain projection lag. | Wait only for the bounded refresh interval or click **Refresh now**. Do not query SQL or claim a notification receipt. |
-| Preparation partially fails | Read the failed step, service, status/code, and correlation ID. Earlier returned steps remain evidence; later steps are not complete. | If the page says retry is safe, click **Resume preparation**; it reuses the same command key for the uncertain step. Otherwise fix the stated prerequisite before explicitly preparing another run. Never reset existing data. |
-| Browser refresh or session loss | Explain that refresh reads current state and does not create a new command. A lost session can lose in-memory page references while service records remain. | Do not re-register with a new identity/key. Sign in again only as an authorized synthetic persona and read back a known record if its ID is available; otherwise stop and use a newly consented run. |
-| Lab result is partial, unknown, or `INCONCLUSIVE` | Keep the unknown/error counts and raw read-back visible. Say that sent requests may have committed; no rollback is promised. | Click **Stop new requests and drain in-flight work** only for an active run. Review the retained observation/export after the stop response. Do not restart or resubmit merely to get a green verdict. |
-| Scenario Lab controls are disabled | Show the read-only preview and the stated disabled/unavailable reason. | Verify both lab flags and the fixed fixture/limits, then run `bash scripts/run-demo-web.sh` again. Compose reconciles only services whose configuration changed; do not restart or stop unrelated services. |
-| Localhost port is unavailable | Show the launcher's port-collision message. | Choose a free `DEMO_WEB_PORT`, validate `infra/.env`, and rerun the documented launcher. Never kill an unknown process. |
+| A page shows an error with a service name and correlation id | Read the service and the correlation id. Do not call it an empty list. | Check `docker compose -p eventhub ps`, restore only the stated service, then reload the page. |
+| **Reports could not be loaded.** | Reporting is unavailable; this is not "zero registrations". | Restore Reporting; the page recovers on reload. Never query a database directly. |
+| No visible `PENDING_PAYMENT` | The Billing mock may approve immediately. Read out the actual status. | Do not submit again or change Billing to force a delay. |
+| A new registration is missing from Reports | Projection lag. | Wait for the next automatic refresh. |
+| **Request certificate** is rejected | The activity has not ended or there was no check-in. | Use the backup in demonstration 4 (Participante simulado 01). |
+| `cenario.sh` says the app is not running | The presentation stack is down. | Run `bash scripts/run-demo-web.sh` and try again. |
+| `cenario.sh` says the scenarios are disabled | `DEMO_LAB_ENABLED`/`IDENTITY_LAB_ENABLED` are not `true`. | Set both in `infra/.env` and rerun `bash scripts/run-demo-web.sh`. |
+| The peak reports `WAITLIST_DISABLED` errors | The Registration waiting list is off. | Set `WAITLIST_ENABLED=true` and rerun the launcher before presenting. |
+| `Veredito: VERIFICAR` | Show the printed counts and errors as they are. | Do not rerun only to get a green verdict; explain what the counts show. |
+| Port unavailable | Show the launcher's port-collision message. | Choose a free `DEMO_WEB_PORT` and rerun the launcher. Never kill an unknown process. |
 
 Controlled Reporting/Identity outages are validated by the isolated browser
-runner, not by taking down a shared presentation stack. Use the
-[validation evidence](./webapp-evidence.md) for those results; do not create an
-outage on a shared or production system to imitate a failure branch.
+runner (`bash tests/webapp/run.sh`), not by taking down the presentation
+stack. See the [validation evidence](./webapp-evidence.md).
 
 ## Q&A prompts and answers
 
 | Question | Answer |
 |---|---|
-| Why a Python/template presentation app? | It is a small server-rendered client for the existing APIs. It keeps browser logic bounded and does not introduce another domain service or database. |
-| Why separate stores and APIs? | Each domain owns its records and invariants. Services exchange API requests/events rather than reading another service's tables. |
-| Is this a real payment? | No. Billing is a mock that supplies configured outcomes; the UI collects no card details and contacts no payment provider. |
-| Is delivery exactly once? | No. The prototype uses idempotency and event/outbox handling to tolerate retries and duplicates; transport is at-least-once, not exactly once. |
-| Why can the report lag? | Reporting builds an event-fed projection asynchronously. Registration and Attendance remain authoritative for their own state. |
-| Why is capacity frozen? | Registration uses the Event Management admission snapshot and its own serialized transitions to protect capacity. Changing active capacity would weaken the demonstrated invariant. |
-| What does a restart lose? | Browser/session and Scenario Lab observation references are in memory and may be lost. Domain records in their service stores are not deleted by stopping Demo Web. |
-| Does the lab prove production scalability? | No. It is a bounded local burst using synthetic identities and a small sample. It is evidence for that observed run, not an SLA or capacity guarantee. |
-| What does Stop do to in-flight work? | It stops queued/not-yet-sent work and drains/classifies in-flight requests within configured bounds. A request already sent may commit; stop is not rollback. |
-| What is needed for production? | Production identity, payment, and notification integrations; secrets management; deployment hardening; operational monitoring; recovery and scale testing; and independent security/reliability review. |
+| Why a Python/template presentation app? | It is a small server-rendered client for the existing APIs. It adds no domain service or database. |
+| Why separate stores and APIs? | Each domain owns its records and invariants. Services exchange API requests and events rather than reading another service's tables. |
+| Is this a real payment? | No. Billing is a mock with configured outcomes; the UI collects no card details. |
+| Is delivery exactly once? | No. Transport is at-least-once; idempotency keys and the outbox tolerate retries and duplicates. |
+| Why can the report lag? | Reporting builds an event-fed projection asynchronously. Registration and Attendance remain authoritative. |
+| How does the peak avoid overbooking? | Registration serializes admission per activity against the published capacity snapshot; extra requests go to the waiting list. |
+| Does the peak prove production scalability? | No. It is a small local burst with synthetic identities: evidence for that run, not an SLA. |
+| What does a restart lose? | Only the browser sessions held in memory. Domain records stay in the service stores, and the initial data is not recreated. |
+| What is needed for production? | Real identity, payment and notification integrations; secrets management; deployment hardening; monitoring; recovery and scale testing; and independent security review. |
 
 ## AI-use disclosure
 
@@ -243,29 +289,26 @@ the accuracy of claims, and the final demonstration.”
 
 ## Presenter checklist and non-destructive shutdown
 
-- [ ] `infra/.env` is ignored, validated, synthetic, and not visible to the audience.
-- [ ] Billing is `APPROVED`; Registration waitlist is enabled; service health is ready.
-- [ ] Both lab flags and the bounded fixture configuration are enabled for the full version.
-- [ ] The launcher URL opens; the required port is free; projector viewport is 1366×768.
-- [ ] Participante simulado 01 and Participante simulado 02 use separate browser sessions.
-- [ ] Consent is checked before preparing fresh records; no existing data will be reset.
-- [ ] Narration distinguishes live services from mock/provider boundaries.
-- [ ] Actual status, timestamps, reports, and lab read-back are shown without fabricated intervals or winners.
-- [ ] Failure states remain visible; no mutation is retried with a new command identity.
-- [ ] Screens and exports contain no real credentials or participant data.
+- [ ] `infra/.env` is ignored, validated, synthetic and not visible to the audience.
+- [ ] Billing is `APPROVED`; the waiting list and both lab flags are enabled.
+- [ ] The launcher ran at least 6 minutes before presenting; seeded certificates are visible.
+- [ ] The URL opens; the projector viewport is 1366×768.
+- [ ] A terminal is ready at the repository root for `scripts/cenario.sh`.
+- [ ] Actual statuses, timestamps, reports and verdicts are shown as returned.
+- [ ] Failures remain visible; no command is retried just to change the result.
 
-To stop only the optional presentation app while preserving the backend and all
-data, run from the repository root:
+To stop only the presentation app while keeping the backend and all data, run
+from the repository root:
 
 ```sh
-docker compose --env-file infra/.env \
+docker compose -p eventhub --env-file infra/.env \
   -f infra/docker-compose.yml \
   -f infra/docker-compose.demo-web.yml \
   -f infra/docker-compose.demo-lab.yml \
   --profile demo-web stop demo-web
 ```
 
-This does not delete containers' persistent volumes or service records. Do not
-run `down --volumes` as routine cleanup. The existing
+This does not delete persistent volumes or service records. Do not run
+`down --volumes` as routine cleanup. The
 [API/script-based defense guide](./final-delivery.md#demonstration-and-defense-script)
 remains available as an alternative to this browser presentation.
