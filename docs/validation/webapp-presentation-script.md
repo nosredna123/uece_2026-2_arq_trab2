@@ -61,17 +61,13 @@ activity schedule, not promises that a registration or payment has happened.
    python scripts/validate-environment.py infra/.env
    ```
 
-   Required Event Management, Registration, Attendance, Reporting, and Identity
-   services must be healthy. Billing and Notification remain the existing
-   mocks. If Identity was already running with the lab pool disabled, load the
-   opted-in pool once, before the presentation and before any active lab run:
-
-   ```sh
-   bash scripts/run-demo-web.sh --restart-identity-pool
-   ```
-
-   This is an explicit operator action. Do not restart Identity during the
-   presentation or to manufacture a workload result.
+   The launcher starts/builds the normal backend services and waits for their
+   health checks; Billing and Notification remain the existing mocks. When
+   enabling the Scenario Lab on an already-running stack, Compose reconciles
+   Identity to the opted-in configuration automatically. The operator action
+   is limited to setting both lab flags and bounded values in `infra/.env`.
+   Do not restart Identity during the presentation or to manufacture a
+   workload result.
 
 4. Start the optional app:
 
@@ -79,7 +75,10 @@ activity schedule, not promises that a registration or payment has happened.
    bash scripts/run-demo-web.sh
    ```
 
-   Open the localhost URL printed by the launcher (default:
+   This command prepares the backend stack, then starts the presentation app;
+   no separate backend `docker compose up` command is needed. It preserves
+   existing service volumes and never runs `down`. Open the localhost URL
+   printed by the launcher (default:
    `http://localhost:8085`). If the launcher reports a port collision, choose
    another unused `DEMO_WEB_PORT` in `infra/.env`; never stop an unknown
    listener.
@@ -200,7 +199,7 @@ row, show that exact state; do not claim completion or trigger another POST.
 | Preparation partially fails | Read the failed step, service, status/code, and correlation ID. Earlier returned steps remain evidence; later steps are not complete. | If the page says retry is safe, click **Resume preparation**; it reuses the same command key for the uncertain step. Otherwise fix the stated prerequisite before explicitly preparing another run. Never reset existing data. |
 | Browser refresh or session loss | Explain that refresh reads current state and does not create a new command. A lost session can lose in-memory page references while service records remain. | Do not re-register with a new identity/key. Re-select only an authorized synthetic persona and read back a known record if its ID is available; otherwise stop and use a newly consented run. |
 | Lab result is partial, unknown, or `INCONCLUSIVE` | Keep the unknown/error counts and raw read-back visible. Say that sent requests may have committed; no rollback is promised. | Click **Stop new requests and drain in-flight work** only for an active run. Review the retained observation/export after the stop response. Do not restart or resubmit merely to get a green verdict. |
-| Scenario Lab controls are disabled | Show the read-only preview and the stated disabled/unavailable reason. | Verify both lab flags and the fixed fixture/limits before the demo. If an already-running Identity mock did not load the opted-in pool, use the documented `--restart-identity-pool` action once before the talk; never restart it from the browser. |
+| Scenario Lab controls are disabled | Show the read-only preview and the stated disabled/unavailable reason. | Verify both lab flags and the fixed fixture/limits, then run `bash scripts/run-demo-web.sh` again. Compose reconciles only services whose configuration changed; do not restart or stop unrelated services. |
 | Localhost port is unavailable | Show the launcher's port-collision message. | Choose a free `DEMO_WEB_PORT`, validate `infra/.env`, and rerun the documented launcher. Never kill an unknown process. |
 
 Controlled Reporting/Identity outages are validated by the isolated browser

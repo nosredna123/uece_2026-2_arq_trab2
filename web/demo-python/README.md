@@ -14,13 +14,16 @@ replace it from a launch script; use `infra/.env.example` as the safe template.
 bash scripts/run-demo-web.sh
 ```
 
-The launcher uses the `demo-web` Compose profile, binds only to localhost, and
-waits for healthy Event Management, Registration, Attendance, Reporting, and
-Identity services; it also starts the Billing and Notification mocks. It
-checks only the presentation port, so it works when the backend stack is
-already running. A collision on the presentation port is
-reported with guidance to choose another `DEMO_WEB_PORT`. It never calls
-`docker compose down`, deletes volumes, or changes the local environment file.
+The launcher first builds/starts the normal backend Compose stack and waits for
+its health checks, then builds/starts the `demo-web` profile and waits for app
+readiness. It binds the app only to localhost and also starts the Billing and
+Notification mocks. You no longer need to run a separate backend `docker
+compose up` command. Existing services are reconciled in place; the launcher
+never calls `docker compose down`, deletes volumes, or changes the local
+environment file. A presentation-port collision is reported with guidance to
+choose another `DEMO_WEB_PORT`. The safe `infra/.env.example` supplies defaults
+for omitted settings, with values in `infra/.env` taking precedence; the
+launcher does not write either file.
 
 Open the printed localhost URL. The ordinary service journeys use the
 synthetic Identity fixture and existing service APIs; the app has no database,
@@ -70,15 +73,10 @@ is `/run/eventhub/scenario-participants.json`; the corresponding bind mount is
 read-only and is added only by the lab Compose overlay. Registration must have
 waiting-list support enabled before running FIFO scenarios.
 
-When Identity is already running with the pool disabled, the launcher refuses
-to start the lab until the one-time pool reload is explicit:
-
-```sh
-bash scripts/run-demo-web.sh --restart-identity-pool
-```
-
-This recreates only the Identity mock after the operator has opted in through
-both flags. If Identity is not running, Compose starts it with the requested
-configuration. No browser action restarts Identity. Billing and Registration
-scenarios remain those selected by the operator; the web app does not change
-mock state or service configuration.
+When enabling the lab after the backend is already running, update both flags
+and run `bash scripts/run-demo-web.sh` again. Compose detects the changed
+Identity configuration and recreates the affected service; unchanged
+containers are left running, and persistent volumes are preserved. No special
+restart flag or browser action is needed. Billing and Registration scenarios
+remain those selected by the operator; the web app does not change mock state
+or service configuration.

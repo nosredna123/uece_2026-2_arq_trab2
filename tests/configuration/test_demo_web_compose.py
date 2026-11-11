@@ -179,8 +179,8 @@ fi
     env_file.write_text(
         f"DEMO_WEB_PORT={demo_port}\n"
         "DEMO_WEB_ENABLED=true\n"
-        f"IDENTITY_LAB_ENABLED={str(lab_enabled).lower()}\n"
-        f"DEMO_LAB_ENABLED={str(lab_enabled).lower()}\n"
+        + ("IDENTITY_LAB_ENABLED=true\n" if lab_enabled else "")
+        + f"DEMO_LAB_ENABLED={str(lab_enabled).lower()}\n"
         + (
             "DEMO_LAB_FIXTURES_PATH=/run/eventhub/scenario-participants.json\n"
             "DEMO_LAB_MAX_PARTICIPANTS=50\n"
@@ -227,11 +227,23 @@ def test_runner_does_not_run_backend_port_gate_or_delete_volumes_on_existing_sta
     result, environment = _run_demo_web(tmp_path, demo_running=True)
 
     assert result.returncode == 0, result.stderr
-    docker_log = Path(environment["FAKE_DOCKER_LOG"]).read_text(encoding="utf-8")
-    assert "up" in docker_log and "demo-web" in docker_log
-    assert "check-environment.sh" not in docker_log
-    assert "down" not in docker_log
-    assert "--volumes" not in docker_log
+    docker_commands = Path(environment["FAKE_DOCKER_LOG"]).read_text(encoding="utf-8").splitlines()
+    backend_start = next(
+        index
+        for index, command in enumerate(docker_commands)
+        if "-f " + str(ROOT / "infra/docker-compose.yml") in command
+        and "up --build --detach --wait --wait-timeout 600" in command
+    )
+    web_start = next(
+        index for index, command in enumerate(docker_commands) if "up --detach --build --wait" in command
+    )
+    assert backend_start < web_start
+    assert docker_commands[backend_start].count("--env-file") == 2
+    assert str(ROOT / "infra/.env.example") in docker_commands[backend_start]
+    assert str(environment["EVENTHUB_ENV_FILE"]) in docker_commands[backend_start]
+    assert "demo-web" in docker_commands[web_start]
+    assert "check-environment.sh" not in "\n".join(docker_commands)
+    assert all("down" not in command and "--volumes" not in command for command in docker_commands)
     assert not Path(environment["FAKE_SS_LOG"]).exists()
     assert "http://localhost:18085" in result.stdout
 
@@ -258,6 +270,7 @@ def test_runner_preserves_compose_failure_and_never_removes_volumes(tmp_path):
     result, environment = _run_demo_web(tmp_path)
     assert result.returncode == 0, result.stderr
 
+    Path(environment["FAKE_DOCKER_LOG"]).unlink()
     environment["FAKE_DOCKER_UP_STATUS"] = "23"
     failed = subprocess.run(
         ["bash", str(RUNNER)],
@@ -269,9 +282,10 @@ def test_runner_preserves_compose_failure_and_never_removes_volumes(tmp_path):
     )
 
     assert failed.returncode == 23
-    docker_log = Path(environment["FAKE_DOCKER_LOG"]).read_text(encoding="utf-8")
-    assert "down" not in docker_log
-    assert "--volumes" not in docker_log
+    docker_commands = Path(environment["FAKE_DOCKER_LOG"]).read_text(encoding="utf-8").splitlines()
+    assert any("up --build --detach --wait --wait-timeout 600" in command for command in docker_commands)
+    assert not any("up --detach --build --wait" in command for command in docker_commands)
+    assert all("down" not in command and "--volumes" not in command for command in docker_commands)
 
 
 def test_runner_requires_existing_env_file_without_creating_or_overwriting_it(tmp_path):
@@ -295,29 +309,25 @@ def test_runner_requires_existing_env_file_without_creating_or_overwriting_it(tm
     assert not Path(environment["FAKE_DOCKER_LOG"]).exists()
 
 
-def test_runner_requires_explicit_identity_restart_when_enabling_lab_pool(tmp_path):
+def test_runner_reconciles_running_identity_when_enabling_lab_pool_without_flags(tmp_path):
     result, environment = _run_demo_web(
         tmp_path,
         identity_running=True,
         lab_enabled=True,
     )
 
-    assert result.returncode != 0
-    assert "--restart-identity-pool" in result.stderr
-    assert " up " not in f" {Path(environment['FAKE_DOCKER_LOG']).read_text()} "
-
-    restarted, environment = _run_demo_web(
-        tmp_path,
-        args=("--restart-identity-pool",),
-        identity_running=True,
-        lab_enabled=True,
+    assert result.returncode == 0, result.stderr
+    docker_commands = Path(environment["FAKE_DOCKER_LOG"]).read_text(encoding="utf-8").splitlines()
+    backend_start = next(
+        command
+        for command in docker_commands
+        if "up --build --detach --wait --wait-timeout 600" in command
     )
-
-    assert restarted.returncode == 0, restarted.stderr
-    docker_log = Path(environment["FAKE_DOCKER_LOG"]).read_text(encoding="utf-8")
-    assert "--force-recreate" in docker_log
-    assert "identity-mock" in docker_log
-    assert "demo-web" in docker_log
+    web_start = next(command for command in docker_commands if "up --detach --build --wait" in command)
+    assert "identity-mock" not in backend_start
+    assert "--force-recreate" not in "\n".join(docker_commands)
+    assert "demo-web" in web_start
+    assert "inspect --format" not in "\n".join(docker_commands)
 
 
 def test_test_runner_is_separate_bounded_and_never_takes_down_stack(tmp_path):

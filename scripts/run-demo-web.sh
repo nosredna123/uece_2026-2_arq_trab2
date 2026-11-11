@@ -4,7 +4,7 @@ set -Eeuo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
 ENV_FILE="${EVENTHUB_ENV_FILE:-$ROOT/infra/.env}"
-restart_identity_pool=false
+DEFAULT_ENV_FILE="$ROOT/infra/.env.example"
 
 fail() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -19,20 +19,14 @@ read_env_value() {
     printf '%s\n' "$environment_value"
     return
   fi
-  awk -F= -v key="$key" '$1 == key { value = substr($0, index($0, "=") + 1) } END { print value }' "$ENV_FILE"
+  if grep -q "^${key}=" "$ENV_FILE"; then
+    awk -F= -v key="$key" '$1 == key { value = substr($0, index($0, "=") + 1) } END { print value }' "$ENV_FILE"
+  else
+    awk -F= -v key="$key" '$1 == key { value = substr($0, index($0, "=") + 1) } END { print value }' "$DEFAULT_ENV_FILE"
+  fi
 }
 
-while (($#)); do
-  case "$1" in
-    --restart-identity-pool)
-      restart_identity_pool=true
-      ;;
-    *)
-      fail "Unknown option '$1'. Only --restart-identity-pool is supported."
-      ;;
-  esac
-  shift
-done
+[[ $# -eq 0 ]] || fail "This launcher takes no options; update infra/.env and run it again."
 
 [[ -f "$ENV_FILE" ]] || fail "Missing infra/.env. Copy infra/.env.example and configure local synthetic values; this script never creates or overwrites it."
 command -v docker >/dev/null 2>&1 || fail "Docker CLI is required."
@@ -54,9 +48,16 @@ port_number=$((10#$web_port))
 
 COMPOSE=(
   docker compose
+  --env-file "$DEFAULT_ENV_FILE"
   --env-file "$ENV_FILE"
   -f "$ROOT/infra/docker-compose.yml"
   -f "$ROOT/infra/docker-compose.demo-web.yml"
+)
+BASE_COMPOSE=(
+  docker compose
+  --env-file "$DEFAULT_ENV_FILE"
+  --env-file "$ENV_FILE"
+  -f "$ROOT/infra/docker-compose.yml"
 )
 
 service=demo-web
@@ -80,25 +81,6 @@ COMPOSE+=(--profile "$profile")
 
 "${COMPOSE[@]}" config --quiet || fail "Compose configuration is invalid; validate infra/.env and the selected profile."
 
-if [[ "$demo_lab_enabled" == true ]]; then
-  identity_id=$("${COMPOSE[@]}" ps --status running -q identity-mock) \
-    || fail "Could not determine whether the Identity mock is running."
-  if [[ -n "$identity_id" ]]; then
-    identity_environment="$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$identity_id")" \
-      || fail "Could not inspect the running Identity mock configuration."
-    if [[ "$identity_environment" != *$'IDENTITY_LAB_ENABLED=true'* ]]; then
-      if [[ "$restart_identity_pool" != true ]]; then
-        fail "The running Identity mock has not loaded the scenario pool. After enabling both lab flags, rerun with --restart-identity-pool once; the browser never restarts Identity."
-      fi
-      printf 'Explicitly restarting Identity once to load the opted-in scenario pool.\n'
-      "${COMPOSE[@]}" up --detach --force-recreate --wait --wait-timeout 120 identity-mock \
-        || fail "Identity mock could not be restarted with the opted-in scenario pool."
-    fi
-  fi
-elif [[ "$restart_identity_pool" == true ]]; then
-  fail "--restart-identity-pool is only valid when both lab flags are true."
-fi
-
 running_id=$("${COMPOSE[@]}" ps --status running -q "$service") \
   || fail "Could not determine whether the presentation app is already running."
 if [[ -z "$running_id" ]]; then
@@ -116,7 +98,16 @@ if [[ -z "$running_id" ]]; then
   [[ -z "$listener" ]] || fail "Localhost port $port_number is already used by an unrelated process; choose another DEMO_WEB_PORT."
 fi
 
-printf 'Starting the presentation app with existing EventHub services; backend port readiness checks are not rerun.\n'
+printf 'Building and starting the EventHub services; Compose will recreate only services whose configuration changed. Existing volumes are preserved.\n'
+if "${BASE_COMPOSE[@]}" up --build --detach --wait --wait-timeout 600; then
+  :
+else
+  status=$?
+  printf 'ERROR: could not prepare the EventHub services. Check the Compose output and configured ports.\n' >&2
+  exit "$status"
+fi
+
+printf 'Starting the presentation app.\n'
 if "${COMPOSE[@]}" up --detach --build --wait --wait-timeout 240 "$service"; then
   :
 else

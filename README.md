@@ -160,12 +160,14 @@ bash scripts/test-demo-web.sh
 bash tests/webapp/run.sh
 ```
 
-The launcher binds the app to localhost, waits for required service health,
-keeps existing backend ports and volumes intact, and never creates or
-overwrites `infra/.env`. See
-[the presentation setup guide](web/demo-python/README.md) for the optional
-Scenario Lab fixture pool, including the explicit Identity restart required
-when enabling it on an already-running stack.
+The launcher builds/starts the backend stack, waits for its health checks, then
+starts the app on localhost. It keeps existing service data and volumes,
+uses the example file for omitted settings with your `infra/.env` taking
+precedence, never creates or overwrites `infra/.env`, and does not require a
+separate backend startup command. Re-run the same script after changing
+settings; Compose recreates only services whose configuration changed. See
+[the presentation setup guide](web/demo-python/README.md) for optional
+Scenario Lab settings.
 
 The browser runner uses `infra/.env.example` plus bounded synthetic settings
 in a uniquely named Compose project. It publishes no host ports, uses fresh
