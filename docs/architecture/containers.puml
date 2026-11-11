@@ -9,6 +9,7 @@ skinparam monochrome true
 actor Participant
 actor Organizer
 actor "Global administrator" as GlobalAdmin
+actor "Demo presenter\n(synthetic personas)" as DemoPresenter
 
 rectangle "EventHub local Docker Compose runtime" {
   component "Identity & Access\nmock" as Identity <<mock>>
@@ -18,6 +19,7 @@ rectangle "EventHub local Docker Compose runtime" {
   component "Notification\nmock" as Notification <<mock>>
   component "Attendance & Certification\nPython / FastAPI" as Attendance <<executable>>
   component "Reporting\nPython / FastAPI" as Reporting <<executable>>
+  component "Demo Web\nPython 3.12 / FastAPI\noptional presentation adapter" as DemoWeb <<presentation>>
 
   queue "RabbitMQ" as RabbitMQ
 
@@ -36,6 +38,12 @@ Organizer --> Events : manage own events and activities
 Organizer --> Reporting : own-organization reports
 GlobalAdmin --> Events : cross-organization event operations
 GlobalAdmin --> Reporting : cross-organization reports
+DemoPresenter --> DemoWeb : server-rendered browser UI
+
+DemoWeb --> Events : HTTP API\ncatalog / preparation
+DemoWeb --> Registration : HTTP API\nregistration commands / queries
+DemoWeb --> Attendance : HTTP API\ncheck-in / certificates
+DemoWeb --> Reporting : HTTP API\norganization reports
 
 Events --> Identity : validate identity/scope
 Registration --> Identity : validate identity/scope
@@ -67,9 +75,15 @@ Exchanges, routing keys, schemas and quarantine topology are defined in
 the AsyncAPI contract and ADR-004. Retry delays are validated configuration.
 end note
 
+note bottom of DemoWeb
+Optional presentation-only adapter. Uses server-side synthetic persona fixtures;
+owns no domain state and has no database or broker access.
+end note
+
 legend right
 |= Stereotype |= Prototype status |
 | <<executable>> | Implemented domain service |
 | <<mock>> | Contract-backed integration fake; not a domain service |
+| <<presentation>> | Optional browser adapter; not a domain service |
 endlegend
 @enduml

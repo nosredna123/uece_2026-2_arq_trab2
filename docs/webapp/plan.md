@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Implementation in progress; T045-T062 are complete.
+**Status:** Implementation in progress; T045-T078 are complete.
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T068 are complete; T069-T080 remain unimplemented. Tests belong before the
+T045-T078 are complete; T079-T080 remain. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -579,7 +579,7 @@ fail-fast, and does not leave a browser helper running.
 applicable; especially REQ-017.
 
 - [x] T077 [Plan:6.2] Create `tests/webapp/conftest.py`, `test_paid_journey.py`, `test_waitlist_journey.py`, `test_failures_and_isolation.py`, and `run.sh`; use Python Playwright/Chromium in its pinned test image against real services and isolated data. Include `test_scenario_lab.py` in discovery. Cover refresh/double-submit, different browser contexts/personas, actual certificate/read-back, keyboard badges/forms, JS polling, missing/invalid credentials, and Reporting/Identity failure behavior without weakening backend gates.
-- [ ] T078 [Plan:6.2] Execute the validation matrix below and write `docs/validation/webapp-evidence.md` with commands, image/runtime versions, exit codes, pass/fail/skip counts, timings, viewport checks, sanitized screenshots, test-data scope, known gaps, scenario-run exports, and recovery verification. Update `docs/architecture/containers.puml`, its PNG export, and `context-map.md` to show the presentation adapter without adding new domain ownership; link evidence from `docs/validation/final-delivery.md`.
+- [x] T078 [Plan:6.2] Execute the validation matrix below and write `docs/validation/webapp-evidence.md` with commands, image/runtime versions, exit codes, pass/fail/skip counts, timings, viewport checks, sanitized screenshots, test-data scope, known gaps, scenario-run exports, and recovery verification. Update `docs/architecture/containers.puml`, its PNG export, and `context-map.md` to show the presentation adapter without adding new domain ownership; link evidence from `docs/validation/final-delivery.md`.
 
 **Done when:** all primary journeys pass in an actual browser and backend
 regressions remain green. Missing browser/infra capability is UNVERIFIED, not

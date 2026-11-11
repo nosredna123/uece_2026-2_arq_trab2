@@ -1,6 +1,7 @@
 import http.cookiejar
 import json
 import os
+from pathlib import Path
 import time
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
@@ -14,6 +15,7 @@ import pytest
 
 
 BASE_URL = os.environ.get("SCENARIO_LAB_BASE_URL")
+ARTIFACTS_DIR = Path(os.environ.get("WEBAPP_TEST_ARTIFACTS_DIR", "/tmp/webapp-artifacts"))
 
 
 class ScenarioLabClient:
@@ -73,6 +75,17 @@ class ScenarioLabClient:
             time.sleep(0.25)
         raise AssertionError("Scenario Lab run did not settle within the configured bound.")
 
+    def save_export(self, snapshot, filename):
+        status, exported = self.request(
+            "GET",
+            f"/scenario-lab/runs/{snapshot['id']}/export",
+        )
+        assert status == 200
+        contents = json.dumps(exported, indent=2, sort_keys=True)
+        assert "token" not in contents.lower()
+        ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+        (ARTIFACTS_DIR / filename).write_text(contents + "\n", encoding="utf-8")
+
 
 @pytest.mark.skipif(
     not BASE_URL,
@@ -119,6 +132,7 @@ def test_real_scenario_lab_readback_replay_and_fifo_continuation():
     assert accepted_status == 200
     assert accepted["fifo"]["acceptedRegistrationId"] == expected_offer
     assert accepted["fifo"]["verdict"] == "EXPECTED"
+    organizer.save_export(accepted, "scenario-last-seat.json")
 
     rush = organizer.start_and_wait("registration-rush")
     assert rush["state"] == "COMPLETED"
@@ -127,6 +141,7 @@ def test_real_scenario_lab_readback_replay_and_fifo_continuation():
     assert rush["readback"]["statuses"].count("CONFIRMED") == 5
     assert rush["readback"]["statuses"].count("WAITLISTED") == 15
     assert rush["verdict"] == "EXPECTED"
+    organizer.save_export(rush, "scenario-registration-rush.json")
 
     duplicate = organizer.start_and_wait("duplicate-submission")
     returned_ids = {
@@ -138,3 +153,4 @@ def test_real_scenario_lab_readback_replay_and_fifo_continuation():
     assert len(returned_ids) == 1
     assert duplicate["readback"]["registrationCount"] == 1
     assert duplicate["verdict"] == "EXPECTED"
+    organizer.save_export(duplicate, "scenario-duplicate-submission.json")

@@ -1,0 +1,231 @@
+{
+  "exportedAt": "2026-11-11T10:27:14.920463+00:00",
+  "run": {
+    "activityId": "0b725032-9c1c-4dda-b510-a3a819dcfe78",
+    "capacity": 1,
+    "createdAt": "2026-11-11T10:27:14.620881+00:00",
+    "elapsedMs": 300,
+    "errors": [],
+    "eventId": "a2c30732-08d9-49cd-b499-acbb287ad406",
+    "fifo": {
+      "acceptedRegistrationId": null,
+      "expectedRegistrationId": null,
+      "offeredRegistrationId": null,
+      "verdict": "NOT_RUN"
+    },
+    "id": "8661fdc1-900d-4c15-ba6a-c28fb1e48b5b",
+    "observations": [
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 33,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 42,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 43,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 44,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 43,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "65f1c2b0-d9d5-4c6c-8a94-472bb1e96444",
+        "errorCode": null,
+        "latencyMs": 43,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      }
+    ],
+    "participantCount": 1,
+    "preset": "duplicate-submission",
+    "readback": {
+      "availability": {
+        "available": 0,
+        "capacity": 1,
+        "occupied": 1
+      },
+      "observedAt": "2026-11-11T10:27:14.718884+00:00",
+      "registrationCount": 1,
+      "sampleErrors": 0,
+      "statuses": [
+        "CONFIRMED"
+      ]
+    },
+    "sampleBudget": 2,
+    "sampleRequests": 2,
+    "state": "COMPLETED",
+    "timeline": [
+      {
+        "at": "2026-11-11T10:27:14.693850+00:00",
+        "errorCode": null,
+        "latencyMs": 33,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.702483+00:00",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.702740+00:00",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.703043+00:00",
+        "errorCode": null,
+        "latencyMs": 42,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.703421+00:00",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.705088+00:00",
+        "errorCode": null,
+        "latencyMs": 43,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.705402+00:00",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.706626+00:00",
+        "errorCode": null,
+        "latencyMs": 43,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.706909+00:00",
+        "errorCode": null,
+        "latencyMs": 44,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.707765+00:00",
+        "errorCode": null,
+        "latencyMs": 43,
+        "participant": "Participant 01",
+        "registrationId": "dea12540-6411-4fc2-b0c5-87a8c0f8ae2b",
+        "state": "success",
+        "status": "CONFIRMED"
+      }
+    ],
+    "title": "Double-click storm",
+    "verdict": "EXPECTED",
+    "workload": {
+      "completedCount": 10,
+      "dispatchCount": 10,
+      "errors": 0,
+      "peakInFlight": 10,
+      "throughputPerSecond": 33.38,
+      "unknown": 0
+    }
+  },
+  "schemaVersion": 1
+}

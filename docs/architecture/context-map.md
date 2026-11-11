@@ -7,7 +7,8 @@
 EventHub evaluates seven candidate service boundaries. The runnable prototype
 contains four domain services and three explicitly identified integration
 mocks. A capability is not split into a service per requirement, and the mocks
-do not represent production domain-service implementations.
+do not represent production domain-service implementations. An opt-in Python
+presentation adapter provides a browser client without adding domain ownership.
 
 ## Context and dependency graph
 
@@ -18,6 +19,7 @@ flowchart LR
   GlobalAdmin[Global administrator]
 
   subgraph Runtime["Local Docker Compose runtime"]
+    DemoWeb["Demo Web<br/>Python / FastAPI<br/>optional presentation adapter"]
     Identity["Identity & Access<br/>mock"]
     EventManagement["Event Management<br/>Java / Spring Boot"]
     Registration["Registration<br/>Java / Spring Boot"]
@@ -32,10 +34,17 @@ flowchart LR
   Participant -->|"public published catalog"| EventManagement
   Participant -->|"register, status, cancel"| Registration
   Participant -->|"eligible check-in / certificate APIs"| Attendance
+  Participant -->|"optional demo browser"| DemoWeb
   Organizer -->|"manage own events / query own reports"| EventManagement
   Organizer -->|"authorized reporting API"| Reporting
+  Organizer -->|"optional demo browser"| DemoWeb
   GlobalAdmin -->|"cross-organization event and report operations"| EventManagement
   GlobalAdmin -->|"cross-organization reporting API"| Reporting
+
+  DemoWeb -->|"HTTP API: catalog / preparation"| EventManagement
+  DemoWeb -->|"HTTP API: registration commands / queries"| Registration
+  DemoWeb -->|"HTTP API: check-in / certificates"| Attendance
+  DemoWeb -->|"HTTP API: organization reports"| Reporting
 
   EventManagement -->|"validate identity and organization scope"| Identity
   Registration -->|"validate identity and participant scope"| Identity
@@ -64,20 +73,25 @@ flowchart LR
 
   classDef implemented fill:#e7f4e4,stroke:#367a32,color:#1d421a;
   classDef mock fill:#fff0d6,stroke:#a36a00,color:#573900;
+  classDef presentation fill:#e8effa,stroke:#406a9c,color:#1e3550;
   class EventManagement,Registration,Attendance,Reporting implemented;
   class Identity,Billing,Notification mock;
+  class DemoWeb presentation;
 ```
 
 Legend: green nodes are the four executable domain services; amber nodes are
 the three integration mocks. The single PostgreSQL cluster is deployment
 infrastructure only: each implemented service owns its own logical database
 or schema and credentials. Dashed links indicate storage in that cluster, not
-cross-service access.
+cross-service access. Demo Web is an optional presentation-only adapter: it
+uses server-side synthetic persona fixtures and calls service HTTP APIs; it owns
+no domain state and has no database or broker access.
 
 ## Interaction summary
 
 | Producer | Consumer | Interaction | Boundary and purpose |
 |---|---|---|---|
+| Demo Web adapter | Event Management, Registration, Attendance & Certification, Reporting | HTTP APIs | Optional server-rendered presentation client using synthetic personas; no domain state, database, or broker ownership. |
 | Participant / organizer | Event Management | HTTP API | Public published catalog; event/activity management within authorization scope. |
 | Participant | Registration | HTTP API | Request, query, and cancel own registrations; view reservation/offer state. |
 | Registration | Event Management | HTTP: `GET /activities/{activityId}` and `POST /internal/activities/{activityId}/admission` | Validate current activity eligibility and obtain the frozen admission-capacity snapshot under [ADR-002](../adr/ADR-002-data-ownership.md). See the [OpenAPI contracts](../contracts/openapi); no direct database access. |

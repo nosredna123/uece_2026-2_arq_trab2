@@ -88,17 +88,19 @@ results are summarized separately below.
 | Area | Recorded result | Evidence and limits |
 |---|---|---|
 | Host readiness | PASS | [Environment readiness](./environment-readiness.md) records the successful gate and environment metadata without credentials. |
-| Repository Python suite | 185 passed, 6 skipped | The canonical Python 3.12 Docker test image ran pytest with `-x`; the default run skips environment-dependent concurrency/failure/live-flow cases, which have dedicated runners. |
-| Java and service test images | PASS | The Compose test-profile build completed for both Java test targets and the Python service/mock test targets. |
+| Repository Python suite | 406 passed, 10 skipped | The canonical Python 3.12 Docker test image ran pytest with `-x`; the default run skips environment-dependent concurrency/failure/live-flow cases, which have dedicated runners. |
+| Test-profile image build | PASS | The complete Compose test profile built both Java test targets and the Python service/mock test targets; image build is not reported as Java test execution. |
+| Demo Web browser acceptance | 4 passed, 2 skipped; outage probes 2 passed | Real-browser journeys ran against an isolated stack; viewports, redacted screenshots, Scenario Lab exports, versions, timings, recovery, and known gaps are recorded in the [Demo Web evidence](./webapp-evidence.md). |
 | Live paid-registration flow | 1 passed | The dedicated runner completed paid reservation, asynchronous approval, check-in, certificate, and Reporting projection; correlation response/error IDs were asserted. See the [T042 batch report](../../checkpoints/batch-report-T042.yaml). |
 | Domain mutation testing | Event Management 100%; Registration 95%; Attendance 100%; Reporting 97.30% | Scores meet the ≥95% domain-core gate. Boundary/infrastructure exclusions are listed in [mutation-testing scope](./mutation-testing.md). |
 | Load comparison | 840/840 requests succeeded | At 2→40 virtual users, event-query throughput changed from 519.48 to 1,664.10 requests/s (3.20×); registration throughput from 55.65 to 252.57 requests/s (4.54×). Full percentiles and environment are in [load evidence](./evidence.md). |
 | Correlation diagnostics | PASS | HTTP responses/errors, messages, and structured logs carry correlation context; registration diagnostics include `registrationId`. The live flow and service test-profile build passed; see [observability](./observability.md) and the [T042 report](../../checkpoints/batch-report-T042.yaml). |
 | Quality and architecture checks | PASS | Ruff, import-linter, and whitespace checks passed for the implementation changes; service ownership and boundaries are covered by repository tests. |
 
-The six default-suite skips are not counted as passes. They correspond to
-environment-dependent tests with dedicated runners. The load result is one
-local comparative run, not a production-capacity guarantee or latency-SLA
+The ten current default-suite skips are not counted as passes; they are
+environment-dependent tests, with dedicated runners where applicable. The live
+browser evidence separately covers the relevant web journeys. The load result
+is one local comparative run, not a production-capacity guarantee or latency-SLA
 claim. Health checks prove process/dependency readiness only; they do not
 replace domain-flow tests. Mutation scores apply only to the explicitly scoped
 domain cores, not the excluded HTTP, persistence, or messaging adapters.

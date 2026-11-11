@@ -127,6 +127,10 @@ def test_paid_registration_certificate_and_projection(browser_page, browser_erro
     expect(page.locator("#certificate-heading")).to_be_visible()
     certificate_id = page.locator(".certificate-facts dd").nth(0).inner_text()
     expect(page.locator(".certificate-facts dd").nth(1)).to_have_text(registration_id)
+    page.locator(".certificate-activity strong").evaluate(
+        "(element) => { element.textContent = 'Synthetic activity (identifier redacted)'; }"
+    )
+    page.add_style_tag(content=".certificate-facts dd { visibility: hidden !important; }")
     save_screenshot(page, "webapp-certificate-record.png")
     page.reload()
     expect(page.locator(".certificate-facts dd").nth(0)).to_have_text(certificate_id)

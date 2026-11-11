@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 33
+  completed_tasks: 34
   in_progress_tasks: 0
-  pending_tasks: 3
-  completion_percentage: 91.7
+  pending_tasks: 2
+  completion_percentage: 94.4
 
 tasks:
   - task_id: "T045"
@@ -953,8 +953,93 @@ tasks:
       requirements: ["REQ-002", "REQ-004", "REQ-006", "REQ-008", "REQ-010", "REQ-011", "REQ-012", "REQ-014", "REQ-015", "REQ-016", "REQ-017", "REQ-019", "REQ-020", "REQ-021"]
       full_trace: "REQ-002/004/006/008/010/011/012/014/015/016/017/019/020/021 → Plan 6.2 → T077 → isolated Playwright and Scenario Lab journeys"
 
+  - task_id: "T078"
+    description: "Execute validation gates and record evidence."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "docs/validation/webapp-evidence.md"
+          changes: ["Record test commands, versions, timings, viewport checks, sanitized screenshots, test-data scope, known gaps, scenario exports, and outage recovery."]
+        - file: "docs/validation/artifacts/webapp/"
+          changes: ["Add redacted desktop, mobile, and certificate screenshots plus three token-free synthetic Scenario Lab exports."]
+        - file: "tests/webapp/test_paid_journey.py"
+          changes: ["Redact generated certificate/activity identifiers from the evidence screenshot."]
+        - file: "tests/webapp/test_scenario_lab.py"
+          changes: ["Save real completed run exports and assert that serialized output contains no token text."]
+        - file: "docs/architecture/containers.puml"
+          changes: ["Show Demo Web as an optional presentation adapter with HTTP API links and no domain data ownership."]
+        - file: "docs/architecture/services.png"
+          changes: ["Regenerate the PlantUML architecture export."]
+        - file: "docs/architecture/context-map.md"
+          changes: ["Document the optional adapter path and its service API boundaries."]
+        - file: "docs/validation/final-delivery.md"
+          changes: ["Link the detailed browser evidence and update the Python suite/test-profile build results."]
+        - file: "docs/webapp/plan.md"
+          changes: ["Mark T078 complete and update remaining task status."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "EVENTHUB_ENV_FILE=infra/.env.example bash scripts/test-demo-web.sh"
+        passed: 406
+        failed: 0
+        skipped: 10
+        failures: []
+      host_test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 406
+        failed: 0
+        skipped: 10
+        failures: []
+      browser_journeys:
+        command: "bash tests/webapp/run.sh"
+        passed: 4
+        failed: 0
+        skipped: 2
+        failures: []
+        duration: "77.00 seconds"
+      outage_probes:
+        command: "tests/webapp/run.sh controlled Reporting and Identity failure probes"
+        passed: 2
+        failed: 0
+        skipped: 0
+        failures: []
+      test_profile_build:
+        command: "docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      lint:
+        command: "ruff check tests/webapp/test_paid_journey.py tests/webapp/test_scenario_lab.py"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      formatting:
+        command: "ruff format --check tests/webapp/test_paid_journey.py tests/webapp/test_scenario_lab.py"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      import_boundaries:
+        command: ".venv/bin/lint-imports --no-cache"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      architecture_export:
+        command: "PlantUML 1.2025.4 rendered docs/architecture/containers.puml to docs/architecture/services.png"
+        passed: 1
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The browser suite passed at 1366x768 and 390x844 with no horizontal overflow. Separate Reporting and Identity outage probes each passed and service recovery completed. The Scenario Lab exports contain generated IDs and synthetic labels only; no tokens."
+    upstream_trace:
+      plan_item: "6.2"
+      requirements: ["REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006", "REQ-007", "REQ-008", "REQ-009", "REQ-010", "REQ-011", "REQ-012", "REQ-013", "REQ-014", "REQ-015", "REQ-016", "REQ-017", "REQ-019", "REQ-020", "REQ-021"]
+      full_trace: "REQ-002/003/004/005/006/007/008/009/010/011/012/013/014/015/016/017/019/020/021 → Plan 6.2 → T078 → real-browser evidence, sanitized artifacts, and adapter boundary diagrams"
+
 pending_tasks:
-  - {task_id: "T078", description: "Execute validation gates and record evidence", blocked_by: ["T077"], priority: "P1"}
   - {task_id: "T079", description: "Write presentation plot and recovery branches", blocked_by: ["T078"], priority: "P1"}
   - {task_id: "T080", description: "Rehearse and close verified requirements", blocked_by: ["T079"], priority: "P1"}
 

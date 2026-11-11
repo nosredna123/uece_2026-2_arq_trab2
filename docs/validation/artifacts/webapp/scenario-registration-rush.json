@@ -1,0 +1,430 @@
+{
+  "exportedAt": "2026-11-11T10:27:14.619283+00:00",
+  "run": {
+    "activityId": "873a48a9-9e2f-403d-ac62-670158f632b2",
+    "capacity": 5,
+    "createdAt": "2026-11-11T10:27:14.327824+00:00",
+    "elapsedMs": 291,
+    "errors": [],
+    "eventId": "4e9bd372-777a-41a1-a8bd-1b79c5a68e04",
+    "fifo": {
+      "acceptedRegistrationId": null,
+      "expectedRegistrationId": null,
+      "offeredRegistrationId": null,
+      "verdict": "NOT_RUN"
+    },
+    "id": "b8753939-948f-4855-8f1d-f85a2c8ff34c",
+    "observations": [
+      {
+        "correlationId": "4b2de3c6-ccb1-4153-ae5d-595497aa4417",
+        "errorCode": null,
+        "latencyMs": 35,
+        "participant": "Participant 01",
+        "registrationId": "05967a40-36ea-4a68-84ad-0e08d452b36d",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "7569620a-0dbf-423c-b152-853ac51d3b37",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 02",
+        "registrationId": "1c90c21e-12ae-4624-8186-eca46c3b535e",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "a8ee5fd2-a044-445a-a11f-b0d9cd9a92a1",
+        "errorCode": null,
+        "latencyMs": 55,
+        "participant": "Participant 03",
+        "registrationId": "2bdf3f22-3b20-43f4-9ee0-d11c8c888481",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "48b30d75-7365-4696-93cc-46d749d462c1",
+        "errorCode": null,
+        "latencyMs": 110,
+        "participant": "Participant 04",
+        "registrationId": "a42b13a7-9710-4e63-8fa0-cd2189e77f32",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "77b87f80-c0e6-4f49-b762-a02699690db9",
+        "errorCode": null,
+        "latencyMs": 27,
+        "participant": "Participant 05",
+        "registrationId": "64be612f-5e02-4db8-ac56-c96cfbad4da3",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "e98f854a-cca3-4315-b06f-7f1558c94011",
+        "errorCode": null,
+        "latencyMs": 100,
+        "participant": "Participant 06",
+        "registrationId": "bae0bfb4-e5ad-4fed-8cfc-750f97c7dd0e",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "3c06d777-5547-45c1-9073-10db83fa5090",
+        "errorCode": null,
+        "latencyMs": 61,
+        "participant": "Participant 07",
+        "registrationId": "9af72b05-ed1a-48ed-954b-6362ae46cc6e",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "correlationId": "89a1465d-cda1-4746-aef1-880544ecf53d",
+        "errorCode": null,
+        "latencyMs": 69,
+        "participant": "Participant 08",
+        "registrationId": "181e5a0b-034e-4c28-8329-d2f8c735c6a6",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "f58004ff-2808-4804-a7c8-1228dbc296e0",
+        "errorCode": null,
+        "latencyMs": 88,
+        "participant": "Participant 09",
+        "registrationId": "fd793c22-2caa-4403-a33f-fe68952d5932",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "caaf0017-d6ae-4313-b283-b6b46bcf57c2",
+        "errorCode": null,
+        "latencyMs": 82,
+        "participant": "Participant 10",
+        "registrationId": "ab2a93ec-7618-4600-8446-94d2fa0cbdd6",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "a3ca0597-eb56-4bba-a695-058af84791eb",
+        "errorCode": null,
+        "latencyMs": 47,
+        "participant": "Participant 11",
+        "registrationId": "ddbc77f3-eb6b-40b4-85f2-9e8c40cb99f1",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "03225ce9-adb8-4a27-ab6f-88928ed315ee",
+        "errorCode": null,
+        "latencyMs": 80,
+        "participant": "Participant 12",
+        "registrationId": "8ee77dd6-15a8-40df-a887-9b7c489fa450",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "454c7bfc-3018-444c-8ac2-a3cdf774baa8",
+        "errorCode": null,
+        "latencyMs": 79,
+        "participant": "Participant 13",
+        "registrationId": "0ba5d08b-0acb-494d-8af2-a6a5060b75c9",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "f285aa94-54e3-4f40-85d6-ffbc7a73fde5",
+        "errorCode": null,
+        "latencyMs": 71,
+        "participant": "Participant 14",
+        "registrationId": "a244c58d-3b4d-42c0-b7a6-f1b7ab6727e1",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "2a06f363-f68d-4ad4-9b84-c6df030de47d",
+        "errorCode": null,
+        "latencyMs": 67,
+        "participant": "Participant 15",
+        "registrationId": "7e48127a-2142-4457-ba49-8f0cd9ba3572",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "93ec2daf-42c8-40f7-8d4b-5c0d8aa364c2",
+        "errorCode": null,
+        "latencyMs": 63,
+        "participant": "Participant 16",
+        "registrationId": "898a3112-aa2f-4342-8299-2ea40f4f5e82",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "1ec738a1-5862-41fa-b8c6-2cf82a7456a7",
+        "errorCode": null,
+        "latencyMs": 62,
+        "participant": "Participant 17",
+        "registrationId": "34b6fcc5-dff8-4502-a833-e097c55bebe4",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "8c71add2-09bb-4930-8acf-b6b477b277e3",
+        "errorCode": null,
+        "latencyMs": 57,
+        "participant": "Participant 18",
+        "registrationId": "9a6f7448-9c7b-429a-9c70-35b065040541",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "11fc414a-34d3-42d8-bdd4-a1d84bd6ade1",
+        "errorCode": null,
+        "latencyMs": 54,
+        "participant": "Participant 19",
+        "registrationId": "7f5d9bde-f52d-4084-af23-a7a93d8e2f21",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "correlationId": "429236b7-2c41-47b1-a6da-955b53e9b3f8",
+        "errorCode": null,
+        "latencyMs": 48,
+        "participant": "Participant 20",
+        "registrationId": "a453a462-485d-45c0-b834-865277697ed1",
+        "state": "success",
+        "status": "WAITLISTED"
+      }
+    ],
+    "participantCount": 20,
+    "preset": "registration-rush",
+    "readback": {
+      "availability": {
+        "available": 0,
+        "capacity": 5,
+        "occupied": 5
+      },
+      "observedAt": "2026-11-11T10:27:14.573289+00:00",
+      "registrationCount": 20,
+      "sampleErrors": 0,
+      "statuses": [
+        "CONFIRMED",
+        "WAITLISTED",
+        "CONFIRMED",
+        "CONFIRMED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "CONFIRMED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "CONFIRMED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "WAITLISTED",
+        "WAITLISTED"
+      ]
+    },
+    "sampleBudget": 21,
+    "sampleRequests": 21,
+    "state": "COMPLETED",
+    "timeline": [
+      {
+        "at": "2026-11-11T10:27:14.389098+00:00",
+        "errorCode": null,
+        "latencyMs": 27,
+        "participant": "Participant 05",
+        "registrationId": "64be612f-5e02-4db8-ac56-c96cfbad4da3",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.394814+00:00",
+        "errorCode": null,
+        "latencyMs": 35,
+        "participant": "Participant 01",
+        "registrationId": "05967a40-36ea-4a68-84ad-0e08d452b36d",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.400982+00:00",
+        "errorCode": null,
+        "latencyMs": 41,
+        "participant": "Participant 02",
+        "registrationId": "1c90c21e-12ae-4624-8186-eca46c3b535e",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.416018+00:00",
+        "errorCode": null,
+        "latencyMs": 55,
+        "participant": "Participant 03",
+        "registrationId": "2bdf3f22-3b20-43f4-9ee0-d11c8c888481",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.423617+00:00",
+        "errorCode": null,
+        "latencyMs": 61,
+        "participant": "Participant 07",
+        "registrationId": "9af72b05-ed1a-48ed-954b-6362ae46cc6e",
+        "state": "success",
+        "status": "CONFIRMED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.431760+00:00",
+        "errorCode": null,
+        "latencyMs": 69,
+        "participant": "Participant 08",
+        "registrationId": "181e5a0b-034e-4c28-8329-d2f8c735c6a6",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.435947+00:00",
+        "errorCode": null,
+        "latencyMs": 47,
+        "participant": "Participant 11",
+        "registrationId": "ddbc77f3-eb6b-40b4-85f2-9e8c40cb99f1",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.445310+00:00",
+        "errorCode": null,
+        "latencyMs": 82,
+        "participant": "Participant 10",
+        "registrationId": "ab2a93ec-7618-4600-8446-94d2fa0cbdd6",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.451590+00:00",
+        "errorCode": null,
+        "latencyMs": 88,
+        "participant": "Participant 09",
+        "registrationId": "fd793c22-2caa-4403-a33f-fe68952d5932",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.461856+00:00",
+        "errorCode": null,
+        "latencyMs": 100,
+        "participant": "Participant 06",
+        "registrationId": "bae0bfb4-e5ad-4fed-8cfc-750f97c7dd0e",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.471004+00:00",
+        "errorCode": null,
+        "latencyMs": 110,
+        "participant": "Participant 04",
+        "registrationId": "a42b13a7-9710-4e63-8fa0-cd2189e77f32",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.474993+00:00",
+        "errorCode": null,
+        "latencyMs": 80,
+        "participant": "Participant 12",
+        "registrationId": "8ee77dd6-15a8-40df-a887-9b7c489fa450",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.479737+00:00",
+        "errorCode": null,
+        "latencyMs": 79,
+        "participant": "Participant 13",
+        "registrationId": "0ba5d08b-0acb-494d-8af2-a6a5060b75c9",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.487106+00:00",
+        "errorCode": null,
+        "latencyMs": 71,
+        "participant": "Participant 14",
+        "registrationId": "a244c58d-3b4d-42c0-b7a6-f1b7ab6727e1",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.490655+00:00",
+        "errorCode": null,
+        "latencyMs": 67,
+        "participant": "Participant 15",
+        "registrationId": "7e48127a-2142-4457-ba49-8f0cd9ba3572",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.494500+00:00",
+        "errorCode": null,
+        "latencyMs": 63,
+        "participant": "Participant 16",
+        "registrationId": "898a3112-aa2f-4342-8299-2ea40f4f5e82",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.498230+00:00",
+        "errorCode": null,
+        "latencyMs": 62,
+        "participant": "Participant 17",
+        "registrationId": "34b6fcc5-dff8-4502-a833-e097c55bebe4",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.502055+00:00",
+        "errorCode": null,
+        "latencyMs": 57,
+        "participant": "Participant 18",
+        "registrationId": "9a6f7448-9c7b-429a-9c70-35b065040541",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.506117+00:00",
+        "errorCode": null,
+        "latencyMs": 54,
+        "participant": "Participant 19",
+        "registrationId": "7f5d9bde-f52d-4084-af23-a7a93d8e2f21",
+        "state": "success",
+        "status": "WAITLISTED"
+      },
+      {
+        "at": "2026-11-11T10:27:14.509466+00:00",
+        "errorCode": null,
+        "latencyMs": 48,
+        "participant": "Participant 20",
+        "registrationId": "a453a462-485d-45c0-b834-865277697ed1",
+        "state": "success",
+        "status": "WAITLISTED"
+      }
+    ],
+    "title": "Registration rush",
+    "verdict": "EXPECTED",
+    "workload": {
+      "completedCount": 20,
+      "dispatchCount": 20,
+      "errors": 0,
+      "peakInFlight": 10,
+      "throughputPerSecond": 68.63,
+      "unknown": 0
+    }
+  },
+  "schemaVersion": 1
+}
