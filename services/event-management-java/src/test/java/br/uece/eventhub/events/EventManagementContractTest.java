@@ -139,6 +139,46 @@ class EventManagementContractTest {
   }
 
   @Test
+  void organizationListingIncludesDraftsAndIsScopedToTheOrganizer() {
+    UUID draftId =
+        UUID.fromString(createEvent("Draft Event", "org-draft").getBody().path("id").asText());
+    UUID publishedId =
+        UUID.fromString(
+            createEvent("Published Event", "org-published").getBody().path("id").asText());
+    createActivity(draftId, "Draft activity", "2030-01-01T10:00:00Z", "org-draft-activity");
+    createActivity(publishedId, "Published activity", "2030-01-01T10:00:00Z", "org-pub-activity");
+    assertThat(
+            post("/events/" + publishedId + "/publish", null, "org-publish")
+                .getStatusCode()
+                .value())
+        .isEqualTo(200);
+
+    String eventsPath = "/organizations/" + ORGANIZATION_ID + "/events";
+    ResponseEntity<JsonNode> events = get(eventsPath, "organizer-token");
+    assertThat(events.getStatusCode().value()).isEqualTo(200);
+    assertThat(events.getBody()).hasSize(2);
+    assertThat(events.getBody().findValuesAsText("status"))
+        .containsExactlyInAnyOrder("DRAFT", "PUBLISHED");
+    assertThat(get(eventsPath, "admin-token").getBody()).hasSize(2);
+
+    String activitiesPath = eventsPath + "/" + draftId + "/activities";
+    ResponseEntity<JsonNode> activities = get(activitiesPath, "organizer-token");
+    assertThat(activities.getStatusCode().value()).isEqualTo(200);
+    assertThat(activities.getBody().get(0).path("title").asText()).isEqualTo("Draft activity");
+
+    assertThat(get(eventsPath, "other-organizer-token").getStatusCode().value()).isEqualTo(403);
+    assertThat(get(eventsPath, "participant-token").getStatusCode().value()).isEqualTo(403);
+    assertThat(client.getForEntity(eventsPath, JsonNode.class).getStatusCode().value())
+        .isEqualTo(401);
+    assertThat(get(activitiesPath, "other-organizer-token").getStatusCode().value()).isEqualTo(403);
+    String foreignEventPath =
+        "/organizations/" + OTHER_ORGANIZATION_ID + "/events/" + draftId + "/activities";
+    assertThat(get(foreignEventPath, "admin-token").getStatusCode().value()).isEqualTo(404);
+    assertThat(get(eventsPath + "?limit=0", "organizer-token").getStatusCode().value())
+        .isEqualTo(400);
+  }
+
+  @Test
   void creationIsIdempotentAndOrganizationScopeIsEnforced() {
     ResponseEntity<JsonNode> first = createEvent("Scoped Event", "same-key");
     ResponseEntity<JsonNode> replay = createEvent("Scoped Event", "same-key");
@@ -320,6 +360,11 @@ class EventManagementContractTest {
         "/events/" + eventId + "/activities",
         new HttpEntity<>(activityInput(title, startsAt, 10), headers("organizer-token", key)),
         JsonNode.class);
+  }
+
+  private ResponseEntity<JsonNode> get(String path, String token) {
+    return client.exchange(
+        path, HttpMethod.GET, new HttpEntity<>(headers(token, "read")), JsonNode.class);
   }
 
   private ResponseEntity<JsonNode> post(String path, Object body, String key) {

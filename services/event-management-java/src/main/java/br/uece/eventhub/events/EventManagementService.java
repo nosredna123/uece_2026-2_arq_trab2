@@ -49,6 +49,24 @@ public class EventManagementService {
     return activity;
   }
 
+  public List<EventView> listOrganizationEvents(
+      Principal principal, UUID organizationId, int limit, int offset) {
+    EventManagementPolicy.authorizeCreate(principal, organizationId);
+    EventManagementPolicy.validatePage(limit, offset);
+    return repository.listOrganizationEvents(organizationId, limit, offset);
+  }
+
+  public List<ActivityView> listOrganizationActivities(
+      Principal principal, UUID organizationId, UUID eventId, int limit, int offset) {
+    EventManagementPolicy.authorizeCreate(principal, organizationId);
+    EventManagementPolicy.validatePage(limit, offset);
+    repository
+        .findEvent(eventId)
+        .filter(event -> event.organizationId().equals(organizationId))
+        .orElseThrow(() -> notFound("EVENT_NOT_FOUND", "Event was not found."));
+    return repository.listActivities(eventId, limit, offset);
+  }
+
   public CommandResult createEvent(Principal principal, String key, EventInput input) {
     EventManagementPolicy.authorizeCreate(principal, input.organizationId());
     EventManagementPolicy.validateRange(input.startsAt(), input.endsAt(), "Event");

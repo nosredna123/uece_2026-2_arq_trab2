@@ -32,6 +32,26 @@ public class EventController {
     return service.listPublishedEvents(q, limit, offset);
   }
 
+  @GetMapping("/organizations/{organizationId}/events")
+  public List<EventView> listOrganizationEvents(
+      @PathVariable UUID organizationId,
+      @RequestParam(defaultValue = "20") int limit,
+      @RequestParam(defaultValue = "0") int offset,
+      HttpServletRequest request) {
+    return service.listOrganizationEvents(principal(request), organizationId, limit, offset);
+  }
+
+  @GetMapping("/organizations/{organizationId}/events/{eventId}/activities")
+  public List<ActivityView> listOrganizationActivities(
+      @PathVariable UUID organizationId,
+      @PathVariable UUID eventId,
+      @RequestParam(defaultValue = "20") int limit,
+      @RequestParam(defaultValue = "0") int offset,
+      HttpServletRequest request) {
+    return service.listOrganizationActivities(
+        principal(request), organizationId, eventId, limit, offset);
+  }
+
   @PostMapping("/events")
   public ResponseEntity<?> createEvent(
       @Valid @RequestBody EventInput input,

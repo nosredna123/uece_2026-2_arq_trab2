@@ -81,6 +81,21 @@ public class EventRepository {
         offset);
   }
 
+  public List<EventView> listOrganizationEvents(UUID organizationId, int limit, int offset) {
+    return jdbcTemplate.query(
+        """
+        SELECT id, organization_id, title, description, starts_at, ends_at, status, version
+        FROM event
+        WHERE organization_id = ?
+        ORDER BY starts_at, id
+        LIMIT ? OFFSET ?
+        """,
+        EVENT_MAPPER,
+        organizationId,
+        limit,
+        offset);
+  }
+
   public int updateEvent(UUID id, EventInput input) {
     return jdbcTemplate.update(
         """

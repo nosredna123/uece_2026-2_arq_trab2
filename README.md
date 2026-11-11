@@ -224,7 +224,7 @@ effective ID in HTTP responses. See
 
 | Service | Base URL | Main API surface |
 |---|---|---|
-| Event Management | `http://localhost:8081` | Public `GET /events`, `GET /events/{eventId}`, `GET /events/{eventId}/activities`, and `GET /activities/{activityId}`; organizer `POST /events`, `PUT /events/{eventId}`, `POST /events/{eventId}/publish`, `POST /events/{eventId}/cancel`, `POST /events/{eventId}/activities`, and `PUT /activities/{activityId}`. |
+| Event Management | `http://localhost:8081` | Public `GET /events`, `GET /events/{eventId}`, `GET /events/{eventId}/activities`, and `GET /activities/{activityId}`; organizer `GET /organizations/{organizationId}/events` and `GET /organizations/{organizationId}/events/{eventId}/activities` (own organization, any status including drafts), `POST /events`, `PUT /events/{eventId}`, `POST /events/{eventId}/publish`, `POST /events/{eventId}/cancel`, `POST /events/{eventId}/activities`, and `PUT /activities/{activityId}`. |
 | Registration | `http://localhost:8082` | Public `GET /activities/{activityId}/availability`; participant `POST /registrations`, `GET /registrations`, `GET /registrations/{id}`, `POST /registrations/{id}/cancel`, and `POST /registrations/{id}/accept-offer`. |
 | Attendance & Certification | `http://localhost:8083` | Participant `POST /registrations/{id}/check-in`, `POST /registrations/{id}/certificate`, and `GET /registrations/{id}/certificate`. |
 | Reporting | `http://localhost:8084` | Organization-authorized `GET /organizations/{organizationId}/reports`, optionally filtered by `activityId` and paginated with `limit`/`offset`. |

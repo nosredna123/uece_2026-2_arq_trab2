@@ -105,6 +105,47 @@ paths:
           description: Created draft.
           content: {application/json: {schema: {$ref: '#/components/schemas/Event'}}}
         default: {$ref: './common.yaml#/components/responses/Error'}
+  /organizations/{organizationId}/events:
+    parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - {$ref: './common.yaml#/components/parameters/CorrelationId'}
+    get:
+      operationId: listOrganizationEvents
+      description: Organization back-office listing in any status (DRAFT, PUBLISHED, CANCELLED), ordered by start and id. Organizers may read only their own organization (403 otherwise).
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters:
+        - {$ref: './common.yaml#/components/parameters/Limit'}
+        - {$ref: './common.yaml#/components/parameters/Offset'}
+      responses:
+        '200':
+          description: Organization events.
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: '#/components/schemas/Event'}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
+  /organizations/{organizationId}/events/{eventId}/activities:
+    parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema: {type: string, format: uuid}
+      - {$ref: './common.yaml#/components/parameters/EventId'}
+      - {$ref: './common.yaml#/components/parameters/CorrelationId'}
+    get:
+      operationId: listOrganizationActivities
+      description: Program of an organization event in any status, ordered by start and id; 404 when the event belongs to another organization.
+      x-roles: [ORGANIZER, GLOBAL_ADMIN]
+      parameters:
+        - {$ref: './common.yaml#/components/parameters/Limit'}
+        - {$ref: './common.yaml#/components/parameters/Offset'}
+      responses:
+        '200':
+          description: Organization event program.
+          content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Activity'}}}}
+        default: {$ref: './common.yaml#/components/responses/Error'}
   /events/{eventId}:
     parameters:
       - {$ref: './common.yaml#/components/parameters/EventId'}
