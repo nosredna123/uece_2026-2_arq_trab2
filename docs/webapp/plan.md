@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T062 are complete; T063-T080 remain unimplemented. Tests belong before the
+T045-T064 are complete; T065-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -492,8 +492,8 @@ the interface does not claim to list all drafts or store a second domain databas
 
 **Requirements:** REQ-002, REQ-008, REQ-009, REQ-013, REQ-017.
 
-- [ ] T063 [Plan:4.2] Write `web/demo-python/tests/test_attendance.py`: check-in success/replay, unknown read state after reload, projection 409, ineligible 422, certificate-before-end rejection, foreign/missing certificate 404, issue/retrieve identity, escaped printable content, and no POST on print.
-- [ ] T064 [Plan:4.2] Add check-in/issue/retrieve routes to `routes.py`, `templates/certificate.html`, and `static/print.css`; show record ownership/IDs and service-issued timestamps, distinguish live record from visual certificate layout, and render server errors/correlation IDs without inventing eligibility.
+- [x] T063 [Plan:4.2] Write `web/demo-python/tests/test_attendance.py`: check-in success/replay, unknown read state after reload, projection 409, ineligible 422, certificate-before-end rejection, foreign/missing certificate 404, issue/retrieve identity, escaped printable content, and no POST on print.
+- [x] T064 [Plan:4.2] Add check-in/issue/retrieve routes to `routes.py`, `templates/certificate.html`, and `static/print.css`; show record ownership/IDs and service-issued timestamps, distinguish live record from visual certificate layout, and render server errors/correlation IDs without inventing eligibility.
 
 **Done when:** no check-in/certificate success exists without a real response;
 the printable view contains a real issued record and a prototype disclaimer.

@@ -10,7 +10,7 @@ from pydantic import ValidationError
 
 from demo_web.commands import CommandConflictError
 from demo_web.errors import InvalidResponseError, ServiceError, TransportError
-from demo_web.models import ActivityInput, EventInput, Money
+from demo_web.models import ActivityInput, Certificate, CheckIn, EventInput, Money
 from demo_web.presentation import (
     PAGE_METADATA,
     PERSONA_LABELS,
@@ -273,6 +273,7 @@ def _registration_detail_response(
     registration=None,
     retry_action: str | None = None,
     idempotency_key: str | None = None,
+    check_in_observation: CheckIn | None = None,
     action_error: ServiceError | TransportError | InvalidResponseError | None = None,
     message: str | None = None,
     status_code: int = 200,
@@ -295,6 +296,20 @@ def _registration_detail_response(
         if retry_action == "accept-offer"
         else secrets.token_urlsafe(32)
         if has_mutable_status
+        else None
+    )
+    check_in_key = (
+        idempotency_key
+        if retry_action == "check-in"
+        else secrets.token_urlsafe(32)
+        if has_mutable_status and registration.status == "CONFIRMED"
+        else None
+    )
+    certificate_key = (
+        idempotency_key
+        if retry_action == "certificate"
+        else secrets.token_urlsafe(32)
+        if has_mutable_status and registration.status == "CONFIRMED"
         else None
     )
     response = templates.TemplateResponse(
@@ -341,6 +356,20 @@ def _registration_detail_response(
             "can_accept_offer": retry_action == "accept-offer"
             or registration is not None
             and registration.status == "OFFERED",
+            "check_in_key": check_in_key,
+            "certificate_key": certificate_key,
+            "check_in_observation": check_in_observation,
+            "check_in_observed_at": (
+                format_datetime(check_in_observation.checked_in_at)
+                if check_in_observation is not None
+                else None
+            ),
+            "can_check_in": retry_action == "check-in"
+            or registration is not None
+            and registration.status == "CONFIRMED",
+            "can_issue_certificate": retry_action == "certificate"
+            or registration is not None
+            and registration.status == "CONFIRMED",
             "retry_action": retry_action,
             "action_error": service_failure(action_error) if action_error else None,
             "message": message,
@@ -780,11 +809,14 @@ async def registration_detail(request: Request, registration_id: UUID) -> HTMLRe
             else "Registration details are temporarily unavailable."
         )
         return _service_error_page(request, error=error, message=message)
+    with session.lock:
+        check_in_observation = session.attendance_flashes.pop(str(registration_id), None)
     return _registration_detail_response(
         request,
         session=session,
         registration_id=registration_id,
         registration=registration,
+        check_in_observation=check_in_observation,
     )
 
 
@@ -1233,6 +1265,158 @@ async def organizer_publish_event(request: Request, event_id: UUID) -> Response:
     with session.lock:
         draft.event = outcome.result
     return Response(status_code=303, headers={"Location": "/organizer"})
+
+
+async def _attendance_action(
+    request: Request,
+    registration_id: UUID,
+    *,
+    action: str,
+) -> Response:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    identity = _participant_identity(request, session)
+    fields = await _validated_form_fields(
+        request,
+        allowed=frozenset({"csrf_token", "idempotency_key"}),
+    )
+    idempotency_key = _command_key(fields)
+    clients = request.app.state.clients
+
+    async def execute_action(key: str, correlation_id: UUID):
+        if action == "check-in":
+            return await clients.check_in(
+                registration_id,
+                token=identity["token"],
+                idempotency_key=key,
+                session_id=session.id,
+                correlation_id=correlation_id,
+            )
+        return await clients.issue_certificate(
+            registration_id,
+            token=identity["token"],
+            idempotency_key=key,
+            session_id=session.id,
+            correlation_id=correlation_id,
+        )
+
+    try:
+        outcome = await request.app.state.command_ledger.execute(
+            session,
+            idempotency_key=idempotency_key,
+            payload={"action": action, "registrationId": str(registration_id)},
+            operation=execute_action,
+        )
+    except CommandConflictError:
+        raise HTTPException(
+            status_code=409,
+            detail="This key belongs to a different Attendance action.",
+        ) from None
+    except OverflowError:
+        raise HTTPException(
+            status_code=429,
+            detail="This browser session has reached its command limit.",
+        ) from None
+    except (TransportError, InvalidResponseError) as error:
+        if error.outcome_unknown:
+            return _registration_detail_response(
+                request,
+                session=session,
+                registration_id=registration_id,
+                retry_action=action,
+                idempotency_key=idempotency_key,
+                action_error=error,
+                message=(
+                    "The Attendance command result is unknown. Retry the same command; "
+                    "do not infer eligibility or success."
+                ),
+                status_code=503,
+            )
+        return _service_error_page(
+            request,
+            error=error,
+            message="The Attendance action could not be completed.",
+        )
+    except ServiceError as error:
+        return _service_error_page(
+            request,
+            error=error,
+            message="The Attendance action could not be completed.",
+        )
+
+    result = outcome.result
+    if action == "check-in":
+        with session.lock:
+            session.attendance_flashes[str(registration_id)] = result
+            while (
+                len(session.attendance_flashes)
+                > request.app.state.settings.max_commands_per_session
+            ):
+                session.attendance_flashes.popitem(last=False)
+        location = f"/registrations/{registration_id}"
+    else:
+        location = f"/registrations/{registration_id}/certificate"
+    return Response(status_code=303, headers={"Location": location})
+
+
+@router.post("/registrations/{registration_id}/check-in")
+async def check_in_registration(request: Request, registration_id: UUID) -> Response:
+    return await _attendance_action(request, registration_id, action="check-in")
+
+
+@router.post("/registrations/{registration_id}/certificate")
+async def issue_registration_certificate(
+    request: Request,
+    registration_id: UUID,
+) -> Response:
+    return await _attendance_action(request, registration_id, action="certificate")
+
+
+@router.get(
+    "/registrations/{registration_id}/certificate",
+    response_class=HTMLResponse,
+)
+async def registration_certificate(request: Request, registration_id: UUID) -> HTMLResponse:
+    session = _existing_session(request)
+    identity = _participant_identity(request, session)
+    clients = request.app.state.clients
+    try:
+        certificate: Certificate = await clients.get_certificate(
+            registration_id,
+            token=identity["token"],
+            session_id=session.id,
+        )
+    except SERVICE_ERRORS as error:
+        message = (
+            "The requested certificate was not found."
+            if isinstance(error, ServiceError) and error.status_code == 404
+            else "The certificate record is temporarily unavailable."
+        )
+        return _service_error_page(request, error=error, message=message)
+
+    activity = None
+    activity_error = None
+    try:
+        activity = await clients.get_activity(
+            certificate.activity_id,
+            session_id=session.id,
+        )
+    except SERVICE_ERRORS as error:
+        activity_error = service_failure(error)
+    response = templates.TemplateResponse(
+        request=request,
+        name="certificate.html",
+        context={
+            "page": PAGE_METADATA["certificate"],
+            "operational_status": "Attendance returned an issued certificate record.",
+            "certificate": certificate,
+            "issued_at": format_datetime(certificate.issued_at),
+            "activity": activity,
+            "activity_error": activity_error,
+        },
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @router.get("/session")

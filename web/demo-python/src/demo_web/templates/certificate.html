@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/print.css">
+{% endblock %}
+
+{% block content %}
+<section class="content-card certificate-page"
+         data-section="certificate" data-provenance="live_service"
+         aria-labelledby="certificate-heading">
+  {% set kind = "live_service" %}
+  {% include "partials/badge.html" %}
+  <article class="certificate-document">
+    <p class="eyebrow">Attendance record</p>
+    <h2 id="certificate-heading">Certificate of participation</h2>
+    <p>This certificate record was issued by the Attendance service.</p>
+    <p class="prototype-disclaimer">
+      EventHub prototype presentation—not a signed credential or independent proof of attendance.
+    </p>
+    {% if activity %}
+    <p class="certificate-activity">Activity: <strong>{{ activity.title }}</strong></p>
+    {% else %}
+    <p class="certificate-activity">Activity title unavailable; the Attendance record is still shown.</p>
+    {% endif %}
+    <dl class="certificate-facts">
+      <div><dt>Certificate ID</dt><dd>{{ certificate.id }}</dd></div>
+      <div><dt>Registration ID</dt><dd>{{ certificate.registration_id }}</dd></div>
+      <div><dt>Participant ID</dt><dd>{{ certificate.participant_id }}</dd></div>
+      <div><dt>Activity ID</dt><dd>{{ certificate.activity_id }}</dd></div>
+      <div><dt>Issued</dt><dd>{{ issued_at }}</dd></div>
+    </dl>
+  </article>
+  {% if activity_error %}
+  <p class="service-error" role="status">
+    The activity title could not be loaded from Event Management.
+    <strong>{{ activity_error.service }}</strong>
+    {% if activity_error.status_code %}returned HTTP {{ activity_error.status_code }}{% else %}could not be reached{% endif %}.
+    Code <code>{{ activity_error.code }}</code>
+    · correlation <code>{{ activity_error.correlation_id }}</code>
+  </p>
+  {% endif %}
+  <p class="print-guidance">Use the browser Print command to print this presentation. Printing does not change service state.</p>
+  <a class="secondary-button print-control" href="/registrations/{{ certificate.registration_id }}">Back to registration</a>
+</section>
+{% endblock %}

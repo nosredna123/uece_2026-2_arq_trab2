@@ -42,7 +42,18 @@
         <dd>{{ price }}</dd>
       </div>
       {% endif %}
-    </dl>
+      {% if check_in_observation %}
+      <div>
+        <dt>Check-in observation</dt>
+        <dd>Attendance returned a check-in record at {{ check_in_observed_at }}.</dd>
+      </div>
+      {% else %}
+      <div>
+        <dt>Check-in observation</dt>
+        <dd>Read state unknown after reload; Attendance has no check-in read endpoint.</dd>
+      </div>
+      {% endif %}
+      </dl>
     <p class="notice-box refund-note" data-refund-note
        {% if registration.status != "CONFIRMED" or registration.refund_status != "PENDING" %}hidden{% endif %}>
       Refund pending; this registration remains confirmed and still occupies capacity.
@@ -111,9 +122,30 @@
     </button>
   </form>
   {% endif %}
-  {% if not cancel_key and not accept_key %}
+  {% if check_in_key %}
+  <form method="post" action="/registrations/{{ registration_id }}/check-in"
+        data-action-form="check-in" {% if not can_check_in %}hidden{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ check_in_key }}">
+    <button class="primary-button action-button" type="submit">
+      {% if retry_action == "check-in" %}Retry same check-in{% else %}Check in{% endif %}
+    </button>
+  </form>
+  {% endif %}
+  {% if certificate_key %}
+  <form method="post" action="/registrations/{{ registration_id }}/certificate"
+        data-action-form="certificate" {% if not can_issue_certificate %}hidden{% endif %}>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ certificate_key }}">
+    <button class="secondary-button action-button" type="submit">
+      {% if retry_action == "certificate" %}Retry certificate request{% else %}Request certificate{% endif %}
+    </button>
+  </form>
+  {% endif %}
+  {% if not cancel_key and not accept_key and not check_in_key and not certificate_key %}
   <p class="card-copy">No mutation is available for this current state.</p>
   {% endif %}
+  <p><a href="/registrations/{{ registration_id }}/certificate">View issued certificate</a></p>
 </section>
 
 <script src="/static/status.js" defer></script>

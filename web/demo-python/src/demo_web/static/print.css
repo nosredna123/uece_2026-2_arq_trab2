@@ -1,0 +1,68 @@
+.certificate-document {
+  border: 1px solid var(--line);
+  margin: 1.5rem 0;
+  padding: clamp(1.5rem, 5vw, 3rem);
+}
+
+.certificate-document h2 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.1;
+  max-width: 18ch;
+}
+
+.certificate-facts {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  margin-top: 2rem;
+}
+
+.certificate-facts dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.certificate-facts dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .prototype-banner,
+  .site-header,
+  .page-intro,
+  .status-strip,
+  .provenance-guide,
+  .site-footer,
+  .print-guidance,
+  .print-control,
+  .badge {
+    display: none !important;
+  }
+
+  .page-shell,
+  .content-card,
+  .certificate-document {
+    border: 0;
+    box-shadow: none;
+    margin: 0;
+    max-width: none;
+    padding: 0;
+  }
+
+  .certificate-facts {
+    grid-template-columns: 1fr 1fr;
+  }
+}

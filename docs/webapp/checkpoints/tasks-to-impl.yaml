@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 18
+  completed_tasks: 20
   in_progress_tasks: 0
-  pending_tasks: 18
-  completion_percentage: 50.0
+  pending_tasks: 16
+  completion_percentage: 55.6
 
 tasks:
   - task_id: "T045"
@@ -481,10 +481,60 @@ tasks:
       plan_item: "4.1"
       requirements: ["REQ-003", "REQ-010", "REQ-012", "REQ-013"]
       full_trace: "REQ-003/010/012/013 → Phase-4.1 → T062 → organizer event creation and publication"
+  - task_id: "T063"
+    description: "Specify attendance, eligibility, and print behavior."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_attendance.py"
+          changes: ["Cover one-time check-in observations, unknown read state after reload/persona change, idempotent replay, eligibility/projection errors, certificate issuance and retrieval, escaped activity text, and GET-only printing."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 318
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "Attendance acceptance tests use HTTPX MockTransport to verify backend-owned eligibility and certificate outcomes."
+    upstream_trace:
+      plan_item: "4.2"
+      requirements: ["REQ-002", "REQ-008", "REQ-009", "REQ-013", "REQ-017"]
+      full_trace: "REQ-002/008/009/013/017 → Phase-4.2 → T063 → Attendance behavior contract tests"
+  - task_id: "T064"
+    description: "Implement Attendance actions and certificate views."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add participant-gated CSRF/idempotency-protected check-in and certificate issue commands, one-time check-in flash handling, and certificate retrieval from Attendance."]
+        - file: "web/demo-python/src/demo_web/sessions.py"
+          changes: ["Retain bounded one-time check-in observations and clear them when the selected persona changes."]
+        - file: "web/demo-python/src/demo_web/presentation.py"
+          changes: ["Add certificate page metadata describing the Attendance record and presentation boundary."]
+        - file: "web/demo-python/src/demo_web/templates/base.html"
+          changes: ["Add an optional head extension point for the certificate print stylesheet."]
+        - file: "web/demo-python/src/demo_web/templates/registration_detail.html"
+          changes: ["Add check-in and certificate actions with explicit unknown check-in state when no fresh POST observation exists."]
+        - file: "web/demo-python/src/demo_web/templates/certificate.html"
+          changes: ["Render the real issued record IDs and timestamp, optional Event Management activity title, sanitized retrieval errors, and browser-print guidance."]
+        - file: "web/demo-python/src/demo_web/static/print.css"
+          changes: ["Add responsive certificate layout and print-only presentation rules."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+        passed: 124
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Full root suite, Ruff checks, formatting, and packaged runtime tests passed."
+    upstream_trace:
+      plan_item: "4.2"
+      requirements: ["REQ-002", "REQ-008", "REQ-009", "REQ-013", "REQ-017"]
+      full_trace: "REQ-002/008/009/013/017 → Phase-4.2 → T064 → service-owned check-in and certificate presentation"
 
 pending_tasks:
-  - {task_id: "T063", description: "Specify attendance, eligibility, and print tests", blocked_by: ["T060"], priority: "P1"}
-  - {task_id: "T064", description: "Implement Attendance actions and certificate views", blocked_by: ["T063"], priority: "P1"}
   - {task_id: "T065", description: "Specify safe preparation and timing tests", blocked_by: ["T062", "T064"], priority: "P1"}
   - {task_id: "T066", description: "Implement guided API-only preparation", blocked_by: ["T065"], priority: "P1"}
   - {task_id: "T067", description: "Specify report scoping and failure tests", blocked_by: ["T060", "T062"], priority: "P1"}

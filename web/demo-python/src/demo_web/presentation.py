@@ -120,6 +120,16 @@ PAGE_METADATA = {
         ),
         implementation_status="Organizer setup available",
     ),
+    "certificate": PageMetadata(
+        title="Certificate record",
+        eyebrow="Attendance record and printable presentation",
+        heading="Certificate of participation",
+        description=(
+            "The certificate identity and issue time come from Attendance. "
+            "The printable layout is a presentation, not a signed credential."
+        ),
+        implementation_status="Certificate view available",
+    ),
     "error": PageMetadata(
         title="Request not completed",
         eyebrow="The prototype could not complete this page",

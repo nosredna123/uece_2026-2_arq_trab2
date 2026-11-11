@@ -1,0 +1,139 @@
+batch_id: "B10"
+completed_tasks: ["T063", "T064"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T063:
+    - file: "web/demo-python/tests/test_attendance.py"
+      change_type: "created"
+      description: "Test check-in command replay and uncertainty, projection/eligibility failures, certificate timing and ownership, issued-record retrieval, safe activity text, and print without mutation."
+  T064:
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Implement participant-scoped check-in and certificate issue commands with CSRF, retained idempotency, PRG, one-time check-in observation, and actual Attendance retrieval."
+    - file: "web/demo-python/src/demo_web/sessions.py"
+      change_type: "modified"
+      description: "Keep one-time check-in observations session-local and clear them on persona change."
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "modified"
+      description: "Add certificate page metadata."
+    - file: "web/demo-python/src/demo_web/templates/base.html"
+      change_type: "modified"
+      description: "Add an optional head block for page-specific print styles."
+    - file: "web/demo-python/src/demo_web/templates/registration_detail.html"
+      change_type: "modified"
+      description: "Add check-in/certificate forms and an explicit unknown check-in read-state label."
+    - file: "web/demo-python/src/demo_web/templates/certificate.html"
+      change_type: "created"
+      description: "Render certificate and ownership identifiers from the Attendance record, with activity-title fallback and browser-print guidance."
+    - file: "web/demo-python/src/demo_web/static/print.css"
+      change_type: "created"
+      description: "Style the certificate and its print-only layout."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T063-T064 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T063-T064 evidence and update completion counts."
+    - file: "docs/webapp/checkpoints/batch-report-T063-T064.yaml"
+      change_type: "created"
+      description: "Record batch scope, verification, endpoint evidence, and skip explanation."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Attendance success/replay, unknown-read-state, eligibility errors, certificate issue/retrieve, and printable presentation acceptance."
+  - artifact: "docs/contracts/openapi/attendance-certification.yaml"
+    used_for: "Attendance-only check-in and certificate operations, server-owned eligibility, and certificate record identity."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "Preserve service ownership, bounded browser-session state, and presentation-only printing."
+evidence_mapping:
+  T063:
+    - upstream: "docs/webapp/plan.md#Plan-4.2"
+      output: "web/demo-python/tests/test_attendance.py"
+      evidence: "Nine HTTP contract tests verify command replay, unknown read state, persona-change flash clearing, projection and eligibility failures, issue/retrieve identity, missing records, escaping, and GET-only print presentation."
+  T064:
+    - upstream: "docs/contracts/openapi/attendance-certification.yaml"
+      output: "web/demo-python/src/demo_web/routes.py and certificate template"
+      evidence: "MockTransport assertions verify only existing Attendance POST/GET operations are called; the browser never synthesizes eligibility or a certificate, and print styling performs no mutation."
+traceability:
+  - requirement: "REQ-002"
+    plan_item: "4.2"
+    task: "T063-T064"
+    files: ["web/demo-python/tests/test_attendance.py", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-008"
+    plan_item: "4.2"
+    task: "T063-T064"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/certificate.html"]
+    status: "completed"
+  - requirement: "REQ-009"
+    plan_item: "4.2"
+    task: "T063-T064"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/certificate.html"]
+    status: "completed"
+  - requirement: "REQ-013"
+    plan_item: "4.2"
+    task: "T063-T064"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/registration_detail.html"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "4.2"
+    task: "T063-T064"
+    files: ["web/demo-python/tests/test_attendance.py", "web/demo-python/src/demo_web/static/print.css"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six existing integration/concurrency tests were skipped because their external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 318
+    failed: 0
+    skipped: 6
+    failures: []
+  docker_runtime:
+    command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+    passed: 124
+    failed: 0
+    skipped: 0
+    failures: []
+  lint:
+    command: ".venv/bin/python -m ruff check --no-cache and ruff format --check --cache-dir /tmp/ruff-check-cache"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "POST"
+    path: "/registrations/{registration_id}/check-in"
+    status: 303
+    result: "PASS (successful Attendance response redirects to the registration page; replay is deduplicated)"
+  - method: "GET"
+    path: "/registrations/{registration_id}"
+    status: 200
+    result: "PASS (one-time check-in observation is shown, then the read state is explicitly unknown)"
+  - method: "POST"
+    path: "/registrations/{registration_id}/check-in"
+    status: 409
+    result: "PASS (projection readiness failure is surfaced without claiming check-in success)"
+  - method: "POST"
+    path: "/registrations/{registration_id}/check-in"
+    status: 422
+    result: "PASS (backend eligibility rejection is surfaced)"
+  - method: "POST"
+    path: "/registrations/{registration_id}/certificate"
+    status: 422
+    result: "PASS (certificate issuance before activity end remains a backend rejection)"
+  - method: "POST"
+    path: "/registrations/{registration_id}/certificate"
+    status: 303
+    result: "PASS (successful certificate issuance redirects to Attendance retrieval)"
+  - method: "GET"
+    path: "/registrations/{registration_id}/certificate"
+    status: 200
+    result: "PASS (returned Attendance IDs and issue timestamp are rendered; print is GET-only)"
+  - method: "GET"
+    path: "/static/print.css"
+    status: 200
+    result: "PASS (print stylesheet is served and tested)"
