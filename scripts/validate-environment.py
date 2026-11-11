@@ -42,9 +42,6 @@ def validate(path: Path) -> list[str]:
             "DEMO_WEB_HISTORY_LIMIT",
             "DEMO_WEB_POLL_INTERVAL_SECONDS",
             "DEMO_WEB_POLL_TIMEOUT_SECONDS",
-            "DEMO_WEB_PAID_START_DELAY_SECONDS",
-            "DEMO_WEB_ACTIVITY_DURATION_SECONDS",
-            "DEMO_WEB_FREE_START_DELAY_SECONDS",
             "DEMO_WEB_EVENT_BASE_URL",
             "DEMO_WEB_REGISTRATION_BASE_URL",
             "DEMO_WEB_ATTENDANCE_BASE_URL",
@@ -100,12 +97,6 @@ def validate(path: Path) -> list[str]:
             errors.append("DEMO_WEB_POLL_TIMEOUT_SECONDS: must exceed poll interval")
         if int(poll_timeout) > 300:
             errors.append("DEMO_WEB_POLL_TIMEOUT_SECONDS: exceeds 300")
-    paid_start = values.get("DEMO_WEB_PAID_START_DELAY_SECONDS", "")
-    activity_duration = values.get("DEMO_WEB_ACTIVITY_DURATION_SECONDS", "")
-    free_start = values.get("DEMO_WEB_FREE_START_DELAY_SECONDS", "")
-    if paid_start.isdigit() and activity_duration.isdigit() and free_start.isdigit():
-        if int(free_start) <= int(paid_start) + int(activity_duration):
-            errors.append("DEMO_WEB_FREE_START_DELAY_SECONDS: must follow the paid activity")
     demo_bounds = {
         "DEMO_WEB_SESSION_TTL_SECONDS": 86400,
         "DEMO_WEB_MAX_SESSIONS": 500,

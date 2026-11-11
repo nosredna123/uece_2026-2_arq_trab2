@@ -43,7 +43,6 @@ def test_web_enabled_requires_complete_configuration(tmp_path):
         ("DEMO_WEB_PORT=8085", "DEMO_WEB_PORT=8081"),
         ("DEMO_WEB_PORT=8085", "DEMO_WEB_PORT=65536"),
         ("DEMO_WEB_POLL_TIMEOUT_SECONDS=60", "DEMO_WEB_POLL_TIMEOUT_SECONDS=2"),
-        ("DEMO_WEB_FREE_START_DELAY_SECONDS=900", "DEMO_WEB_FREE_START_DELAY_SECONDS=240"),
         (
             "DEMO_WEB_EVENT_BASE_URL=http://event-management:8080",
             "DEMO_WEB_EVENT_BASE_URL=http://attacker.example:8080",

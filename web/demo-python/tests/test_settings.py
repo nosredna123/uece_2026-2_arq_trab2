@@ -36,9 +36,6 @@ def test_requires_every_setting_and_explicit_enabled_true(web_environment):
         ("DEMO_WEB_HISTORY_LIMIT", "101"),
         ("DEMO_WEB_POLL_INTERVAL_SECONDS", "60"),
         ("DEMO_WEB_POLL_TIMEOUT_SECONDS", "2"),
-        ("DEMO_WEB_PAID_START_DELAY_SECONDS", "0"),
-        ("DEMO_WEB_ACTIVITY_DURATION_SECONDS", "0"),
-        ("DEMO_WEB_FREE_START_DELAY_SECONDS", "240"),
         ("DEMO_WEB_PORT", "70000"),
     ],
 )

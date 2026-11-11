@@ -24,9 +24,6 @@ _REQUIRED = (
     "DEMO_WEB_HISTORY_LIMIT",
     "DEMO_WEB_POLL_INTERVAL_SECONDS",
     "DEMO_WEB_POLL_TIMEOUT_SECONDS",
-    "DEMO_WEB_PAID_START_DELAY_SECONDS",
-    "DEMO_WEB_ACTIVITY_DURATION_SECONDS",
-    "DEMO_WEB_FREE_START_DELAY_SECONDS",
     "DEMO_WEB_EVENT_BASE_URL",
     "DEMO_WEB_REGISTRATION_BASE_URL",
     "DEMO_WEB_ATTENDANCE_BASE_URL",
@@ -155,9 +152,6 @@ class Settings:
     history_limit: int
     poll_interval_seconds: int
     poll_timeout_seconds: int
-    paid_start_delay_seconds: int
-    activity_duration_seconds: int
-    free_start_delay_seconds: int
     event_base_url: str
     registration_base_url: str
     attendance_base_url: str
@@ -207,21 +201,6 @@ class Settings:
             raise SettingsError("DEMO_WEB_POLL_TIMEOUT_SECONDS must exceed the poll interval.")
         if self.poll_timeout_seconds > 300:
             raise SettingsError("DEMO_WEB_POLL_TIMEOUT_SECONDS exceeds 300.")
-
-        self.paid_start_delay_seconds = _positive_integer(
-            values, "DEMO_WEB_PAID_START_DELAY_SECONDS"
-        )
-        self.activity_duration_seconds = _positive_integer(
-            values, "DEMO_WEB_ACTIVITY_DURATION_SECONDS"
-        )
-        self.free_start_delay_seconds = _positive_integer(
-            values, "DEMO_WEB_FREE_START_DELAY_SECONDS"
-        )
-        if (
-            self.free_start_delay_seconds
-            <= self.paid_start_delay_seconds + self.activity_duration_seconds
-        ):
-            raise SettingsError("DEMO_WEB_FREE_START_DELAY_SECONDS must follow the paid activity.")
 
         for key, hostname in _SERVICE_URLS.items():
             self._validate_service_origin(key, values[key], hostname)
