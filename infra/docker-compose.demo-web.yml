@@ -1,0 +1,55 @@
+services:
+  demo-web:
+    profiles: [demo-web]
+    build:
+      context: ../web/demo-python
+      target: runtime
+    environment:
+      HTTP_TIMEOUT_SECONDS: ${HTTP_TIMEOUT_SECONDS:?Set HTTP_TIMEOUT_SECONDS in infra/.env}
+      DEMO_WEB_ENABLED: ${DEMO_WEB_ENABLED:?Set DEMO_WEB_ENABLED in infra/.env}
+      DEMO_WEB_SESSION_TTL_SECONDS: ${DEMO_WEB_SESSION_TTL_SECONDS:?Set DEMO_WEB_SESSION_TTL_SECONDS in infra/.env}
+      DEMO_WEB_MAX_SESSIONS: ${DEMO_WEB_MAX_SESSIONS:?Set DEMO_WEB_MAX_SESSIONS in infra/.env}
+      DEMO_WEB_MAX_COMMANDS_PER_SESSION: ${DEMO_WEB_MAX_COMMANDS_PER_SESSION:?Set DEMO_WEB_MAX_COMMANDS_PER_SESSION in infra/.env}
+      DEMO_WEB_HISTORY_LIMIT: ${DEMO_WEB_HISTORY_LIMIT:?Set DEMO_WEB_HISTORY_LIMIT in infra/.env}
+      DEMO_WEB_POLL_INTERVAL_SECONDS: ${DEMO_WEB_POLL_INTERVAL_SECONDS:?Set DEMO_WEB_POLL_INTERVAL_SECONDS in infra/.env}
+      DEMO_WEB_POLL_TIMEOUT_SECONDS: ${DEMO_WEB_POLL_TIMEOUT_SECONDS:?Set DEMO_WEB_POLL_TIMEOUT_SECONDS in infra/.env}
+      DEMO_WEB_PAID_START_DELAY_SECONDS: ${DEMO_WEB_PAID_START_DELAY_SECONDS:?Set DEMO_WEB_PAID_START_DELAY_SECONDS in infra/.env}
+      DEMO_WEB_ACTIVITY_DURATION_SECONDS: ${DEMO_WEB_ACTIVITY_DURATION_SECONDS:?Set DEMO_WEB_ACTIVITY_DURATION_SECONDS in infra/.env}
+      DEMO_WEB_FREE_START_DELAY_SECONDS: ${DEMO_WEB_FREE_START_DELAY_SECONDS:?Set DEMO_WEB_FREE_START_DELAY_SECONDS in infra/.env}
+      DEMO_WEB_EVENT_BASE_URL: ${DEMO_WEB_EVENT_BASE_URL:?Set DEMO_WEB_EVENT_BASE_URL in infra/.env}
+      DEMO_WEB_REGISTRATION_BASE_URL: ${DEMO_WEB_REGISTRATION_BASE_URL:?Set DEMO_WEB_REGISTRATION_BASE_URL in infra/.env}
+      DEMO_WEB_ATTENDANCE_BASE_URL: ${DEMO_WEB_ATTENDANCE_BASE_URL:?Set DEMO_WEB_ATTENDANCE_BASE_URL in infra/.env}
+      DEMO_WEB_REPORTING_BASE_URL: ${DEMO_WEB_REPORTING_BASE_URL:?Set DEMO_WEB_REPORTING_BASE_URL in infra/.env}
+      DEMO_WEB_IDENTITY_FIXTURES_PATH: ${DEMO_WEB_IDENTITY_FIXTURES_PATH:?Set DEMO_WEB_IDENTITY_FIXTURES_PATH in infra/.env}
+      IDENTITY_LAB_ENABLED: ${IDENTITY_LAB_ENABLED:?Set IDENTITY_LAB_ENABLED in infra/.env}
+      DEMO_LAB_ENABLED: ${DEMO_LAB_ENABLED:?Set DEMO_LAB_ENABLED in infra/.env}
+    ports:
+      - "127.0.0.1:${DEMO_WEB_PORT:?Set DEMO_WEB_PORT in infra/.env}:8080"
+    volumes:
+      - ../mocks/identity-access/src/identity_access_mock/fixtures.json:/run/eventhub/identity-fixtures.json:ro
+    depends_on:
+      identity-mock:
+        condition: service_healthy
+      event-management:
+        condition: service_healthy
+      registration:
+        condition: service_healthy
+      attendance:
+        condition: service_healthy
+      reporting:
+        condition: service_healthy
+      billing-mock:
+        condition: service_started
+      notification-mock:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2).read()"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped

@@ -148,6 +148,24 @@ tests are invoked separately. The `down` command preserves persistent data.
 Use `down --volumes` only when intentionally deleting the local prototype's
 PostgreSQL, RabbitMQ, Billing, and Notification data.
 
+### Optional Python presentation app
+
+The browser presentation is an isolated Compose profile and is not included in
+the default backend-only startup. Set `DEMO_WEB_ENABLED=true` in the ignored
+`infra/.env`, then use the container-only launch and test commands:
+
+```sh
+bash scripts/run-demo-web.sh
+bash scripts/test-demo-web.sh
+```
+
+The launcher binds the app to localhost, waits for required service health,
+keeps existing backend ports and volumes intact, and never creates or
+overwrites `infra/.env`. See
+[the presentation setup guide](web/demo-python/README.md) for the optional
+Scenario Lab fixture pool, including the explicit Identity restart required
+when enabling it on an already-running stack.
+
 ### Paid-registration demonstration
 
 There is no preloaded production-like dataset. The repeatable demonstration

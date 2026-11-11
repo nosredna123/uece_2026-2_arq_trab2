@@ -5,6 +5,7 @@ root_packages =
     identity_access_mock
     billing_mock
     notification_mock
+    demo_web
 include_external_packages = True
 exclude_type_checking_imports = True
 
@@ -17,3 +18,4 @@ modules =
     identity_access_mock
     billing_mock
     notification_mock
+    demo_web

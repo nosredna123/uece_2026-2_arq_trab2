@@ -1,0 +1,158 @@
+batch_id: "T075-T076"
+completed_tasks: ["T075", "T076"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T075:
+    - file: "tests/configuration/test_demo_web_compose.py"
+      change_type: "created"
+      description: "Test localhost-only opt-in profile wiring, fixed internal URLs, read-only fixtures, pool isolation, backend-only preservation, existing-stack behavior, port conflicts, error handling, and volume safety."
+  T076:
+    - file: "infra/docker-compose.demo-web.yml"
+      change_type: "created"
+      description: "Add the optional presentation profile with localhost binding, read-only identity fixture, internal service URLs, health waits, and domain mock dependencies."
+    - file: "infra/docker-compose.demo-lab.yml"
+      change_type: "created"
+      description: "Add opt-in lab settings and the fixed read-only Scenario Lab fixture mount."
+    - file: "scripts/run-demo-web.sh"
+      change_type: "created"
+      description: "Add safe app startup with profile validation, web-port collision checks, bounded readiness waits, and explicit Identity pool restart."
+    - file: "scripts/test-demo-web.sh"
+      change_type: "created"
+      description: "Add a separate Docker-only, fail-fast, time-bounded Python suite runner."
+    - file: "infra/Dockerfile.python-tests"
+      change_type: "modified"
+      description: "Install the presentation test extra, separate image build from execution, and bound the default test command."
+    - file: ".github/workflows/ci.yml"
+      change_type: "modified"
+      description: "Run repository-wide Python tests and lint/import checks and build the optional presentation runtime."
+    - file: ".importlinter"
+      change_type: "modified"
+      description: "Include the presentation package in the architectural independence contract."
+    - file: "README.md"
+      change_type: "modified"
+      description: "Document the opt-in presentation profile and container-only launch/test commands."
+    - file: "web/demo-python/README.md"
+      change_type: "created"
+      description: "Document startup prerequisites, bounded testing, and explicit Scenario Lab setup."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Plan 6.1 task scope, localhost/profile boundaries, health waits, bounded testing, and explicit Identity pool reload."
+  - artifact: "infra/.env.example"
+    used_for: "Validate required Compose variables without reading or changing the local environment file."
+  - artifact: "infra/docker-compose.yml"
+    used_for: "Keep backend-only startup unchanged while attaching the optional app to existing services."
+evidence_mapping:
+  T075:
+    - upstream: "docs/webapp/plan.md#Plan-6.1"
+      output: "tests/configuration/test_demo_web_compose.py"
+      evidence: "All 10 Compose and launcher acceptance tests pass, covering the configured isolation and safety behavior."
+  T076:
+    - upstream: "docs/webapp/plan.md#Plan-6.1"
+      output: "infra/docker-compose.demo-web.yml, infra/docker-compose.demo-lab.yml, scripts/run-demo-web.sh, and scripts/test-demo-web.sh"
+      evidence: "Both profile configurations validate with the safe template plus explicit synthetic lab values; runtime and test images build; the Docker test runner completes the full fail-fast suite."
+traceability:
+  - requirement: "REQ-001"
+    plan_item: "6.1"
+    task: "T075-T076"
+    files: ["infra/docker-compose.demo-web.yml", "web/demo-python/README.md"]
+    status: "completed"
+  - requirement: "REQ-015"
+    plan_item: "6.1"
+    task: "T075-T076"
+    files: ["scripts/run-demo-web.sh", "tests/configuration/test_demo_web_compose.py"]
+    status: "completed"
+  - requirement: "REQ-016"
+    plan_item: "6.1"
+    task: "T075-T076"
+    files: ["scripts/run-demo-web.sh", "scripts/test-demo-web.sh"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "6.1"
+    task: "T075-T076"
+    files: [".github/workflows/ci.yml", ".importlinter", "infra/Dockerfile.python-tests"]
+    status: "completed"
+  - requirement: "REQ-021"
+    plan_item: "6.1"
+    task: "T075-T076"
+    files: ["infra/docker-compose.demo-lab.yml", "scripts/run-demo-web.sh"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Seven tests remain intentionally skipped: six infrastructure-dependent tests and the opt-in real Scenario Lab test, which requires SCENARIO_LAB_BASE_URL."
+  - severity: "LOW"
+    message: "The live presentation launcher was not run against the local backend stack to avoid starting or reconfiguring user services and volumes; shell behavior was tested with fake Docker, and Compose profiles and images were validated."
+  - severity: "LOW"
+    message: "Docker Compose used its Docker-driver fallback because buildx is unavailable; both requested images built successfully."
+  - severity: "LOW"
+    message: "The test run emitted one upstream Starlette/AnyIO deprecation warning; no test failed."
+test_results:
+  full_suite_host:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 406
+    failed: 0
+    skipped: 7
+    failures: []
+  full_suite_docker:
+    command: "EVENTHUB_ENV_FILE=infra/.env.example bash scripts/test-demo-web.sh"
+    passed: 406
+    failed: 0
+    skipped: 7
+    failures: []
+  focused_compose_acceptance:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib tests/configuration/test_demo_web_compose.py"
+    passed: 10
+    failed: 0
+    skipped: 0
+    failures: []
+  lint:
+    command: ".venv/bin/ruff check --no-cache tests/configuration/test_demo_web_compose.py"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  formatting:
+    command: ".venv/bin/ruff format --check --no-cache tests/configuration/test_demo_web_compose.py"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  import_boundaries:
+    command: ".venv/bin/lint-imports --no-cache"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  compose_profiles:
+    command: "docker compose config --quiet for default, demo-web, demo-lab, and test profiles"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  image_builds:
+    command: "docker compose build demo-web python-suite-test"
+    passed: 2
+    failed: 0
+    skipped: 0
+    failures: []
+  shell_syntax:
+    command: "bash -n scripts/run-demo-web.sh scripts/test-demo-web.sh"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  ci_yaml:
+    command: ".venv/bin/python -c 'import yaml; yaml.safe_load(open(\".github/workflows/ci.yml\"))'"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+  whitespace:
+    command: "git diff --check"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes: []

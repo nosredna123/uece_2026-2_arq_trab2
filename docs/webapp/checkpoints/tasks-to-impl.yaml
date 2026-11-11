@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 30
+  completed_tasks: 32
   in_progress_tasks: 0
-  pending_tasks: 6
-  completion_percentage: 83.3
+  pending_tasks: 4
+  completion_percentage: 88.9
 
 tasks:
   - task_id: "T045"
@@ -842,9 +842,71 @@ tasks:
       requirements: ["REQ-002", "REQ-017", "REQ-019", "REQ-020", "REQ-021"]
       full_trace: "REQ-002/017/019/020/021 → Phase-5.5 → T074 → server-authoritative, bounded-polling Scenario Lab presentation"
 
+  - task_id: "T075"
+    description: "Specify Compose and launcher safety tests."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "tests/configuration/test_demo_web_compose.py"
+          changes: ["Verify opt-in localhost wiring, fixed internal URLs, read-only fixtures, identity-pool isolation, no database/broker/socket access, backend-only preservation, existing-stack operation, port collisions, failure exits, explicit Identity restart, and volume preservation."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 406
+        failed: 0
+        skipped: 7
+        failures: []
+      notes: "Focused Compose and shell-runner acceptance tests passed; the repository-wide suite also passed."
+    upstream_trace:
+      plan_item: "6.1"
+      requirements: ["REQ-001", "REQ-015", "REQ-016", "REQ-017", "REQ-021"]
+      full_trace: "REQ-001/015/016/017/021 → Plan 6.1 → T075 → Compose and launcher safety acceptance"
+
+  - task_id: "T076"
+    description: "Wire images, launchers, boundaries, and CI."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "infra/docker-compose.demo-web.yml"
+          changes: ["Add the optional localhost-only presentation profile and required domain/mocks dependencies."]
+        - file: "infra/docker-compose.demo-lab.yml"
+          changes: ["Add the optional read-only Scenario Lab fixture mount and opt-in pool environment."]
+        - file: "scripts/run-demo-web.sh"
+          changes: ["Add safe bounded launch, web-port checks, health waits, and explicit one-time Identity pool restart."]
+        - file: "scripts/test-demo-web.sh"
+          changes: ["Add a separate Docker-only, fail-fast, time-bounded repository test runner."]
+        - file: "infra/Dockerfile.python-tests"
+          changes: ["Install presentation test extras and separate image construction from bounded test execution."]
+        - file: ".github/workflows/ci.yml"
+          changes: ["Run repository-wide Python tests and lint/import checks; build the optional runtime image."]
+        - file: ".importlinter"
+          changes: ["Include the presentation package in the architectural independence contract."]
+        - file: "README.md"
+          changes: ["Document optional presentation startup and isolated test commands."]
+        - file: "web/demo-python/README.md"
+          changes: ["Document app startup, mock prerequisites, isolated tests, and explicit Scenario Lab setup."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 406
+        failed: 0
+        skipped: 7
+        failures: []
+      docker_test_results:
+        command: "EVENTHUB_ENV_FILE=infra/.env.example bash scripts/test-demo-web.sh"
+        passed: 406
+        failed: 0
+        skipped: 7
+        failures: []
+      notes: "Compose profile validation, both image builds, the Docker test runner, Ruff, shell syntax, and import-linter passed. Live startup against the user's local backend stack was not run to avoid changing local services or volumes."
+    upstream_trace:
+      plan_item: "6.1"
+      requirements: ["REQ-001", "REQ-015", "REQ-016", "REQ-017", "REQ-021"]
+      full_trace: "REQ-001/015/016/017/021 → Plan 6.1 → T076 → isolated startup/test/CI wiring"
+
 pending_tasks:
-  - {task_id: "T075", description: "Specify Compose and launcher safety tests", blocked_by: ["T048", "T066", "T068", "T074"], priority: "P1"}
-  - {task_id: "T076", description: "Wire images, launchers, boundaries, and CI", blocked_by: ["T075"], priority: "P1"}
   - {task_id: "T077", description: "Complete isolated browser integration suite", blocked_by: ["T076"], priority: "P1"}
   - {task_id: "T078", description: "Execute validation gates and record evidence", blocked_by: ["T077"], priority: "P1"}
   - {task_id: "T079", description: "Write presentation plot and recovery branches", blocked_by: ["T078"], priority: "P1"}

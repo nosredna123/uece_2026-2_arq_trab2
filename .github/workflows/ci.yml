@@ -24,19 +24,26 @@ jobs:
           fetch-depth: 0
       - name: Build and run all test targets
         run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test build
+      - name: Build optional presentation runtime
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml -f infra/docker-compose.demo-web.yml --profile demo-web build demo-web
+      - name: Run repository-wide Python tests
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test
       - name: Re-run contract and rationale gates explicitly
-        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test python -m pytest -x --import-mode=importlib tests/contracts tests/docs/test_rationales.py
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile test run --rm python-suite-test timeout --signal=INT --kill-after=30s 300s python -m pytest -x --import-mode=importlib tests/contracts tests/docs/test_rationales.py
       - name: Run Compose health acceptance
         run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml --profile acceptance up --build --abort-on-container-exit --exit-code-from acceptance
       - name: Remove test containers and volumes
         if: always()
         run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml down --volumes --remove-orphans
+      - name: Remove presentation-profile containers
+        if: always()
+        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml -f infra/docker-compose.demo-web.yml down --remove-orphans
 
   python-lint:
     name: python-lint
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: services/attendance-certification-python/src:services/reporting-python/src:mocks/identity-access/src:mocks/billing/src:mocks/notification/src
+      PYTHONPATH: services/attendance-certification-python/src:services/reporting-python/src:mocks/identity-access/src:mocks/billing/src:mocks/notification/src:web/demo-python/src
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
