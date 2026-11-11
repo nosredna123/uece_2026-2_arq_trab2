@@ -3,10 +3,7 @@
          data-run-state="{{ run.state }}"
          data-preset="{{ run.preset }}"
          data-capacity="{{ run.capacity }}"
-         data-provenance="live_service"
          aria-labelledby="lab-run-heading-{{ run.id }}">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <div class="lab-run-heading">
     <div>
       <p class="eyebrow">Run {{ run.id }}</p>
@@ -147,9 +144,7 @@
     </p>
   </section>
 
-  <div class="lab-run-actions" data-provenance="demo_presentation">
-    {% set kind = "demo_presentation" %}
-    {% include "partials/badge.html" %}
+  <div class="lab-run-actions">
     {% if can_run and run.state in ["PREPARING", "RUNNING"] %}
     <button class="secondary-button" type="button" data-run-action="stop" data-run-id="{{ run.id }}">
       Stop new requests and drain in-flight work

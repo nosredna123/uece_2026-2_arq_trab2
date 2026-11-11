@@ -2,10 +2,8 @@
 
 {% block content %}
 <section class="content-card registration-detail"
-         data-section="registration-status" data-provenance="live_service"
+         data-section="registration-status"
          aria-labelledby="registration-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <p class="eyebrow">Registration record {{ registration_id }}</p>
   <h2 id="registration-heading">Registration status</h2>
   {% if registration %}
@@ -82,9 +80,7 @@
   </div>
   {% endif %}
 
-  <section class="poll-controls" data-provenance="demo_presentation" aria-label="Status refresh controls">
-    {% set kind = "demo_presentation" %}
-    {% include "partials/badge.html" %}
+  <section class="poll-controls" aria-label="Status refresh controls">
     {% if pollable %}
     <button class="secondary-button" type="button" data-poll-toggle aria-pressed="false">Pause updates</button>
     {% endif %}
@@ -97,10 +93,8 @@
 </section>
 
 <section class="content-card registration-actions"
-         data-section="registration-actions" data-provenance="live_service"
+         data-section="registration-actions"
          aria-labelledby="registration-actions-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <h2 id="registration-actions-heading">Available service actions</h2>
   {% if cancel_key %}
   <form method="post" action="/registrations/{{ registration_id }}/cancel"

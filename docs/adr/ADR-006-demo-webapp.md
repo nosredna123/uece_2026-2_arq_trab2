@@ -39,10 +39,13 @@ service APIs; it does not import shared domain code, access service storage,
 consume the broker, or add a generic gateway. No Node/npm toolchain or extra
 host Python installation is required.
 
-Every page has a prototype notice. Each functional section uses a centrally
-defined icon and visible text label to identify **LIVE SERVICE**,
-**SIMULATED DEPENDENCY**, or **DEMO PRESENTATION**; meaning is never conveyed
-by color alone. Mixed pages label sections individually.
+Every page has a prototype notice. Pages explain in plain text which
+service owns each action and which dependencies are mocks. Earlier revisions
+also showed per-section provenance badges (**LIVE SERVICE**, **SIMULATED
+DEPENDENCY**, **DEMO PRESENTATION**), a label guide, and implementation/
+operational status indicators; these were removed at the product owner's
+request so the internal pages stay focused on the core business flow.
+Error messages still name the failing service and correlation id.
 
 Visitor, Participant 1, Participant 2 and Organizer are synthetic presentation
 personas, not user accounts or authentication. Persona identity and session

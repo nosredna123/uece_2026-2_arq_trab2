@@ -191,6 +191,11 @@ patterns, HTTP contracts, and runtime-validation test-tier guidance instead.
 
 Navigation: **Home / Guided demo / Events / My registrations / Organizer /
 Scenario Lab**. The lab is organizer-only and visibly opt-in.
+> **Revision:** at the product owner's request the badges, badge legend, and
+> implementation/operational status indicators described below were removed
+> from the UI so internal pages focus on the core business flow. The prototype
+> banner, explanatory page copy, and service/correlation details in errors remain.
+
 Header always shows selected synthetic persona, prototype notice, and badge
 legend. A small architecture explanation links each capability to its owner.
 
@@ -885,7 +890,7 @@ Tasks are obtained from the plan-item pairs above and the machine-readable
 | REQ ID | Description | Plan Items | Planned implementation evidence | Backend trace |
 |---|---|---|---|---|
 | REQ-001 | Python presentation-only client | 0.1, 1.1, 6.1 | ADR-006, package/Dockerfile, Compose | RQ01, RQ05, RQ08 |
-| REQ-002 | Honest accessible icon/text labels | 0.1, 2.1, 3.1, 3.2, 4.2, 5.1, 5.2, 5.5, 6.2, 6.3 | central badge helper, section templates, browser evidence, script | RQ05, RQ08; prototype scope |
+| REQ-002 | Honest prototype disclosure (badges later removed by request) | 0.1, 2.1, 3.1, 3.2, 4.2, 5.1, 5.2, 5.5, 6.2, 6.3 | central badge helper, section templates, browser evidence, script | RQ05, RQ08; prototype scope |
 | REQ-003 | Synthetic personas and isolation | 1.3, 2.1, 3.2, 3.3, 4.1, 5.2, 5.3, 6.2 | sessions, persona/CSRF tests, browser isolation | RF01, RN07, RQ07 |
 | REQ-004 | Catalog and real availability | 1.2, 3.1, 6.2 | clients, catalog routes/templates/tests | RF04, RN01 |
 | REQ-005 | Checkout before simulated payment | 1.3, 3.2, 5.1, 6.2 | checkout, command tests, actual paid browser flow | RF05, RF07, RN02 |

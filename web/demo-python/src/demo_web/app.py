@@ -100,7 +100,6 @@ def create_app(environ: Mapping[str, str] | None = None) -> FastAPI:
             name="error.html",
             context={
                 "page": PAGE_METADATA["error"],
-                "operational_status": "Request could not be completed.",
                 "status_code": exception.status_code,
                 "message": messages.get(
                     exception.status_code, "The request could not be completed."

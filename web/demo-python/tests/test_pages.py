@@ -146,7 +146,6 @@ def test_error_template_escapes_untrusted_content(web_environment):
             name="error.html",
             context={
                 "page": PAGE_METADATA["error"],
-                "operational_status": "Request failed.",
                 "message": '<script>alert("unsafe")</script>',
             },
             status_code=400,

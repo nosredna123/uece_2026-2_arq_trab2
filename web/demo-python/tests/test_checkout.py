@@ -130,9 +130,6 @@ def test_checkout_get_has_no_registration_side_effects_and_discloses_boundaries(
     assert "Synthetic event" in response.text
     assert "Paid workshop" in response.text
     assert "BRL 12.50" in response.text
-    assert "DEMO PRESENTATION" in response.text
-    assert "LIVE SERVICE" in response.text
-    assert "SIMULATED DEPENDENCY" in response.text
     assert "no card details" in response.text.lower()
     assert 'name="card_number"' not in response.text
     assert all(request.method == "GET" for request in requests)

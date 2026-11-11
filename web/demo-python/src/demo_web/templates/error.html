@@ -2,8 +2,6 @@
 
 {% block content %}
 <section class="content-card error-card" role="alert" aria-labelledby="error-heading">
-  {% set kind = "demo_presentation" %}
-  {% include "partials/badge.html" %}
   <p class="eyebrow">HTTP {{ status_code }}</p>
   <h2 id="error-heading">{{ message }}</h2>
   {% if error_detail %}

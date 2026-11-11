@@ -21,7 +21,6 @@ def test_paid_registration_certificate_and_projection(browser_page, browser_erro
     page = browser_page
     page.goto(f"{BASE_URL}/demo")
     expect(page.get_by_text("EventHub prototype", exact=False)).to_be_visible()
-    assert page.locator('[data-badge-kind="demo_presentation"]').count() > 0
 
     page.set_viewport_size({"width": 1366, "height": 768})
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
@@ -69,8 +68,6 @@ def test_paid_registration_certificate_and_projection(browser_page, browser_erro
 
     select_persona(page, "Participante simulado 01")
     page.goto(checkout_url)
-    assert page.locator('[data-badge-kind="live_service"]').count() > 0
-    assert page.locator('[data-badge-kind="simulated_dependency"]').count() > 0
     assert "synthetic-participant-001" not in page.content()
     page.get_by_role("button", name="Confirm registration", exact=True).click(
         click_count=2,

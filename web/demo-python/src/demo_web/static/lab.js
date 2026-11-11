@@ -203,10 +203,8 @@
   const updateActions = (board, result) => {
     const host = board.querySelector(".lab-run-actions");
     if (!host) return;
-    const badge = host.querySelector(".provenance-badge");
     const exportLink = host.querySelector("a[href$='/export']");
     host.replaceChildren();
-    if (badge) host.append(badge);
     const runId = result.id;
     if (root.dataset.canRun === "true" && ["PREPARING", "RUNNING"].includes(result.state)) {
       addActionButton(host, "stop", runId, "Stop new requests and drain in-flight work");

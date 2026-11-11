@@ -2,10 +2,8 @@
 
 {% block content %}
 <section class="content-card report-controls"
-         data-section="report-filters" data-provenance="demo_presentation"
+         data-section="report-filters"
          aria-labelledby="report-controls-heading">
-  {% set kind = "demo_presentation" %}
-  {% include "partials/badge.html" %}
   <h2 id="report-controls-heading">Filter this organization’s projection</h2>
   <p class="card-copy">
     Organization scope is fixed to the selected organizer fixture: <code>{{ organization_id }}</code>.
@@ -30,7 +28,7 @@
 </section>
 
 <section id="report-panel" class="content-card report-panel"
-         data-section="activity-reports" data-provenance="live_service"
+         data-section="activity-reports"
          data-poll-url="/reports/poll"
          data-persona-version="{{ persona_version }}"
          data-poll-interval-ms="{{ poll_interval_ms }}"
@@ -39,8 +37,6 @@
          data-activity-id="{{ activity_id }}"
          data-polling="true"
          aria-labelledby="report-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <h2 id="report-heading">Activity report observations</h2>
   <p class="card-copy">
     This is an eventually consistent projection, not authoritative admission capacity, a heartbeat,
@@ -102,9 +98,7 @@
     </table>
   </div>
 
-  <div class="poll-controls report-refresh-controls" data-provenance="demo_presentation" aria-label="Report refresh controls">
-    {% set kind = "demo_presentation" %}
-    {% include "partials/badge.html" %}
+  <div class="poll-controls report-refresh-controls" aria-label="Report refresh controls">
     <button class="secondary-button" type="button" data-report-toggle aria-pressed="false">Pause updates</button>
     <button class="secondary-button" type="button" data-report-refresh>Refresh now</button>
     <p data-report-message role="status">Automatic refresh is bounded; it never touches registration state.</p>

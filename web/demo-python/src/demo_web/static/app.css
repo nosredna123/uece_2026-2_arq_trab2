@@ -183,72 +183,6 @@ h1 {
   font-size: 1.08rem;
 }
 
-.status-strip {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
-  margin-bottom: 1rem;
-}
-
-.status-item {
-  display: grid;
-  gap: 0.12rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.68);
-}
-
-.status-label {
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.status-item strong {
-  font-size: 0.95rem;
-}
-
-.provenance-guide {
-  margin-bottom: 1.7rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.7);
-}
-
-.provenance-guide summary {
-  width: fit-content;
-  color: var(--forest-dark);
-  cursor: pointer;
-  font-weight: 750;
-}
-
-.provenance-list {
-  display: grid;
-  gap: 0.6rem;
-  margin: 1rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.provenance-list li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.7rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.guide-note {
-  margin: 0.9rem 0 0;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
 .content-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -594,39 +528,10 @@ h1 {
   grid-column: 1 / -1;
 }
 
-.provenance-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.42rem;
-  min-height: 1.65rem;
-  padding: 0.22rem 0.55rem;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 850;
-  letter-spacing: 0.075em;
-  line-height: 1.2;
-}
 
-.provenance-live_service {
-  color: #164e3e;
-  background: var(--mint);
-}
 
-.provenance-simulated_dependency {
-  color: #6b4a07;
-  background: var(--amber);
-}
 
-.provenance-demo_presentation {
-  color: #234b60;
-  background: var(--blue);
-}
 
-.badge-icon {
-  font-size: 0.77rem;
-  line-height: 1;
-}
 
 .card-heading {
   margin: 1.1rem 0 0.7rem;
@@ -829,8 +734,7 @@ h2 {
     padding: 1.8rem 1rem 3rem;
   }
 
-  .content-grid,
-  .status-strip {
+  .content-grid {
     grid-template-columns: 1fr;
   }
 
@@ -939,9 +843,6 @@ h2 {
 }
 
 .registration-actions h2,
-.registration-actions > .provenance-badge {
-  flex-basis: 100%;
-}
 
 .registration-actions h2 {
   margin: 0;
@@ -1116,14 +1017,6 @@ h2 {
   margin-bottom: 1.2rem;
 }
 
-.lab-provenance-key {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin: 1rem 0 0;
-  padding: 0;
-  list-style: none;
-}
 
 .lab-preset-grid {
   display: grid;
@@ -1411,9 +1304,6 @@ h2 {
   border-top: 1px solid var(--line);
 }
 
-.lab-run-actions .provenance-badge {
-  flex-basis: 100%;
-}
 
 .lab-run-actions button:disabled,
 .lab-poll-controls button:disabled {

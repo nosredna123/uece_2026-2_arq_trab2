@@ -181,9 +181,6 @@ def test_lab_page_renders_fixed_predictions_and_provenance_without_mutations(
     assert "5 free seats" in html
     assert "10 concurrent submissions" in html
     assert "Prediction" in html
-    assert "SIMULATED DEPENDENCY" in html
-    assert "DEMO PRESENTATION" in html
-    assert "LIVE SERVICE" in html
     assert manager.start_calls == 0
 
 

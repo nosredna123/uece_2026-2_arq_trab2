@@ -2,10 +2,8 @@
 
 {% block content %}
 <section class="content-card event-overview"
-         data-section="event" data-provenance="live_service"
+         data-section="event"
          aria-labelledby="event-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <p class="eyebrow">Published event</p>
   <h2 id="event-heading">{{ event.title }}</h2>
   <p class="event-description">{{ event.description }}</p>
@@ -17,10 +15,8 @@
 </section>
 
 <section id="activities" class="content-card activity-program"
-         data-section="activities" data-provenance="live_service"
+         data-section="activities"
          aria-labelledby="activities-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <div class="card-heading">
     <p class="eyebrow">Observed program</p>
     <h2 id="activities-heading">Activities</h2>

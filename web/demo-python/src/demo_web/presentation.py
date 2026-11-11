@@ -9,19 +9,11 @@ from demo_web.models import Money
 
 
 @dataclass(frozen=True)
-class BadgeDefinition:
-    icon: str
-    label: str
-    description: str
-
-
-@dataclass(frozen=True)
 class PageMetadata:
     title: str
     eyebrow: str
     heading: str
     description: str
-    implementation_status: str
 
 
 @dataclass(frozen=True)
@@ -32,24 +24,6 @@ class ServiceFailure:
     correlation_id: str
 
 
-BADGE_DEFINITIONS = {
-    "live_service": BadgeDefinition(
-        icon="●",
-        label="LIVE SERVICE",
-        description="Observed from an existing EventHub service API.",
-    ),
-    "simulated_dependency": BadgeDefinition(
-        icon="◐",
-        label="SIMULATED DEPENDENCY",
-        description="Behavior supplied by a simulator or mock dependency.",
-    ),
-    "demo_presentation": BadgeDefinition(
-        icon="✦",
-        label="DEMO PRESENTATION",
-        description="Presentation-only guidance or synthetic browser state.",
-    ),
-}
-
 PAGE_METADATA = {
     "home": PageMetadata(
         title="Sign in",
@@ -59,7 +33,6 @@ PAGE_METADATA = {
             "Choose a synthetic user. There is no password: these fictional identities "
             "only select which demo credentials the app sends to the services."
         ),
-        implementation_status="Simulated sign-in",
     ),
     "events": PageMetadata(
         title="Published events",
@@ -69,7 +42,6 @@ PAGE_METADATA = {
             "Browse the public Event Management catalog. Availability is observed "
             "separately and never reserves a place."
         ),
-        implementation_status="Catalog and shell available",
     ),
     "event_detail": PageMetadata(
         title="Event details",
@@ -79,7 +51,6 @@ PAGE_METADATA = {
             "Schedules and prices come from Event Management. Capacity is a "
             "time-stamped observation from Registration."
         ),
-        implementation_status="Catalog and shell available",
     ),
     "checkout": PageMetadata(
         title="Confirm registration",
@@ -89,7 +60,6 @@ PAGE_METADATA = {
             "The activity details come from Event Management. Registration is "
             "created only when you confirm below."
         ),
-        implementation_status="Catalog and checkout available",
     ),
     "registrations": PageMetadata(
         title="My registrations",
@@ -99,7 +69,6 @@ PAGE_METADATA = {
             "Current states come from Registration. A list is scoped to the selected "
             "synthetic participant."
         ),
-        implementation_status="Registration status available",
     ),
     "registration_detail": PageMetadata(
         title="Registration status",
@@ -108,7 +77,6 @@ PAGE_METADATA = {
         description=(
             "This page shows the last observed backend state. Refresh is bounded and can be paused."
         ),
-        implementation_status="Registration status available",
     ),
     "organizer": PageMetadata(
         title="Organizer setup",
@@ -118,7 +86,6 @@ PAGE_METADATA = {
             "Create, extend, and publish event records through Event Management. "
             "Only references created in this browser session appear below."
         ),
-        implementation_status="Organizer setup available",
     ),
     "certificate": PageMetadata(
         title="Certificate record",
@@ -128,7 +95,6 @@ PAGE_METADATA = {
             "The certificate identity and issue time come from Attendance. "
             "The printable layout is a presentation, not a signed credential."
         ),
-        implementation_status="Certificate view available",
     ),
     "demo": PageMetadata(
         title="Guided event demonstration",
@@ -138,7 +104,6 @@ PAGE_METADATA = {
             "Prepare a paid and a one-seat free activity through Event Management, "
             "then follow the participant journeys using actual service responses."
         ),
-        implementation_status="Guided preparation available",
     ),
     "reports": PageMetadata(
         title="Organizer activity reports",
@@ -148,7 +113,6 @@ PAGE_METADATA = {
             "Observe eventually consistent activity counters from Reporting. "
             "These projections may lag and do not determine admission capacity."
         ),
-        implementation_status="Organizer report projection available",
     ),
     "lab": PageMetadata(
         title="Scenario Lab",
@@ -158,14 +122,12 @@ PAGE_METADATA = {
             "Run fixed, synthetic registration workloads and review measured service "
             "observations without treating a timeout as a rollback."
         ),
-        implementation_status="Fixed scenarios and observation board available",
     ),
     "error": PageMetadata(
         title="Request not completed",
         eyebrow="The prototype could not complete this page",
         heading="This request needs attention",
         description="The status below is the result returned by the web application.",
-        implementation_status="Catalog and shell available",
     ),
 }
 
@@ -226,7 +188,6 @@ def _signed_in_user(request) -> dict:
 templates = Jinja2Templates(
     directory=str(TEMPLATE_DIRECTORY), context_processors=[_signed_in_user]
 )
-templates.env.globals["badge_definitions"] = BADGE_DEFINITIONS
 
 
 def format_money(money: Money) -> str:

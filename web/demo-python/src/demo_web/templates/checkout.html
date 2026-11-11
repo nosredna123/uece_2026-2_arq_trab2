@@ -3,10 +3,8 @@
 {% block content %}
 <div class="checkout-grid">
   <section class="content-card checkout-activity"
-           data-section="checkout-activity" data-provenance="live_service"
+           data-section="checkout-activity"
            aria-labelledby="checkout-activity-heading">
-    {% set kind = "live_service" %}
-    {% include "partials/badge.html" %}
     <p class="eyebrow">Activity details from Event Management</p>
     {% if activity %}
     <h2 id="checkout-activity-heading">{{ activity.title }}</h2>
@@ -41,10 +39,8 @@
   </section>
 
   <section class="content-card checkout-confirmation"
-           data-section="registration-command" data-provenance="live_service"
+           data-section="registration-command"
            aria-labelledby="checkout-confirmation-heading">
-    {% set kind = "live_service" %}
-    {% include "partials/badge.html" %}
     <p class="eyebrow">Registration service</p>
     <h2 id="checkout-confirmation-heading">Create your registration</h2>
     <p class="card-copy">
@@ -70,10 +66,8 @@
   </section>
 
   <section class="content-card simulated-card checkout-billing"
-           data-section="billing-disclosure" data-provenance="simulated_dependency"
+           data-section="billing-disclosure"
            aria-labelledby="checkout-billing-heading">
-    {% set kind = "simulated_dependency" %}
-    {% include "partials/badge.html" %}
     <p class="eyebrow">After the real registration command</p>
     <h2 id="checkout-billing-heading">Simulated Billing</h2>
     <p class="card-copy">The existing Billing mock may produce a pending or refused payment outcome. This presentation does not call a payment provider.</p>

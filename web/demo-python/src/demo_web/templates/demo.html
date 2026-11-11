@@ -2,10 +2,8 @@
 
 {% block content %}
 <section class="content-card demo-preview"
-         data-section="guided-preparation" data-provenance="demo_presentation"
+         data-section="guided-preparation"
          aria-labelledby="demo-preview-heading">
-  {% set kind = "demo_presentation" %}
-  {% include "partials/badge.html" %}
   <h2 id="demo-preview-heading">Preparar uma jornada acadêmica simulada</h2>
   <p class="card-copy">
     A preparação cria um evento, uma atividade paga e uma atividade gratuita com uma vaga, usando a organização do perfil selecionado.
@@ -35,11 +33,9 @@
 
 {% if run %}
 <section class="content-card demo-run"
-         data-section="preparation-run" data-provenance="live_service"
+         data-section="preparation-run"
          data-run-id="{{ run.run_id }}"
          aria-labelledby="demo-run-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <p class="eyebrow">Preparation run {{ run.run_id }}</p>
   <h2 id="demo-run-heading">Setup progress</h2>
   <p class="card-copy">
@@ -79,11 +75,8 @@
   <div class="demo-activity-grid">
     {% for item in activity_cards %}
     <article class="demo-activity-card"
-             data-provenance="{{ 'live_service' if item.returned else 'demo_presentation' }}"
              data-starts-at="{{ item.activity.starts_at.isoformat() }}"
              data-ends-at="{{ item.activity.ends_at.isoformat() }}">
-      {% set kind = "live_service" if item.returned else "demo_presentation" %}
-      {% include "partials/badge.html" %}
       <h3>{{ item.activity.title }}</h3>
       <p>{{ item.label }} · {{ item.price }} · capacidade {{ item.activity.capacity }}</p>
       {% if item.activity.id %}
@@ -132,10 +125,8 @@
 </section>
 {% endif %}
 
-<section class="content-card demo-guide" data-section="participant-guide" data-provenance="demo_presentation"
+<section class="content-card demo-guide" data-section="participant-guide"
          aria-labelledby="demo-guide-heading">
-  {% set kind = "demo_presentation" %}
-  {% include "partials/badge.html" %}
   <h2 id="demo-guide-heading">Presenter sequence</h2>
   <ol>
     <li>Use <strong>Sign out</strong> and sign in as Participante simulado 01; open the paid checkout and confirm only when ready.</li>
@@ -146,10 +137,8 @@
 </section>
 
 {% if runs|length > 1 %}
-<section class="content-card demo-history" data-section="preparation-history" data-provenance="demo_presentation"
+<section class="content-card demo-history" data-section="preparation-history"
          aria-labelledby="demo-history-heading">
-  {% set kind = "demo_presentation" %}
-  {% include "partials/badge.html" %}
   <h2 id="demo-history-heading">Earlier preparation references</h2>
   <ul>
     {% for saved_run in runs %}

@@ -115,7 +115,6 @@ def test_registration_detail_renders_each_backend_state(monkeypatch, web_environ
 
     assert response.status_code == 200
     assert status in response.text
-    assert "LIVE SERVICE" in response.text
     assert "Last observed" in response.text
     assert "registration-position" not in response.text
 

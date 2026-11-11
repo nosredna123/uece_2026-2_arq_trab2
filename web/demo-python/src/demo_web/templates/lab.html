@@ -6,20 +6,13 @@
 
 {% block content %}
 <section class="content-card lab-introduction"
-         data-section="scenario-lab-introduction" data-provenance="demo_presentation"
+         data-section="scenario-lab-introduction"
          aria-labelledby="lab-introduction-heading">
-  {% set kind = "demo_presentation" %}
-  {% include "partials/badge.html" %}
   <h2 id="lab-introduction-heading">Fixed workloads, observed outcomes</h2>
   <p class="card-copy">
     Previews make no service calls. Only an explicit GESAD/UECE organizer action starts a run; refresh and polling
     only retrieve retained observations. A timeout is unknown until a public read-back resolves it.
   </p>
-  <ul class="lab-provenance-key" aria-label="Scenario evidence labels">
-    {% for kind in ["live_service", "simulated_dependency", "demo_presentation"] %}
-    <li>{% include "partials/badge.html" %}</li>
-    {% endfor %}
-  </ul>
   {% if not lab_enabled %}
   <p class="notice-box" role="status">
     {{ lab_unavailable_reason }} Presets below are read-only descriptions; no run controls
@@ -39,10 +32,7 @@
            data-participants="{{ preset.participants }}"
            data-capacity="{{ preset.capacity }}"
            data-concurrency="{{ preset.concurrency }}"
-           data-submissions-per-participant="{{ preset.submissionsPerParticipant }}"
-           data-provenance="simulated_dependency">
-    {% set kind = "simulated_dependency" %}
-    {% include "partials/badge.html" %}
+           data-submissions-per-participant="{{ preset.submissionsPerParticipant }}">
     {% if preset.preset == "seat-opens" %}
     <h2>{{ preset.title }}</h2>
     <p class="card-copy">Continuation of a completed last-seat or rush run; it is not a fourth workload preset.</p>
@@ -88,16 +78,12 @@
          data-poll-interval-ms="1000"
          data-max-poll-attempts="{{ max_poll_attempts }}"
          aria-labelledby="lab-observations-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <h2 id="lab-observations-heading">Recorded observations</h2>
   <p class="card-copy">
     Run evidence is session-owned and retained for a bounded period. Read-back values may disagree with
     a prediction; raw values and failures remain visible.
   </p>
-  <div class="lab-poll-controls" data-provenance="demo_presentation">
-    {% set kind = "demo_presentation" %}
-    {% include "partials/badge.html" %}
+  <div class="lab-poll-controls">
     <button class="secondary-button" type="button" data-lab-toggle aria-pressed="false">Pause updates</button>
     <button class="secondary-button" type="button" data-lab-reload>Reload observations</button>
     <p data-lab-message role="status" aria-live="polite">

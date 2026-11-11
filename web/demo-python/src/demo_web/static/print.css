@@ -43,12 +43,9 @@
   .prototype-banner,
   .site-header,
   .page-intro,
-  .status-strip,
-  .provenance-guide,
   .site-footer,
   .print-guidance,
-  .print-control,
-  .badge {
+  .print-control {
     display: none !important;
   }
 

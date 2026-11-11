@@ -2,10 +2,8 @@
 
 {% block content %}
 <section class="content-card organizer-intro"
-         data-section="organizer-workspace" data-provenance="demo_presentation"
+         data-section="organizer-workspace"
          aria-labelledby="organizer-workspace-heading">
-  {% set kind = "demo_presentation" %}
-  {% include "partials/badge.html" %}
   <h2 id="organizer-workspace-heading">Organizador simulado — {{ organization_label }}</h2>
   <p class="card-copy">Esta identidade é fictícia, não é uma autenticação de produção. O escopo organizacional é definido pelo perfil selecionado: <strong>{{ organization_label }}</strong> · <code>{{ organization_id }}</code>.</p>
   <p class="notice-box organizer-retention">Draft references exist only in this browser session. They disappear after session expiry or application restart; Event Management remains the source of truth.</p>
@@ -21,10 +19,8 @@
 </section>
 
 <section class="content-card organizer-event-form"
-         data-section="create-event" data-provenance="live_service"
+         data-section="create-event"
          aria-labelledby="create-event-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <p class="eyebrow">Create an unpublished event</p>
   <h2 id="create-event-heading">New event</h2>
   <form method="post" action="/organizer/events" class="organizer-form">
@@ -53,10 +49,8 @@
 </section>
 
 <section class="content-card organizer-drafts"
-         data-section="session-drafts" data-provenance="live_service"
+         data-section="session-drafts"
          aria-labelledby="session-drafts-heading">
-  {% set kind = "live_service" %}
-  {% include "partials/badge.html" %}
   <div class="card-heading">
     <p class="eyebrow">No draft inventory API is used</p>
     <h2 id="session-drafts-heading">This session’s event references</h2>

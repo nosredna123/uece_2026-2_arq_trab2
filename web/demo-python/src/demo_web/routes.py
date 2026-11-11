@@ -131,7 +131,6 @@ def _service_error_page(
         name="error.html",
         context={
             "page": PAGE_METADATA["error"],
-            "operational_status": "Service request could not be completed.",
             "status_code": status_code,
             "message": message,
             "error_detail": failure,
@@ -263,13 +262,6 @@ def _demo_response(
         name="demo.html",
         context={
             "page": PAGE_METADATA["demo"],
-            "operational_status": (
-                "Preview only; no service mutation has been requested."
-                if run is None
-                else "Event Management published this preparation."
-                if run.complete
-                else "Preparation progress is retained in this browser session."
-            ),
             "session": session,
             "csrf_token": session.csrf_token,
             "can_prepare": session.persona in ORGANIZER_PERSONAS,
@@ -343,21 +335,11 @@ def _report_response(
         )
     service_error = service_failure(failure) if failure is not None else None
     has_projection = observation is not None
-    operational_status = (
-        "Reporting unavailable; showing the last observed projection."
-        if failure is not None and has_projection
-        else "Reporting projection unavailable."
-        if failure is not None
-        else "Reporting responded with an empty projection."
-        if not reports
-        else "Reporting responded; the event-fed projection may lag."
-    )
     response = templates.TemplateResponse(
         request=request,
         name="reports.html",
         context={
             "page": PAGE_METADATA["reports"],
-            "operational_status": operational_status,
             "csrf_token": session.csrf_token,
             "persona_version": session.persona_version,
             "poll_interval_ms": request.app.state.settings.poll_interval_seconds * 1000,
@@ -638,7 +620,6 @@ def _organizer_response(
         name="organizer.html",
         context={
             "page": PAGE_METADATA["organizer"],
-            "operational_status": "Organizer actions use existing Event Management APIs.",
             "csrf_token": session.csrf_token,
             "organization_id": identity["organizationId"],
             "organization_label": ORGANIZER_PERSONAS[session.persona],
@@ -717,9 +698,6 @@ def _registration_detail_response(
         name="registration_detail.html",
         context={
             "page": PAGE_METADATA["registration_detail"],
-            "operational_status": (
-                "Showing the last observed registration; refresh may be paused or unavailable."
-            ),
             "registration": registration,
             "registration_id": registration_id,
             "created_at": (
@@ -799,13 +777,6 @@ def _checkout_response(
         name="checkout.html",
         context={
             "page": PAGE_METADATA["checkout"],
-            "operational_status": (
-                "Registration result is unknown; retry uses the same command."
-                if retry
-                else "Activity details loaded; no registration has been created."
-                if activity is not None
-                else "Registration command could not be confirmed."
-            ),
             "activity": activity,
             "event": event,
             "price": format_money(activity.price) if activity is not None else None,
@@ -841,7 +812,6 @@ async def home(request: Request) -> Response:
         name="home.html",
         context={
             "page": PAGE_METADATA["home"],
-            "operational_status": "Waiting for a synthetic user; backend services not queried.",
             "sign_in_groups": SIGN_IN_GROUPS,
             "persona_labels": PERSONA_LABEL_BY_ID,
             "csrf_token": session.csrf_token,
@@ -878,7 +848,6 @@ async def published_events(
             name="events.html",
             context={
                 "page": PAGE_METADATA["events"],
-                "operational_status": "Catalog service unavailable.",
                 "events": [],
                 "service_failure": failure,
                 "search": search or "",
@@ -907,7 +876,6 @@ async def published_events(
         name="events.html",
         context={
             "page": PAGE_METADATA["events"],
-            "operational_status": "Catalog service responded.",
             "events": events,
             "service_failure": None,
             "search": search or "",
@@ -952,7 +920,6 @@ async def published_event_detail(
             name="error.html",
             context={
                 "page": PAGE_METADATA["error"],
-                "operational_status": "The requested event is not published.",
                 "status_code": 404,
                 "message": "The requested page was not found.",
             },
@@ -1009,11 +976,6 @@ async def published_event_detail(
         name="event_detail.html",
         context={
             "page": PAGE_METADATA["event_detail"],
-            "operational_status": (
-                "Event loaded; activity or availability data may be partial."
-                if has_partial_failure
-                else "Event and activity program loaded."
-            ),
             "event": event,
             "event_starts_at": format_datetime(event.starts_at),
             "event_ends_at": format_datetime(event.ends_at),
@@ -1184,7 +1146,6 @@ async def registrations(
         name="registrations.html",
         context={
             "page": PAGE_METADATA["registrations"],
-            "operational_status": "Registration service responded.",
             "registrations": entries,
             "limit": limit,
             "offset": offset,
@@ -2054,7 +2015,6 @@ async def registration_certificate(request: Request, registration_id: UUID) -> H
         name="certificate.html",
         context={
             "page": PAGE_METADATA["certificate"],
-            "operational_status": "Attendance returned an issued certificate record.",
             "certificate": certificate,
             "issued_at": format_datetime(certificate.issued_at),
             "activity": activity,
@@ -2130,9 +2090,6 @@ async def scenario_lab_page(request: Request) -> HTMLResponse:
         name="lab.html",
         context={
             "page": PAGE_METADATA["lab"],
-            "operational_status": "Preview only; no run has been started."
-            if enabled
-            else unavailable_reason,
             "lab_unavailable_reason": unavailable_reason,
             "lab_enabled": enabled,
             "can_run": enabled and identity is not None and identity["role"] == "ORGANIZER",

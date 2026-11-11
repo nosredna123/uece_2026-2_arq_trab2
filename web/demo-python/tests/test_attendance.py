@@ -374,7 +374,6 @@ def test_printable_certificate_escapes_activity_content_and_never_mutates(
     assert response.status_code == 200
     assert "<script>" not in response.text
     assert "&lt;script&gt;" in response.text
-    assert "DEMO PRESENTATION" in response.text
     assert "not a signed credential" in response.text
     assert "browser Print command" in response.text
     assert print_styles.status_code == 200
