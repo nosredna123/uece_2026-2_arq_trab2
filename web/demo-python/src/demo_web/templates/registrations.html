@@ -5,18 +5,16 @@
          data-section="own-registrations"
          aria-labelledby="registrations-heading">
   <div class="card-heading">
-    <p class="eyebrow">Participant-owned records</p>
     <h2 id="registrations-heading">My registrations</h2>
   </div>
-  <p class="card-copy">This list is scoped by the Registration service to the selected synthetic participant.</p>
 
   {% if registrations %}
   <div class="registration-list">
     {% for item in registrations %}
     <article class="registration-row">
       <div>
-        <h3><a href="/registrations/{{ item.registration.id }}">Registration {{ item.registration.id }}</a></h3>
-        <p>Activity {{ item.registration.activity_id }} · created {{ item.created_at }}</p>
+        <h3><a href="/registrations/{{ item.registration.id }}">{{ item.activity_title or "Activity unavailable" }}</a></h3>
+        <p>Registered {{ item.created_at }}</p>
       </div>
       <div class="registration-summary">
         <strong>{{ item.registration.status }}</strong>
@@ -29,7 +27,7 @@
     {% endfor %}
   </div>
   {% else %}
-  <p class="empty-state">No registrations were returned for this participant.</p>
+  <p class="empty-state">You have no registrations yet. Browse the events to register.</p>
   {% endif %}
 
   {% if has_previous or has_next %}

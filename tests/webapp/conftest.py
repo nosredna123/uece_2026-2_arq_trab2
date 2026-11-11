@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import re
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urlsplit
+from uuid import uuid4
 
 import pytest
 
@@ -13,8 +14,11 @@ ARTIFACTS_DIR = Path(os.environ.get("WEBAPP_TEST_ARTIFACTS_DIR", "/tmp/webapp-ar
 
 
 @dataclass(frozen=True)
-class PreparedRun:
+class PublishedEvent:
     event_id: str
+    title: str
+    paid_title: str
+    free_title: str
     paid_activity_id: str
     free_activity_id: str
     paid_checkout_url: str
@@ -77,50 +81,89 @@ def select_persona(page, label):
         sign_out.click()
         page.wait_for_url(f"{BASE_URL}/")
     page.get_by_role("button", name=label, exact=True).click()
-    page.wait_for_url(f"{BASE_URL}/events**")
-    page.goto(f"{BASE_URL}/demo")
+    page.wait_for_url(re.compile(r".*/(organizer|events)$"))
 
 
-def prepare_demo(page):
+def _local(instant):
+    return instant.strftime("%Y-%m-%dT%H:%M")
+
+
+def _fill_fields(form, values):
+    for label, value in values.items():
+        form.get_by_label(label, exact=True).fill(value)
+
+
+def create_published_event(page, *, paid_start_minutes=2, free_start_minutes=5):
+    """Create and publish an event through the organizer pages (paid + free activity)."""
     select_persona(page, "Organizador — GESAD/UECE")
-    consent = page.get_by_role(
-        "checkbox",
-        name="Confirmo a criação de novos dados simulados; registros anteriores serão mantidos.",
-    )
-    consent.check()
-    page.get_by_role("button", name="Prepare a new run", exact=True).click()
+    suffix = uuid4().hex[:6]
+    title = f"[TESTE] Evento navegador {suffix}"
+    paid_title = f"[TESTE] Oficina paga {suffix}"
+    free_title = f"[TESTE] Oficina gratuita {suffix}"
+    base = datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=1)
+    paid_start = base + timedelta(minutes=paid_start_minutes)
+    paid_end = paid_start + timedelta(minutes=1)
+    free_start = base + timedelta(minutes=free_start_minutes)
+    free_end = free_start + timedelta(minutes=1)
 
-    run = page.locator(".demo-run")
-    run.wait_for(state="visible", timeout=60_000)
-    page.get_by_role("link", name="Open published event", exact=True).wait_for(timeout=60_000)
-    event_link = page.get_by_role("link", name="Open published event", exact=True)
-    event_id = urlsplit(urljoin(BASE_URL, event_link.get_attribute("href"))).path.rsplit("/", 1)[1]
-
-    paid_card = page.locator(".demo-activity-card").filter(
-        has_text="Oficina de Engenharia de Software"
+    page.goto(f"{BASE_URL}/organizer/events/new")
+    form = page.locator('form[action="/organizer/events"]')
+    _fill_fields(
+        form,
+        {
+            "Title": title,
+            "Description": "Evento criado pelo teste de navegador.",
+            "Starts at (UTC)": _local(paid_start - timedelta(minutes=1)),
+            "Ends at (UTC)": _local(free_end + timedelta(minutes=1)),
+        },
     )
-    free_card = page.locator(".demo-activity-card").filter(
-        has_text="Oficina de Sistemas Autoadaptativos"
-    )
+    form.get_by_role("button", name="Create event", exact=True).click()
+    page.wait_for_url(re.compile(r".*/organizer/events/[0-9a-f-]{36}\?notice=created$"))
+    event_id = urlsplit(page.url).path.rsplit("/", 1)[1]
 
-    def activity_values(card):
-        checkout = card.get_by_role("link", name="Open participant checkout", exact=True)
-        checkout_url = urljoin(BASE_URL, checkout.get_attribute("href"))
-        activity_id = urlsplit(checkout_url).path.split("/")[-2]
-        starts_at = datetime.fromisoformat(
-            card.get_attribute("data-starts-at").replace("Z", "+00:00")
+    for activity_title, start, end, capacity, price in (
+        (paid_title, paid_start, paid_end, "10", "25,00"),
+        (free_title, free_start, free_end, "1", "0"),
+    ):
+        form = page.locator('form[data-section="add-activity"]')
+        _fill_fields(
+            form,
+            {
+                "Title": activity_title,
+                "Starts at (UTC)": _local(start),
+                "Ends at (UTC)": _local(end),
+                "Location": "Laboratório GESAD",
+                "Responsible": "Equipe de testes",
+                "Capacity": capacity,
+                "Price (R$, 0 = free)": price,
+            },
         )
-        ends_at = datetime.fromisoformat(card.get_attribute("data-ends-at").replace("Z", "+00:00"))
-        return activity_id, checkout_url, starts_at, ends_at
+        form.get_by_role("button", name="Add activity", exact=True).click()
+        page.wait_for_url(re.compile(r".*\?notice=activity-added$"))
 
-    paid_id, paid_url, paid_start, paid_end = activity_values(paid_card)
-    free_id, free_url, _, _ = activity_values(free_card)
-    return PreparedRun(
+    page.get_by_role("button", name="Publish event", exact=True).click()
+    page.wait_for_url(re.compile(r".*\?notice=published$"))
+
+    def activity_id(activity_title):
+        action = (
+            page.locator(".organizer-activity")
+            .filter(has_text=activity_title)
+            .locator("form")
+            .first.get_attribute("action")
+        )
+        return action.rsplit("/", 1)[1]
+
+    paid_id = activity_id(paid_title)
+    free_id = activity_id(free_title)
+    return PublishedEvent(
         event_id=event_id,
+        title=title,
+        paid_title=paid_title,
+        free_title=free_title,
         paid_activity_id=paid_id,
         free_activity_id=free_id,
-        paid_checkout_url=paid_url,
-        free_checkout_url=free_url,
+        paid_checkout_url=f"{BASE_URL}/activities/{paid_id}/checkout",
+        free_checkout_url=f"{BASE_URL}/activities/{free_id}/checkout",
         paid_starts_at=paid_start,
         paid_ends_at=paid_end,
     )

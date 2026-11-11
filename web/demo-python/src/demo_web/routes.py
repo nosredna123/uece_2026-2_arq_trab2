@@ -1,23 +1,21 @@
+import asyncio
 import secrets
 from datetime import datetime, timezone
 from typing import Annotated
 from urllib.parse import parse_qs
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from demo_web.commands import CommandConflictError
-from demo_web.demo import DemoPreparation, countdown_label, create_preparation
 from demo_web.errors import InvalidResponseError, ServiceError, TransportError
 from demo_web.models import (
     Activity,
     Certificate,
     CheckIn,
-    Event,
 )
 from demo_web.presentation import (
-    ORGANIZER_PERSONAS,
     PAGE_METADATA,
     PERSONA_LABELS,
     SIGN_IN_GROUPS,
@@ -26,15 +24,6 @@ from demo_web.presentation import (
     format_observation_age,
     service_failure,
     templates,
-)
-from demo_web.scenarios import (
-    PRESETS,
-    PresetUnavailableError,
-    ScenarioAccessError,
-    ScenarioConflictError,
-    ScenarioDisabledError,
-    ScenarioManager,
-    ScenarioStateError,
 )
 from demo_web.sessions import (
     BrowserSession,
@@ -72,15 +61,6 @@ def _existing_session(request: Request) -> BrowserSession:
     if session is None:
         raise HTTPException(status_code=403, detail="A valid demo session is required.")
     return session
-
-
-def _require_sign_in(request: Request) -> None:
-    session = _session_store(request).get(request.cookies.get(SESSION_COOKIE))
-    if session is None or not session.signed_in:
-        raise SignInRequired()
-
-
-SIGNED_IN_PAGE = [Depends(_require_sign_in)]
 
 
 def role_home(request: Request, session: BrowserSession) -> str:
@@ -199,105 +179,6 @@ def _organizer_identity(request: Request, session: BrowserSession) -> dict[str, 
     if identity is None or identity.get("role") != "ORGANIZER":
         raise HTTPException(status_code=403, detail="Select the organizer persona to continue.")
     return dict(identity)
-
-
-def _scenario_manager(request: Request, session: BrowserSession) -> ScenarioManager:
-    _organizer_identity(request, session)
-    if session.persona != "organizer":
-        raise HTTPException(
-            status_code=403,
-            detail="Scenario Lab records are scoped to the GESAD/UECE synthetic organization.",
-        )
-    manager = getattr(request.app.state, "scenario_manager", None)
-    if manager is None:
-        raise HTTPException(status_code=404, detail="Scenario Lab is not available.")
-    return manager
-
-
-def _scenario_error(error: Exception) -> HTTPException:
-    if isinstance(error, ScenarioAccessError):
-        return HTTPException(status_code=404, detail="The requested run is not available.")
-    if isinstance(
-        error,
-        (ScenarioConflictError, PresetUnavailableError, ScenarioStateError),
-    ):
-        return HTTPException(status_code=409, detail=str(error))
-    if isinstance(error, ScenarioDisabledError):
-        return HTTPException(status_code=404, detail="Scenario Lab is not available.")
-    raise error
-
-
-def _demo_response(
-    request: Request,
-    *,
-    session: BrowserSession,
-    run: DemoPreparation | None = None,
-    status_code: int = 200,
-) -> HTMLResponse:
-    now = datetime.now(timezone.utc)
-    with session.lock:
-        if session.demo_start_key is None:
-            session.demo_start_key = secrets.token_urlsafe(32)
-        new_run_key = session.demo_start_key
-        runs = list(session.demo_runs.values())
-
-    activity_cards = []
-    stale_warnings = []
-    if run is not None:
-        for label, configured_activity, returned_activity in (
-            ("Paid activity", run.paid_activity_input, run.paid_activity),
-            ("Free waiting-list activity", run.free_activity_input, run.free_activity),
-        ):
-            activity = returned_activity or configured_activity
-            activity_cards.append(
-                {
-                    "label": label,
-                    "activity": activity,
-                    "returned": returned_activity is not None,
-                    "starts_at": format_datetime(activity.starts_at),
-                    "ends_at": format_datetime(activity.ends_at),
-                    "price": format_money(activity.price),
-                    "countdown": countdown_label(
-                        activity.starts_at,
-                        activity.ends_at,
-                        now=now,
-                    ),
-                }
-            )
-            if returned_activity is not None and now >= returned_activity.ends_at:
-                stale_warnings.append(f"{label} window has closed.")
-
-    steps = []
-    if run is not None:
-        steps = [
-            ("Event created", run.event is not None),
-            ("Paid activity created", run.paid_activity is not None),
-            ("Free waiting-list activity created", run.free_activity is not None),
-            ("Event published", run.published_event is not None),
-        ]
-    response = templates.TemplateResponse(
-        request=request,
-        name="demo.html",
-        context={
-            "page": PAGE_METADATA["demo"],
-            "session": session,
-            "csrf_token": session.csrf_token,
-            "can_prepare": session.persona in ORGANIZER_PERSONAS,
-            "new_run_key": new_run_key,
-            "run": run,
-            "runs": runs,
-            "steps": steps,
-            "activity_cards": activity_cards,
-            "stale_warnings": stale_warnings,
-            "failure": run.failure if run is not None else None,
-            "failure_step": run.failure_step if run is not None else None,
-            "failure_retryable": run.failure_retryable if run is not None else False,
-            "now": now,
-        },
-        status_code=status_code,
-    )
-    response.headers["Cache-Control"] = "no-store"
-    return response
 
 
 async def _validated_form_fields(
@@ -822,9 +703,23 @@ async def registrations(
             message="Your registrations are temporarily unavailable.",
         )
 
+    activity_ids = list(dict.fromkeys(item.activity_id for item in returned_registrations))
+    activities = await asyncio.gather(
+        *(
+            request.app.state.clients.get_activity(activity_id, session_id=session.id)
+            for activity_id in activity_ids
+        ),
+        return_exceptions=True,
+    )
+    titles = {
+        activity_id: activity.title
+        for activity_id, activity in zip(activity_ids, activities)
+        if isinstance(activity, Activity)
+    }
     entries = [
         {
             "registration": registration,
+            "activity_title": titles.get(registration.activity_id),
             "created_at": format_datetime(registration.created_at),
             "price": format_money(registration.price) if registration.price else None,
         }
@@ -1036,241 +931,6 @@ async def accept_registration_offer(request: Request, registration_id: UUID) -> 
     return await _registration_action(request, registration_id, action="accept-offer")
 
 
-@router.get("/demo", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
-async def guided_demo(
-    request: Request,
-    run_id: Annotated[UUID | None, Query()] = None,
-) -> HTMLResponse:
-    store = _session_store(request)
-    session, is_new = _session_or_create(request)
-    run = None
-    with session.lock:
-        if run_id is not None:
-            run = session.demo_runs.get(str(run_id))
-            if run is None:
-                raise HTTPException(status_code=404, detail="The preparation run was not found.")
-        elif session.demo_runs:
-            run = next(reversed(session.demo_runs.values()))
-    response = _demo_response(request, session=session, run=run)
-    _set_cookie_if_new(response, is_new=is_new, session=session, store=store)
-    return response
-
-
-@router.post("/demo/prepare")
-async def prepare_demo(request: Request) -> Response:
-    session = _existing_session(request)
-    await _validate_csrf(request, session)
-    identity = _organizer_identity(request, session)
-    fields = await _validated_form_fields(
-        request,
-        allowed=frozenset({"csrf_token", "idempotency_key", "intent", "confirm_new_run", "run_id"}),
-    )
-    intent = fields.get("intent")
-
-    if intent == "new":
-        if fields.get("confirm_new_run") != "yes":
-            raise HTTPException(
-                status_code=400,
-                detail="Confirm explicitly before preparing a new run.",
-            )
-        intent_key = _command_key(fields)
-        with session.lock:
-            run_id_value = session.demo_intents.get(intent_key)
-            run = session.demo_runs.get(run_id_value) if run_id_value is not None else None
-            if run is None:
-                pending_demo_steps = sum(
-                    sum(
-                        result is None
-                        for result in (
-                            preparation.event,
-                            preparation.paid_activity,
-                            preparation.free_activity,
-                            preparation.published_event,
-                        )
-                    )
-                    for preparation in session.demo_runs.values()
-                )
-                if (
-                    intent_key != session.demo_start_key
-                    or len(session.commands) + pending_demo_steps + 4
-                    > request.app.state.settings.max_commands_per_session
-                ):
-                    raise HTTPException(
-                        status_code=409,
-                        detail="Refresh the guide and explicitly confirm a new preparation.",
-                    )
-                run = create_preparation(
-                    run_id=uuid4(),
-                    organization_id=UUID(identity["organizationId"]),
-                    organization_label=ORGANIZER_PERSONAS[session.persona],
-                    settings=request.app.state.settings,
-                    now=datetime.now(timezone.utc),
-                )
-                run_id_value = str(run.run_id)
-                session.demo_runs[run_id_value] = run
-                session.demo_intents[intent_key] = run_id_value
-                session.demo_intents.move_to_end(intent_key)
-                session.demo_start_key = None
-    elif intent == "resume":
-        try:
-            run_id_value = str(UUID(fields.get("run_id", "")))
-        except ValueError:
-            raise HTTPException(
-                status_code=400, detail="A valid preparation run is required."
-            ) from None
-        with session.lock:
-            run = session.demo_runs.get(run_id_value)
-        if run is None:
-            raise HTTPException(status_code=404, detail="The preparation run was not found.")
-    else:
-        raise HTTPException(status_code=400, detail="Choose a valid preparation action.")
-
-    if run is None:
-        raise RuntimeError("The preparation intent was not retained in the browser session.")
-    if run.complete:
-        return Response(
-            status_code=303,
-            headers={"Location": f"/demo?run_id={run.run_id}"},
-        )
-
-    clients = request.app.state.clients
-    run.failure = None
-    run.failure_step = None
-    run.failure_retryable = False
-
-    try:
-        if run.event is None:
-
-            async def create_event(key: str, correlation_id: UUID):
-                return await clients.create_event(
-                    run.event_input,
-                    token=identity["token"],
-                    idempotency_key=key,
-                    session_id=session.id,
-                    correlation_id=correlation_id,
-                )
-
-            outcome = await request.app.state.command_ledger.execute(
-                session,
-                idempotency_key=run.command_keys["event"],
-                payload=run.event_input.model_dump(mode="json", by_alias=True),
-                operation=create_event,
-            )
-            if not isinstance(outcome.result, Event):
-                raise RuntimeError("The event client returned an invalid preparation result.")
-            with session.lock:
-                run.event = outcome.result
-
-        if run.paid_activity is None:
-
-            async def create_paid_activity(key: str, correlation_id: UUID):
-                return await clients.create_activity(
-                    run.event.id,
-                    run.paid_activity_input,
-                    token=identity["token"],
-                    idempotency_key=key,
-                    session_id=session.id,
-                    correlation_id=correlation_id,
-                )
-
-            outcome = await request.app.state.command_ledger.execute(
-                session,
-                idempotency_key=run.command_keys["paid_activity"],
-                payload={
-                    "eventId": str(run.event.id),
-                    "activity": run.paid_activity_input.model_dump(mode="json", by_alias=True),
-                },
-                operation=create_paid_activity,
-            )
-            if not isinstance(outcome.result, Activity):
-                raise RuntimeError("The activity client returned an invalid preparation result.")
-            with session.lock:
-                run.paid_activity = outcome.result
-
-        if run.free_activity is None:
-
-            async def create_free_activity(key: str, correlation_id: UUID):
-                return await clients.create_activity(
-                    run.event.id,
-                    run.free_activity_input,
-                    token=identity["token"],
-                    idempotency_key=key,
-                    session_id=session.id,
-                    correlation_id=correlation_id,
-                )
-
-            outcome = await request.app.state.command_ledger.execute(
-                session,
-                idempotency_key=run.command_keys["free_activity"],
-                payload={
-                    "eventId": str(run.event.id),
-                    "activity": run.free_activity_input.model_dump(mode="json", by_alias=True),
-                },
-                operation=create_free_activity,
-            )
-            if not isinstance(outcome.result, Activity):
-                raise RuntimeError("The activity client returned an invalid preparation result.")
-            with session.lock:
-                run.free_activity = outcome.result
-
-        if run.published_event is None:
-
-            async def publish_event(key: str, correlation_id: UUID):
-                return await clients.publish_event(
-                    run.event.id,
-                    token=identity["token"],
-                    idempotency_key=key,
-                    session_id=session.id,
-                    correlation_id=correlation_id,
-                )
-
-            outcome = await request.app.state.command_ledger.execute(
-                session,
-                idempotency_key=run.command_keys["publish"],
-                payload={"eventId": str(run.event.id), "action": "publish"},
-                operation=publish_event,
-            )
-            if not isinstance(outcome.result, Event):
-                raise RuntimeError("The publish client returned an invalid preparation result.")
-            with session.lock:
-                run.event = outcome.result
-                run.published_event = outcome.result
-    except CommandConflictError:
-        raise HTTPException(
-            status_code=409,
-            detail="This preparation command was invalidated; start a fresh run explicitly.",
-        ) from None
-    except OverflowError:
-        raise HTTPException(
-            status_code=429,
-            detail="This browser session has reached its command limit.",
-        ) from None
-    except SERVICE_ERRORS as error:
-        run.failure = service_failure(error)
-        run.failure_step = (
-            "event creation"
-            if run.event is None
-            else "paid activity creation"
-            if run.paid_activity is None
-            else "free activity creation"
-            if run.free_activity is None
-            else "event publication"
-        )
-        run.failure_retryable = error.outcome_unknown
-        status_code = 503 if error.outcome_unknown else error.status_code or 502
-        return _demo_response(
-            request,
-            session=session,
-            run=run,
-            status_code=status_code,
-        )
-
-    return Response(
-        status_code=303,
-        headers={"Location": f"/demo?run_id={run.run_id}"},
-    )
-
-
 async def _attendance_action(
     request: Request,
     registration_id: UUID,
@@ -1439,216 +1099,10 @@ async def session_info(request: Request, response: Response) -> dict[str, str]:
     return result
 
 
-@router.get("/scenario-lab", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
-async def scenario_lab_page(request: Request) -> HTMLResponse:
-    store = _session_store(request)
-    session, is_new = _session_or_create(request)
-    manager = getattr(request.app.state, "scenario_manager", None)
-    identity = store.identity_for(session)
-    configured = manager is not None
-    tenant_allowed = session.persona == "organizer"
-    enabled = configured and tenant_allowed
-    unavailable_reason = (
-        "Scenario Lab is disabled by configuration."
-        if not configured
-        else "Scenario Lab requires the GESAD/UECE organizer persona."
-    )
-    presets = [
-        manager.preview(preset_key)
-        if enabled
-        else {
-            "preset": preset.key,
-            "title": preset.title,
-            "participants": preset.participants,
-            "capacity": preset.capacity,
-            "submissionsPerParticipant": preset.submissions_per_participant,
-            "concurrency": preset.required_concurrency,
-            "priceMinor": preset.price_minor,
-            "available": False,
-            "unavailableReason": unavailable_reason,
-        }
-        for preset_key, preset in PRESETS.items()
-    ]
-    presets.append(
-        {
-            "preset": "seat-opens",
-            "title": "A seat opens",
-            "participants": 0,
-            "capacity": 0,
-            "submissionsPerParticipant": 0,
-            "concurrency": 0,
-            "priceMinor": 0,
-            "available": enabled,
-            "unavailableReason": None if enabled else unavailable_reason,
-        }
-    )
-    timeout = getattr(request.app.state.settings, "lab_run_timeout_seconds", None) or 60
-    response = templates.TemplateResponse(
-        request=request,
-        name="lab.html",
-        context={
-            "page": PAGE_METADATA["lab"],
-            "lab_unavailable_reason": unavailable_reason,
-            "lab_enabled": enabled,
-            "can_run": enabled and identity is not None and identity["role"] == "ORGANIZER",
-            "csrf_token": session.csrf_token,
-            "presets": presets,
-            "runs": manager.snapshots_for(session.id) if enabled else [],
-            "max_poll_attempts": min(90, timeout + 10),
-        },
-    )
-    response.headers["Cache-Control"] = "no-store"
-    _set_cookie_if_new(response, is_new=is_new, session=session, store=store)
-    return response
-
-
-@router.get("/scenario-lab/presets/{preset}")
-async def scenario_preview(request: Request, preset: str) -> JSONResponse:
-    session = _existing_session(request)
-    manager = _scenario_manager(request, session)
-    try:
-        result = manager.preview(preset)
-    except (
-        ScenarioAccessError,
-        ScenarioConflictError,
-        PresetUnavailableError,
-        ScenarioDisabledError,
-        ScenarioStateError,
-    ) as error:
-        raise _scenario_error(error) from None
-    response = JSONResponse(result)
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-@router.get("/scenario-lab/runs")
-async def scenario_runs(request: Request) -> JSONResponse:
-    session = _existing_session(request)
-    manager = _scenario_manager(request, session)
-    response = JSONResponse({"runs": manager.snapshots_for(session.id)})
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-@router.post("/scenario-lab/runs/{preset}")
-async def start_scenario(request: Request, preset: str) -> JSONResponse:
-    session = _existing_session(request)
-    await _validate_csrf(request, session)
-    manager = _scenario_manager(request, session)
-    try:
-        result = await manager.start(session.id, preset)
-    except (
-        ScenarioAccessError,
-        ScenarioConflictError,
-        PresetUnavailableError,
-        ScenarioDisabledError,
-        ScenarioStateError,
-    ) as error:
-        raise _scenario_error(error) from None
-    response = JSONResponse(result, status_code=202)
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-@router.get("/scenario-lab/runs/{run_id:uuid}")
-async def scenario_snapshot(request: Request, run_id: UUID) -> JSONResponse:
-    session = _existing_session(request)
-    manager = _scenario_manager(request, session)
-    result = manager.snapshot(session.id, str(run_id))
-    if result is None:
-        raise HTTPException(status_code=404, detail="The requested run is not available.")
-    response = JSONResponse(result)
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-@router.get("/scenario-lab/runs/{run_id:uuid}/export")
-async def export_scenario(request: Request, run_id: UUID) -> JSONResponse:
-    session = _existing_session(request)
-    manager = _scenario_manager(request, session)
-    result = manager.export(session.id, str(run_id))
-    if result is None:
-        raise HTTPException(status_code=404, detail="The requested run is not available.")
-    response = JSONResponse(result)
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-@router.post("/scenario-lab/runs/{run_id:uuid}/stop")
-async def stop_scenario(request: Request, run_id: UUID) -> JSONResponse:
-    session = _existing_session(request)
-    await _validate_csrf(request, session)
-    manager = _scenario_manager(request, session)
-    try:
-        result = await manager.stop(session.id, str(run_id))
-    except (
-        ScenarioAccessError,
-        ScenarioConflictError,
-        PresetUnavailableError,
-        ScenarioDisabledError,
-        ScenarioStateError,
-    ) as error:
-        raise _scenario_error(error) from None
-    response = JSONResponse(result)
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-@router.post("/scenario-lab/runs/{run_id:uuid}/cancel-confirmed")
-async def cancel_scenario_registration(request: Request, run_id: UUID) -> JSONResponse:
-    session = _existing_session(request)
-    await _validate_csrf(request, session)
-    manager = _scenario_manager(request, session)
-    try:
-        result = await manager.cancel_confirmed(session.id, str(run_id))
-    except (
-        ScenarioAccessError,
-        ScenarioConflictError,
-        PresetUnavailableError,
-        ScenarioDisabledError,
-        ScenarioStateError,
-    ) as error:
-        raise _scenario_error(error) from None
-    response = JSONResponse(result)
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-@router.post("/scenario-lab/runs/{run_id:uuid}/accept-offer")
-async def accept_scenario_offer(request: Request, run_id: UUID) -> JSONResponse:
-    session = _existing_session(request)
-    await _validate_csrf(request, session)
-    manager = _scenario_manager(request, session)
-    try:
-        result = await manager.accept_offer(session.id, str(run_id))
-    except (
-        ScenarioAccessError,
-        ScenarioConflictError,
-        PresetUnavailableError,
-        ScenarioDisabledError,
-        ScenarioStateError,
-    ) as error:
-        raise _scenario_error(error) from None
-    response = JSONResponse(result)
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-def _reject_if_scenario_running(request: Request, session: BrowserSession, detail: str) -> None:
-    manager = getattr(request.app.state, "scenario_manager", None)
-    if manager is not None and manager.is_running_for(session.id):
-        raise HTTPException(status_code=409, detail=detail)
-
-
 @router.post("/persona/{persona}")
 async def select_persona(request: Request, persona: str) -> Response:
     session = _existing_session(request)
     await _validate_csrf(request, session)
-    _reject_if_scenario_running(
-        request,
-        session,
-        "Persona cannot change while this session owns an active Scenario Lab run.",
-    )
     try:
         _session_store(request).set_persona(session, persona)
     except InvalidPersonaError:
@@ -1660,10 +1114,5 @@ async def select_persona(request: Request, persona: str) -> Response:
 async def sign_out(request: Request) -> Response:
     session = _existing_session(request)
     await _validate_csrf(request, session)
-    _reject_if_scenario_running(
-        request,
-        session,
-        "Sign out is unavailable while this session owns an active Scenario Lab run.",
-    )
     _session_store(request).sign_out(session)
     return Response(status_code=303, headers={"Location": "/"})

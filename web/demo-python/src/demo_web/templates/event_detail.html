@@ -4,7 +4,6 @@
 <section class="content-card event-overview"
          data-section="event"
          aria-labelledby="event-heading">
-  <p class="eyebrow">Published event</p>
   <h2 id="event-heading">{{ event.title }}</h2>
   <p class="event-description">{{ event.description }}</p>
   <dl class="event-facts">
@@ -18,10 +17,8 @@
          data-section="activities"
          aria-labelledby="activities-heading">
   <div class="card-heading">
-    <p class="eyebrow">Observed program</p>
     <h2 id="activities-heading">Activities</h2>
   </div>
-  <p class="card-copy">Activity data comes from Event Management. Availability comes from Registration and is only an observation, not a reservation.</p>
 
   {% if activities_error %}
   <div class="service-error" role="alert">
@@ -53,26 +50,14 @@
       {% if item.availability %}
       <div class="availability-box{% if item.stale %} is-stale{% endif %}" role="status">
         <strong>Available: {{ item.availability.available }}</strong>
-        <span>
-          Observed {{ item.age_label }}{% if item.stale %} · STALE observation{% endif %}
-        </span>
-        <p>This is an observation, not a reservation.</p>
+        {% if item.stale %}<span>(may be outdated)</span>{% endif %}
       </div>
       {% else %}
       <div class="availability-box is-unavailable" role="status">
         <strong>Availability unavailable</strong>
-        <p>No number is shown because the service did not return an observation.</p>
-        {% if item.availability_error %}
-        <p>
-          <strong>{{ item.availability_error.service }}</strong>
-          {% if item.availability_error.status_code %}returned HTTP {{ item.availability_error.status_code }}{% else %}could not be reached{% endif %}.
-          Code <code>{{ item.availability_error.code }}</code>
-          · correlation <code>{{ item.availability_error.correlation_id }}</code>
-        </p>
-        {% endif %}
       </div>
       {% endif %}
-      <a class="secondary-button checkout-link" href="/activities/{{ item.activity.id }}/checkout">Continue to checkout</a>
+      <a class="secondary-button checkout-link" href="/activities/{{ item.activity.id }}/checkout">Register</a>
     </article>
     {% endfor %}
   </div>

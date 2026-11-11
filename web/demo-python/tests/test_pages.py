@@ -101,20 +101,20 @@ def test_home_page_does_not_render_persona_credentials(web_environment):
     with TestClient(create_app(environ=web_environment)) as client:
         initial = client.get("/session").json()
         selected = client.post(
-            "/persona/participant",
+            "/persona/organizer",
             headers={
                 "Origin": "http://testserver",
                 "X-CSRF-Token": initial["csrf_token"],
             },
             follow_redirects=False,
         )
-        response = client.get("/scenario-lab", headers={"Accept": "text/html"})
+        response = client.get("/organizer/events/new", headers={"Accept": "text/html"})
 
     assert selected.status_code == 303
     assert response.status_code == 200
-    assert "Participante simulado 01" in response.text
-    assert "synthetic-participant" not in response.text
-    assert "10000000-0000-4000-8000-000000000001" not in response.text
+    assert "Organizador — GESAD/UECE" in response.text
+    assert "synthetic-organizer" not in response.text
+    assert "20000000-0000-4000-8000-000000000001" not in response.text
 
 
 def test_persona_form_uses_server_rendered_csrf_without_trusting_role_fields(

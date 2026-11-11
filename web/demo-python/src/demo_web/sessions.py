@@ -5,7 +5,6 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Callable, Mapping
 
-from demo_web.demo import DemoPreparation
 from demo_web.models import CheckIn
 
 
@@ -36,9 +35,6 @@ class BrowserSession:
     persona_version: int = 0
     commands: OrderedDict[str, object] = field(default_factory=OrderedDict)
     attendance_flashes: OrderedDict[str, CheckIn] = field(default_factory=OrderedDict)
-    demo_runs: OrderedDict[str, DemoPreparation] = field(default_factory=OrderedDict)
-    demo_intents: OrderedDict[str, str] = field(default_factory=OrderedDict)
-    demo_start_key: str | None = None
     lock: threading.RLock = field(default_factory=threading.RLock)
 
 

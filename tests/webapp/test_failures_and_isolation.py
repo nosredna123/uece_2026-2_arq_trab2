@@ -18,12 +18,14 @@ def test_missing_identity_invalid_persona_and_stale_form_are_rejected(browser_pa
     assert page.url == f"{BASE_URL}/"
     expect(page.get_by_role("button", name="Sign out", exact=True)).to_have_count(0)
 
-    select_persona(page, "Visitante")
-    no_persona = page.goto(f"{BASE_URL}/organizer")
-    assert no_persona.status == 403
+    select_persona(page, "Participante simulado 01")
+    page.goto(f"{BASE_URL}/organizer")
+    assert page.url == f"{BASE_URL}/events"
 
     select_persona(page, "Organizador — GESAD/UECE")
-    page.goto(f"{BASE_URL}/organizer")
+    page.goto(f"{BASE_URL}/events")
+    assert page.url == f"{BASE_URL}/organizer"
+    page.goto(f"{BASE_URL}/organizer/events/new")
     old_csrf = page.locator(
         'form[action="/organizer/events"] input[name="csrf_token"]'
     ).input_value()
@@ -79,15 +81,15 @@ def test_missing_identity_invalid_persona_and_stale_form_are_rejected(browser_pa
     os.environ.get("WEBAPP_TEST_REPORTING_FAILURE") != "1",
     reason="This probe runs only while the isolated Reporting service is deliberately stopped.",
 )
-def test_reporting_failure_is_visible_and_not_an_empty_projection(browser_page):
+def test_reporting_failure_is_visible_and_not_an_empty_report(browser_page):
     page = browser_page
     select_persona(page, "Organizador — GESAD/UECE")
     response = page.goto(f"{BASE_URL}/reports")
     assert response.status in {502, 503, 504}
     alert = page.get_by_role("alert")
-    expect(alert).to_contain_text("Reporting unavailable")
+    expect(alert).to_contain_text("Reports could not be loaded")
     expect(alert).to_contain_text("correlation")
-    assert page.locator("[data-report-empty]").is_hidden()
+    expect(page.locator(".report-table")).to_have_count(0)
 
 
 @pytest.mark.skipif(
@@ -97,16 +99,16 @@ def test_reporting_failure_is_visible_and_not_an_empty_projection(browser_page):
 def test_identity_failure_is_visible_and_does_not_create_an_event(browser_page):
     page = browser_page
     select_persona(page, "Organizador — GESAD/UECE")
-    page.goto(f"{BASE_URL}/organizer")
+    page.goto(f"{BASE_URL}/organizer/events/new")
     future = datetime.now(timezone.utc) + timedelta(hours=1)
-    page.get_by_label("Event title").fill(f"identity-unavailable-{uuid4()}")
-    page.get_by_label("Description").fill("Identity failure browser probe.")
-    page.get_by_label("Starts at (ISO 8601 with timezone)").fill(future.isoformat())
-    page.get_by_label("Ends at (ISO 8601 with timezone)").fill(
-        (future + timedelta(hours=1)).isoformat()
+    form = page.locator('form[action="/organizer/events"]')
+    form.get_by_label("Title", exact=True).fill(f"identity-unavailable-{uuid4()}")
+    form.get_by_label("Description", exact=True).fill("Identity failure browser probe.")
+    form.get_by_label("Starts at (UTC)", exact=True).fill(future.strftime("%Y-%m-%dT%H:%M"))
+    form.get_by_label("Ends at (UTC)", exact=True).fill(
+        (future + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M")
     )
-    page.get_by_role("button", name="Create event draft", exact=True).click()
+    form.get_by_role("button", name="Create event", exact=True).click()
     alert = page.get_by_role("alert")
     expect(alert).to_be_visible()
-    expect(alert).to_contain_text("correlation")
-    expect(page.get_by_text("Event Management event", exact=False)).to_have_count(0)
+    assert "/organizer/events/new" in page.url or page.url.endswith("/organizer/events")

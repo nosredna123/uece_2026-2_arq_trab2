@@ -174,10 +174,8 @@ def test_event_detail_formats_schedule_and_minor_units_and_labels_stale_or_unava
     assert "Free" in response.text
     assert "Jan 02, 2027 10:30 UTC" in response.text
     assert "Available: 0" in response.text
-    assert "STALE" in response.text
+    assert "may be outdated" in response.text
     assert "Availability unavailable" in response.text
-    assert "AVAILABILITY_DOWN" in response.text
-    assert "observation, not a reservation" in response.text
     unavailable_card = response.text.split(f'id="activity-{ACTIVITY_TWO}"', 1)[1]
     unavailable_card = unavailable_card.split("</article>", 1)[0]
     assert "Available:" not in unavailable_card

@@ -183,8 +183,8 @@ def test_check_in_read_state_is_unknown_after_one_time_post_observation(
         reloaded = client.get(f"/registrations/{REGISTRATION_ID}")
 
     assert post_redirect.status_code == 200
-    assert "Attendance returned a check-in record" in post_redirect.text
-    assert "Read state unknown after reload" in reloaded.text
+    assert "Checked in at" in post_redirect.text
+    assert "Checked in at" not in reloaded.text
     assert all(
         request.url.path != f"/registrations/{REGISTRATION_ID}/check-in" or request.method == "POST"
         for request in requests
@@ -219,8 +219,8 @@ def test_persona_change_clears_check_in_observation(monkeypatch, web_environment
         reloaded = client.get(f"/registrations/{REGISTRATION_ID}")
 
     assert changed.status_code == 303
-    assert "Read state unknown after reload" in reloaded.text
-    assert "Attendance returned a check-in record" not in reloaded.text
+    assert "Checked in at" not in reloaded.text
+    assert "Check in" in reloaded.text
 
 
 @pytest.mark.parametrize(

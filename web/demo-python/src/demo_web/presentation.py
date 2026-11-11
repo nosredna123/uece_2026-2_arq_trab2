@@ -35,48 +35,34 @@ PAGE_METADATA = {
         ),
     ),
     "events": PageMetadata(
-        title="Published events",
-        eyebrow="Explore the published program",
+        title="Events",
+        eyebrow="Participant",
         heading="Find an event",
-        description=(
-            "Browse the public Event Management catalog. Availability is observed "
-            "separately and never reserves a place."
-        ),
+        description="Browse published events and register for their activities.",
     ),
     "event_detail": PageMetadata(
         title="Event details",
-        eyebrow="Published event and activity program",
+        eyebrow="Participant",
         heading="Event details",
-        description=(
-            "Schedules and prices come from Event Management. Capacity is a "
-            "time-stamped observation from Registration."
-        ),
+        description="Choose an activity and register. Seats shown are the latest availability.",
     ),
     "checkout": PageMetadata(
         title="Confirm registration",
-        eyebrow="One explicit service command",
-        heading="Review your registration",
-        description=(
-            "The activity details come from Event Management. Registration is "
-            "created only when you confirm below."
-        ),
+        eyebrow="Participant",
+        heading="Confirm your registration",
+        description="Your registration is only created when you confirm below.",
     ),
     "registrations": PageMetadata(
         title="My registrations",
-        eyebrow="Your participant journey",
+        eyebrow="Participant",
         heading="My registrations",
-        description=(
-            "Current states come from Registration. A list is scoped to the selected "
-            "synthetic participant."
-        ),
+        description="Follow your registrations, check in and get your certificates.",
     ),
     "registration_detail": PageMetadata(
-        title="Registration status",
-        eyebrow="Live registration record",
-        heading="Registration status",
-        description=(
-            "This page shows the last observed backend state. Refresh is bounded and can be paused."
-        ),
+        title="Registration",
+        eyebrow="Participant",
+        heading="Registration",
+        description="Current status of this registration. The page refreshes while it changes.",
     ),
     "organizer": PageMetadata(
         title="My events",
@@ -97,22 +83,10 @@ PAGE_METADATA = {
         description="Edit the event and its activities. Times are in UTC.",
     ),
     "certificate": PageMetadata(
-        title="Certificate record",
-        eyebrow="Attendance record and printable presentation",
+        title="Certificate",
+        eyebrow="Participant",
         heading="Certificate of participation",
-        description=(
-            "The certificate identity and issue time come from Attendance. "
-            "The printable layout is a presentation, not a signed credential."
-        ),
-    ),
-    "demo": PageMetadata(
-        title="Guided event demonstration",
-        eyebrow="Prepare synthetic service-owned records",
-        heading="Follow the registration journeys",
-        description=(
-            "Prepare a paid and a one-seat free activity through Event Management, "
-            "then follow the participant journeys using actual service responses."
-        ),
+        description="A printable certificate for an attended activity.",
     ),
     "reports": PageMetadata(
         title="Reports",
@@ -121,15 +95,6 @@ PAGE_METADATA = {
         description=(
             "Registrations, check-ins and certificates of your published events. "
             "The page refreshes automatically."
-        ),
-    ),
-    "lab": PageMetadata(
-        title="Scenario Lab",
-        eyebrow="Bounded concurrency experiments",
-        heading="Scenario Lab",
-        description=(
-            "Run fixed, synthetic registration workloads and review measured service "
-            "observations without treating a timeout as a rollback."
         ),
     ),
     "error": PageMetadata(

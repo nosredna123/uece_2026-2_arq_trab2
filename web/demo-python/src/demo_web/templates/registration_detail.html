@@ -4,8 +4,7 @@
 <section class="content-card registration-detail"
          data-section="registration-status"
          aria-labelledby="registration-heading">
-  <p class="eyebrow">Registration record {{ registration_id }}</p>
-  <h2 id="registration-heading">Registration status</h2>
+  <h2 id="registration-heading">Registration</h2>
   {% if registration %}
   <div id="registration-panel"
        data-poll-url="/registrations/{{ registration_id }}/poll"
@@ -36,31 +35,26 @@
       </div>
       {% if price %}
       <div>
-        <dt>Backend registration price</dt>
+        <dt>Price</dt>
         <dd>{{ price }}</dd>
       </div>
       {% endif %}
       {% if check_in_observation %}
       <div>
-        <dt>Check-in observation</dt>
-        <dd>Attendance returned a check-in record at {{ check_in_observed_at }}.</dd>
-      </div>
-      {% else %}
-      <div>
-        <dt>Check-in observation</dt>
-        <dd>Read state unknown after reload; Attendance has no check-in read endpoint.</dd>
+        <dt>Check-in</dt>
+        <dd>Checked in at {{ check_in_observed_at }}.</dd>
       </div>
       {% endif %}
-      </dl>
+    </dl>
     <p class="notice-box refund-note" data-refund-note
        {% if registration.status != "CONFIRMED" or registration.refund_status != "PENDING" %}hidden{% endif %}>
-      Refund pending; this registration remains confirmed and still occupies capacity.
+      Refund pending; the seat stays reserved until the refund completes.
     </p>
     <p class="notice-box offer-note" data-offer-note
        {% if registration.status != "OFFERED" %}hidden{% endif %}>
-      This is an offer from Registration. Accept before its backend deadline to claim it.
+      A seat became available for you. Accept it before the offer expires.
     </p>
-    <p class="last-observed" data-last-observed>Last observed {{ observed_at }}</p>
+    <p class="last-observed" data-last-observed>Updated {{ observed_at }}</p>
   </div>
   {% else %}
   <p class="service-error" role="alert">
@@ -86,8 +80,7 @@
     {% endif %}
     <button class="secondary-button" type="button" data-poll-refresh>Refresh now</button>
     <p data-poll-message role="status">
-      {% if pollable %}Automatic refresh is bounded and may be paused at any time.
-      {% else %}Automatic refresh is stopped for this state. Use Refresh now for another observation.{% endif %}
+      {% if pollable %}This page updates automatically.{% endif %}
     </p>
   </section>
 </section>
@@ -95,7 +88,7 @@
 <section class="content-card registration-actions"
          data-section="registration-actions"
          aria-labelledby="registration-actions-heading">
-  <h2 id="registration-actions-heading">Available service actions</h2>
+  <h2 id="registration-actions-heading">Actions</h2>
   {% if cancel_key %}
   <form method="post" action="/registrations/{{ registration_id }}/cancel"
         data-action-form="cancel" {% if not can_cancel %}hidden{% endif %}>
@@ -137,9 +130,9 @@
   </form>
   {% endif %}
   {% if not cancel_key and not accept_key and not check_in_key and not certificate_key %}
-  <p class="card-copy">No mutation is available for this current state.</p>
+  <p class="card-copy">No actions available right now.</p>
   {% endif %}
-  <p><a href="/registrations/{{ registration_id }}/certificate">View issued certificate</a></p>
+  <p><a href="/registrations/{{ registration_id }}/certificate">View certificate</a></p>
 </section>
 
 <script src="/static/status.js" defer></script>

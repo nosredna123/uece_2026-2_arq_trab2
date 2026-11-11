@@ -115,7 +115,7 @@ def test_registration_detail_renders_each_backend_state(monkeypatch, web_environ
 
     assert response.status_code == 200
     assert status in response.text
-    assert "Last observed" in response.text
+    assert "Updated" in response.text
     assert "registration-position" not in response.text
 
 
@@ -135,7 +135,7 @@ def test_refund_pending_keeps_registration_confirmed_and_occupied(monkeypatch, w
     assert response.status_code == 200
     assert "CONFIRMED" in response.text
     assert "Refund pending" in response.text
-    assert "still occupies capacity" in response.text
+    assert "seat stays reserved" in response.text
 
 
 def test_offer_deadline_and_accept_action_are_backend_derived(monkeypatch, web_environment):
@@ -373,7 +373,7 @@ def test_poll_failure_preserves_last_observed_registration_data(monkeypatch, web
     assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
     assert "registration" not in response.json()
     assert "PENDING_PAYMENT" in page.text
-    assert "Last observed" in page.text
+    assert "Updated" in page.text
 
 
 def test_lost_cancel_response_retries_same_idempotency_and_correlation(

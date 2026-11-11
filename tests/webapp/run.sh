@@ -71,7 +71,7 @@ printf 'Building the pinned Playwright browser-test image.\n'
 printf 'Starting the isolated backend and presentation services.\n'
 "${COMPOSE[@]}" up -d --wait demo-web
 
-printf 'Running real-browser journeys and Scenario Lab acceptance.\n'
+printf 'Running real-browser journeys.\n'
 "${COMPOSE[@]}" run --no-deps --rm webapp-browser-test
 
 printf 'Checking the Reporting outage response in an isolated browser context.\n'
@@ -81,7 +81,7 @@ outage_probe_active=1
   -e WEBAPP_TEST_REPORTING_FAILURE=1 \
   webapp-browser-test \
   python -m pytest -x --import-mode=importlib \
-  tests/webapp/test_failures_and_isolation.py::test_reporting_failure_is_visible_and_not_an_empty_projection
+  tests/webapp/test_failures_and_isolation.py::test_reporting_failure_is_visible_and_not_an_empty_report
 "${COMPOSE[@]}" up -d --wait reporting
 
 printf 'Checking the Identity outage response in an isolated browser context.\n'

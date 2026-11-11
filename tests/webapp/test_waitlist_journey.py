@@ -3,7 +3,7 @@ import pytest
 from tests.webapp.conftest import (
     BASE_URL,
     assert_no_browser_errors,
-    prepare_demo,
+    create_published_event,
     select_persona,
     wait_for_registration,
 )
@@ -21,7 +21,7 @@ def test_two_person_waitlist_offer_acceptance_and_session_isolation(
     participant_one_context, participant_one = browser_context_factory()
     participant_two_context, participant_two = browser_context_factory()
 
-    prepared = prepare_demo(organizer)
+    prepared = create_published_event(organizer)
     participant_one_cookies = participant_one_context.cookies(BASE_URL)
     participant_two_cookies = participant_two_context.cookies(BASE_URL)
     assert not participant_one_cookies
@@ -80,13 +80,7 @@ def test_two_person_waitlist_offer_acceptance_and_session_isolation(
     expect(participant_two.locator("[data-registration-status]")).to_have_text("CONFIRMED")
 
     participant_two.goto(f"{BASE_URL}/events/{prepared.event_id}")
-    activity = participant_two.locator(".activity-row").filter(
-        has_text="Oficina de Sistemas Autoadaptativos"
-    )
-    if activity.count() == 0:
-        activity = participant_two.locator(".activity-row").filter(
-            has_text="Oficina de Sistemas Autoadaptativos"
-        )
+    activity = participant_two.locator(".activity-row").filter(has_text=prepared.free_title)
     expect(activity).to_contain_text("Available: 0")
     assert "synthetic-participant-001" not in participant_two.content()
     assert_no_browser_errors(browser_errors)

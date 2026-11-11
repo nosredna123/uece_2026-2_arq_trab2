@@ -14,7 +14,6 @@ from demo_web.commands import CommandLedger
 from demo_web.presentation import PAGE_METADATA, STATIC_DIRECTORY, templates
 from demo_web.organizer import router as organizer_router
 from demo_web.routes import SignInRequired, router
-from demo_web.scenarios import ScenarioManager
 from demo_web.seed import run_seed
 from demo_web.sessions import SessionStore
 from demo_web.settings import Settings
@@ -31,27 +30,10 @@ def create_app(environ: Mapping[str, str] | None = None) -> FastAPI:
             max_sessions=app.state.settings.max_sessions,
         )
         app.state.clients = DemoClients(app.state.settings)
-        app.state.scenario_manager = None
         try:
             app.state.command_ledger = CommandLedger(
                 max_commands_per_session=app.state.settings.max_commands_per_session
             )
-            if app.state.settings.lab_enabled:
-                lab_fixtures_path = app.state.settings.lab_fixtures_path
-                if lab_fixtures_path is None:
-                    raise RuntimeError(
-                        "Scenario Lab fixture path is required when the lab is enabled."
-                    )
-                lab_fixtures = json.loads(lab_fixtures_path.read_text(encoding="utf-8"))
-                organizer = fixtures["organizer"]
-                app.state.scenario_manager = ScenarioManager(
-                    clients=app.state.clients,
-                    settings=app.state.settings,
-                    identities=lab_fixtures,
-                    organizer_token=organizer["token"],
-                    organization_id=organizer["organizationId"],
-                    session_is_active=app.state.sessions.is_active,
-                )
             if app.state.settings.seed_data_path is not None:
                 app.state.seed_task = asyncio.create_task(
                     run_seed(app.state.settings, fixtures), name="initial-presentation-data"
@@ -63,11 +45,7 @@ def create_app(environ: Mapping[str, str] | None = None) -> FastAPI:
                 seed_task.cancel()
                 with suppress(asyncio.CancelledError):
                     await seed_task
-            try:
-                if app.state.scenario_manager is not None:
-                    await app.state.scenario_manager.shutdown()
-            finally:
-                await app.state.clients.aclose()
+            await app.state.clients.aclose()
 
     app = FastAPI(title="EventHub Demo", lifespan=lifespan)
     app.mount(

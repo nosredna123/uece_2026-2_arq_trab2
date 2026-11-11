@@ -63,7 +63,7 @@
         : "No active offer";
     }
     if (lastObserved) {
-      lastObserved.textContent = `Last observed ${new Date(observedAt)
+      lastObserved.textContent = `Updated ${new Date(observedAt)
         .toISOString()
         .slice(0, 16)
         .replace("T", " ")} UTC`;
@@ -75,7 +75,7 @@
       if (Date.now() >= deadline) {
         automatic = false;
         paused = true;
-        setMessage("The automatic refresh window ended. Use Refresh now for another observation.");
+        setMessage("Automatic updates stopped. Use Refresh now.");
       }
       return;
     }
@@ -124,7 +124,7 @@
         setMessage("The backend state is terminal for automatic updates. Use Refresh now to recheck.");
         return;
       }
-      setMessage(`Registration observed at ${new Date(result.observedAt).toISOString()}.`);
+      setMessage(`Updated at ${new Date(result.observedAt).toISOString()}.`);
       scheduleAgain = automatic && !paused;
     } catch (error) {
       if (error.name !== "AbortError") {
@@ -157,7 +157,7 @@
       if (paused) {
         if (timer !== null) window.clearTimeout(timer);
         timer = null;
-        setMessage("Updates paused. Use Refresh now for an explicit observation.");
+        setMessage("Updates paused.");
       } else {
         refresh(false);
       }
