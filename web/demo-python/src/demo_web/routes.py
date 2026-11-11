@@ -6,20 +6,15 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import ValidationError
 
 from demo_web.commands import CommandConflictError
 from demo_web.demo import DemoPreparation, countdown_label, create_preparation
 from demo_web.errors import InvalidResponseError, ServiceError, TransportError
 from demo_web.models import (
     Activity,
-    ActivityInput,
     Certificate,
     CheckIn,
     Event,
-    EventInput,
-    Money,
-    Report,
 )
 from demo_web.presentation import (
     ORGANIZER_PERSONAS,
@@ -44,8 +39,6 @@ from demo_web.scenarios import (
 from demo_web.sessions import (
     BrowserSession,
     InvalidPersonaError,
-    ReportObservation,
-    SessionEventDraft,
     SessionStore,
 )
 
@@ -59,11 +52,15 @@ MAX_REGISTRATION_LIMIT = 50
 MAX_PAGE_OFFSET = 10000
 SERVICE_ERRORS = (ServiceError, TransportError, InvalidResponseError)
 POLLABLE_STATUSES = frozenset({"WAITLISTED", "OFFERED", "PENDING_PAYMENT"})
-SIGNED_IN_LANDING = "/events"
+ROLE_HOMES = {"ORGANIZER": "/organizer", "PARTICIPANT": "/events"}
 
 
 class SignInRequired(Exception):
-    """Raised when a page is requested before a synthetic user is selected."""
+    """Raised when a page needs a different (or any) synthetic user; redirects to location."""
+
+    def __init__(self, location: str = "/"):
+        super().__init__(location)
+        self.location = location
 
 
 def _session_store(request: Request) -> SessionStore:
@@ -84,6 +81,27 @@ def _require_sign_in(request: Request) -> None:
 
 
 SIGNED_IN_PAGE = [Depends(_require_sign_in)]
+
+
+def role_home(request: Request, session: BrowserSession) -> str:
+    identity = _session_store(request).identity_for(session)
+    return ROLE_HOMES.get(identity.get("role", "") if identity else "", "/")
+
+
+def _require_role(role: str):
+    def dependency(request: Request) -> None:
+        session = _session_store(request).get(request.cookies.get(SESSION_COOKIE))
+        if session is None or not session.signed_in:
+            raise SignInRequired()
+        identity = _session_store(request).identity_for(session)
+        if identity is None or identity.get("role") != role:
+            raise SignInRequired(role_home(request, session))
+
+    return dependency
+
+
+ORGANIZER_PAGE = [Depends(_require_role("ORGANIZER"))]
+PARTICIPANT_PAGE = [Depends(_require_role("PARTICIPANT"))]
 
 
 def _session_or_create(request: Request) -> tuple[BrowserSession, bool]:
@@ -282,253 +300,6 @@ def _demo_response(
     return response
 
 
-def _report_cache_key(
-    organization_id: str,
-    *,
-    activity_id: UUID | None,
-    limit: int,
-    offset: int,
-) -> str:
-    return f"{organization_id}:{activity_id or ''}:{limit}:{offset}"
-
-
-def _remember_report_observation(
-    session: BrowserSession,
-    *,
-    cache_key: str,
-    reports: list[Report],
-    observed_at: datetime,
-    max_observations: int,
-) -> ReportObservation:
-    observation = ReportObservation(tuple(reports), observed_at)
-    with session.lock:
-        session.report_observations[cache_key] = observation
-        session.report_observations.move_to_end(cache_key)
-        while len(session.report_observations) > max_observations:
-            session.report_observations.popitem(last=False)
-    return observation
-
-
-def _report_response(
-    request: Request,
-    *,
-    session: BrowserSession,
-    identity: dict[str, str],
-    limit: int,
-    offset: int,
-    activity_id: UUID | None,
-    observation: ReportObservation | None,
-    failure: ServiceError | TransportError | InvalidResponseError | None = None,
-) -> HTMLResponse:
-    now = datetime.now(timezone.utc)
-    reports = list(observation.reports) if observation is not None else []
-    report_rows = []
-    for report in reports:
-        age_label, age_stale = format_observation_age(report.projected_at, now=now)
-        report_rows.append(
-            {
-                "report": report,
-                "projected_at": format_datetime(report.projected_at),
-                "age_label": age_label,
-                "stale": failure is not None or age_stale,
-            }
-        )
-    service_error = service_failure(failure) if failure is not None else None
-    has_projection = observation is not None
-    response = templates.TemplateResponse(
-        request=request,
-        name="reports.html",
-        context={
-            "page": PAGE_METADATA["reports"],
-            "csrf_token": session.csrf_token,
-            "persona_version": session.persona_version,
-            "poll_interval_ms": request.app.state.settings.poll_interval_seconds * 1000,
-            "poll_timeout_ms": request.app.state.settings.poll_timeout_seconds * 1000,
-            "organization_id": identity["organizationId"],
-            "limit": limit,
-            "offset": offset,
-            "activity_id": str(activity_id) if activity_id is not None else "",
-            "entries": request.app.state.clients.history_for(session.id),
-            "report_rows": report_rows,
-            "has_projection": has_projection,
-            "empty_projection": has_projection and not reports and failure is None,
-            "observation_age": (
-                format_datetime(observation.observed_at) if observation is not None else None
-            ),
-            "service_failure": service_error,
-            "has_previous": offset > 0,
-            "has_next": len(reports) == limit,
-            "previous_offset": max(0, offset - limit),
-            "next_offset": offset + limit,
-        },
-        status_code=(
-            200
-            if has_projection
-            else failure.status_code
-            if failure is not None
-            and failure.status_code is not None
-            and 400 <= failure.status_code <= 599
-            else 503
-        ),
-    )
-    response.headers["Cache-Control"] = "no-store"
-    return response
-
-
-def _report_json(report: Report) -> dict[str, object]:
-    return report.model_dump(mode="json", by_alias=True)
-
-
-def _report_failure_json(error) -> dict[str, object]:
-    failure = service_failure(error)
-    return {
-        "service": failure.service,
-        "statusCode": failure.status_code,
-        "code": failure.code,
-        "correlationId": failure.correlation_id,
-    }
-
-
-@router.get("/reports", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
-async def organization_reports(
-    request: Request,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    offset: Annotated[int, Query(ge=0, le=MAX_PAGE_OFFSET)] = 0,
-    activity_id: Annotated[UUID | None, Query(alias="activityId")] = None,
-) -> HTMLResponse:
-    session = _existing_session(request)
-    identity = _organizer_identity(request, session)
-    organization_id = identity["organizationId"]
-    cache_key = _report_cache_key(
-        organization_id,
-        activity_id=activity_id,
-        limit=limit,
-        offset=offset,
-    )
-    try:
-        reports = await request.app.state.clients.get_reports(
-            organization_id,
-            token=identity["token"],
-            activity_id=activity_id,
-            limit=limit,
-            offset=offset,
-            session_id=session.id,
-        )
-    except SERVICE_ERRORS as error:
-        with session.lock:
-            observation = session.report_observations.get(cache_key)
-        return _report_response(
-            request,
-            session=session,
-            identity=identity,
-            limit=limit,
-            offset=offset,
-            activity_id=activity_id,
-            observation=observation,
-            failure=error,
-        )
-
-    observation = _remember_report_observation(
-        session,
-        cache_key=cache_key,
-        reports=reports,
-        observed_at=datetime.now(timezone.utc),
-        max_observations=request.app.state.settings.max_commands_per_session,
-    )
-    return _report_response(
-        request,
-        session=session,
-        identity=identity,
-        limit=limit,
-        offset=offset,
-        activity_id=activity_id,
-        observation=observation,
-    )
-
-
-@router.get("/reports/poll")
-async def poll_organization_reports(
-    request: Request,
-    persona_version: Annotated[int, Query(ge=0)],
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    offset: Annotated[int, Query(ge=0, le=MAX_PAGE_OFFSET)] = 0,
-    activity_id: Annotated[UUID | None, Query(alias="activityId")] = None,
-) -> JSONResponse:
-    session = _existing_session(request)
-    identity = _organizer_identity(request, session)
-    if persona_version != session.persona_version:
-        return JSONResponse(
-            {"state": "persona_changed"},
-            status_code=409,
-            headers={"Cache-Control": "no-store"},
-        )
-
-    organization_id = identity["organizationId"]
-    cache_key = _report_cache_key(
-        organization_id,
-        activity_id=activity_id,
-        limit=limit,
-        offset=offset,
-    )
-    try:
-        reports = await request.app.state.clients.get_reports(
-            organization_id,
-            token=identity["token"],
-            activity_id=activity_id,
-            limit=limit,
-            offset=offset,
-            session_id=session.id,
-        )
-    except SERVICE_ERRORS as error:
-        with session.lock:
-            observation = session.report_observations.get(cache_key)
-        failure = service_failure(error)
-        status_code = (
-            error.status_code
-            if error.status_code is not None and 400 <= error.status_code <= 599
-            else 503
-        )
-        return JSONResponse(
-            {
-                "state": "unavailable",
-                "stale": observation is not None,
-                "reports": (
-                    [_report_json(report) for report in observation.reports]
-                    if observation is not None
-                    else []
-                ),
-                "observedAt": (
-                    observation.observed_at.isoformat() if observation is not None else None
-                ),
-                "error": {
-                    "service": failure.service,
-                    "statusCode": failure.status_code,
-                    "code": failure.code,
-                    "correlationId": failure.correlation_id,
-                },
-            },
-            status_code=status_code,
-            headers={"Cache-Control": "no-store"},
-        )
-
-    observation = _remember_report_observation(
-        session,
-        cache_key=cache_key,
-        reports=reports,
-        observed_at=datetime.now(timezone.utc),
-        max_observations=request.app.state.settings.max_commands_per_session,
-    )
-    return JSONResponse(
-        {
-            "state": "observed",
-            "stale": False,
-            "reports": [_report_json(report) for report in observation.reports],
-            "observedAt": observation.observed_at.isoformat(),
-        },
-        headers={"Cache-Control": "no-store"},
-    )
-
-
 async def _validated_form_fields(
     request: Request,
     *,
@@ -559,85 +330,6 @@ def _command_key(fields: dict[str, str]) -> str:
     if not 1 <= len(key) <= 200:
         raise HTTPException(status_code=400, detail="A valid command key is required.")
     return key
-
-
-def _session_event_draft(
-    session: BrowserSession,
-    event_id: UUID,
-) -> SessionEventDraft | None:
-    with session.lock:
-        return session.drafts.get(str(event_id))
-
-
-def _record_session_event(session: BrowserSession, event) -> SessionEventDraft:
-    with session.lock:
-        return session.drafts.setdefault(str(event.id), SessionEventDraft(event=event))
-
-
-def _organizer_response(
-    request: Request,
-    *,
-    session: BrowserSession,
-    identity: dict[str, str],
-    form_error: str | None = None,
-    message: str | None = None,
-    retry_action: str | None = None,
-    retry_event_id: UUID | None = None,
-    retry_key: str | None = None,
-    form_values: dict[str, str] | None = None,
-    status_code: int = 200,
-) -> HTMLResponse:
-    drafts = []
-    with session.lock:
-        current_drafts = tuple(session.drafts.values())
-    for draft in current_drafts:
-        event = draft.event
-        is_activity_retry = retry_action == "create-activity" and str(event.id) == str(
-            retry_event_id
-        )
-        is_publish_retry = retry_action == "publish-event" and str(event.id) == str(retry_event_id)
-        drafts.append(
-            {
-                "event": event,
-                "starts_at": format_datetime(event.starts_at),
-                "ends_at": format_datetime(event.ends_at),
-                "activities": [
-                    {
-                        "activity": activity,
-                        "starts_at": format_datetime(activity.starts_at),
-                        "ends_at": format_datetime(activity.ends_at),
-                        "price": format_money(activity.price),
-                    }
-                    for activity in draft.activities.values()
-                ],
-                "activity_key": (retry_key if is_activity_retry else secrets.token_urlsafe(32)),
-                "publish_key": retry_key if is_publish_retry else secrets.token_urlsafe(32),
-                "activity_values": form_values if is_activity_retry else {},
-            }
-        )
-    response = templates.TemplateResponse(
-        request=request,
-        name="organizer.html",
-        context={
-            "page": PAGE_METADATA["organizer"],
-            "csrf_token": session.csrf_token,
-            "organization_id": identity["organizationId"],
-            "organization_label": ORGANIZER_PERSONAS[session.persona],
-            "drafts": drafts,
-            "create_event_key": retry_key
-            if retry_action == "create-event"
-            else secrets.token_urlsafe(32),
-            "create_event_values": form_values if retry_action == "create-event" else {},
-            "form_error": form_error,
-            "message": message,
-            "retry_action": retry_action,
-            "retry_event_id": retry_event_id,
-            "entries": request.app.state.clients.history_for(session.id),
-        },
-        status_code=status_code,
-    )
-    response.headers["Cache-Control"] = "no-store"
-    return response
 
 
 def _registration_is_pollable(registration) -> bool:
@@ -805,7 +497,7 @@ async def home(request: Request) -> Response:
     if session.signed_in:
         return Response(
             status_code=303,
-            headers={"Location": SIGNED_IN_LANDING, "Cache-Control": "no-store"},
+            headers={"Location": role_home(request, session), "Cache-Control": "no-store"},
         )
     response = templates.TemplateResponse(
         request=request,
@@ -822,7 +514,7 @@ async def home(request: Request) -> Response:
     return response
 
 
-@router.get("/events", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
+@router.get("/events", response_class=HTMLResponse, dependencies=PARTICIPANT_PAGE)
 async def published_events(
     request: Request,
     search: Annotated[str | None, Query(alias="q", max_length=200)] = None,
@@ -892,7 +584,7 @@ async def published_events(
     return response
 
 
-@router.get("/events/{event_id}", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
+@router.get("/events/{event_id}", response_class=HTMLResponse, dependencies=PARTICIPANT_PAGE)
 async def published_event_detail(
     request: Request,
     event_id: UUID,
@@ -968,9 +660,6 @@ async def published_event_detail(
             }
         )
 
-    has_partial_failure = activities_error is not None or any(
-        card["availability_error"] is not None for card in activity_cards
-    )
     response = templates.TemplateResponse(
         request=request,
         name="event_detail.html",
@@ -997,7 +686,7 @@ async def published_event_detail(
 @router.get(
     "/activities/{activity_id}/checkout",
     response_class=HTMLResponse,
-    dependencies=SIGNED_IN_PAGE,
+    dependencies=PARTICIPANT_PAGE,
 )
 async def checkout(request: Request, activity_id: UUID) -> HTMLResponse:
     session = _existing_session(request)
@@ -1111,7 +800,7 @@ async def confirm_checkout(request: Request, activity_id: UUID) -> Response:
     )
 
 
-@router.get("/registrations", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
+@router.get("/registrations", response_class=HTMLResponse, dependencies=PARTICIPANT_PAGE)
 async def registrations(
     request: Request,
     limit: Annotated[int, Query(ge=1, le=MAX_REGISTRATION_LIMIT)] = 20,
@@ -1162,7 +851,7 @@ async def registrations(
 @router.get(
     "/registrations/{registration_id}",
     response_class=HTMLResponse,
-    dependencies=SIGNED_IN_PAGE,
+    dependencies=PARTICIPANT_PAGE,
 )
 async def registration_detail(request: Request, registration_id: UUID) -> HTMLResponse:
     session = _existing_session(request)
@@ -1345,297 +1034,6 @@ async def cancel_registration(request: Request, registration_id: UUID) -> Respon
 @router.post("/registrations/{registration_id}/accept-offer")
 async def accept_registration_offer(request: Request, registration_id: UUID) -> Response:
     return await _registration_action(request, registration_id, action="accept-offer")
-
-
-@router.get("/organizer", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
-async def organizer_page(request: Request) -> HTMLResponse:
-    session = _existing_session(request)
-    identity = _organizer_identity(request, session)
-    return _organizer_response(request, session=session, identity=identity)
-
-
-@router.post("/organizer/events")
-async def organizer_create_event(request: Request) -> Response:
-    session = _existing_session(request)
-    await _validate_csrf(request, session)
-    identity = _organizer_identity(request, session)
-    fields = await _validated_form_fields(
-        request,
-        allowed=frozenset(
-            {"csrf_token", "idempotency_key", "title", "description", "starts_at", "ends_at"}
-        ),
-    )
-    idempotency_key = _command_key(fields)
-    try:
-        event_input = EventInput(
-            organizationId=identity["organizationId"],
-            title=fields.get("title", ""),
-            description=fields.get("description", ""),
-            startsAt=fields.get("starts_at", ""),
-            endsAt=fields.get("ends_at", ""),
-        )
-    except ValidationError:
-        return _organizer_response(
-            request,
-            session=session,
-            identity=identity,
-            form_error="Event details are invalid; check required fields and the event schedule.",
-            retry_action="create-event",
-            retry_key=idempotency_key,
-            form_values=fields,
-            status_code=400,
-        )
-
-    clients = request.app.state.clients
-
-    async def create_event(key: str, correlation_id: UUID):
-        return await clients.create_event(
-            event_input,
-            token=identity["token"],
-            idempotency_key=key,
-            session_id=session.id,
-            correlation_id=correlation_id,
-        )
-
-    try:
-        outcome = await request.app.state.command_ledger.execute(
-            session,
-            idempotency_key=idempotency_key,
-            payload=event_input.model_dump(mode="json", by_alias=True),
-            operation=create_event,
-        )
-    except CommandConflictError:
-        raise HTTPException(
-            status_code=409,
-            detail="This key belongs to a different event creation intent.",
-        ) from None
-    except OverflowError:
-        raise HTTPException(
-            status_code=429,
-            detail="This browser session has reached its command limit.",
-        ) from None
-    except (TransportError, InvalidResponseError) as error:
-        if error.outcome_unknown:
-            return _organizer_response(
-                request,
-                session=session,
-                identity=identity,
-                message=(
-                    "The event creation result is unknown. Retry the same step; "
-                    "the command key and form values are retained."
-                ),
-                retry_action="create-event",
-                retry_key=idempotency_key,
-                form_values=fields,
-                status_code=503,
-            )
-        return _service_error_page(
-            request,
-            error=error,
-            message="Event creation could not be completed.",
-        )
-    except ServiceError as error:
-        return _service_error_page(
-            request,
-            error=error,
-            message="Event creation could not be completed.",
-        )
-
-    _record_session_event(session, outcome.result)
-    return Response(status_code=303, headers={"Location": "/organizer"})
-
-
-@router.post("/organizer/events/{event_id}/activities")
-async def organizer_create_activity(request: Request, event_id: UUID) -> Response:
-    session = _existing_session(request)
-    await _validate_csrf(request, session)
-    identity = _organizer_identity(request, session)
-    draft = _session_event_draft(session, event_id)
-    if draft is None:
-        raise HTTPException(status_code=404, detail="The session event draft was not found.")
-    fields = await _validated_form_fields(
-        request,
-        allowed=frozenset(
-            {
-                "csrf_token",
-                "idempotency_key",
-                "title",
-                "starts_at",
-                "ends_at",
-                "location",
-                "responsible",
-                "capacity",
-                "amount_minor",
-                "currency",
-            }
-        ),
-    )
-    idempotency_key = _command_key(fields)
-    try:
-        activity_input = ActivityInput(
-            title=fields.get("title", ""),
-            startsAt=fields.get("starts_at", ""),
-            endsAt=fields.get("ends_at", ""),
-            location=fields.get("location", ""),
-            responsible=fields.get("responsible", ""),
-            capacity=int(fields.get("capacity", "")),
-            price=Money(
-                amountMinor=int(fields.get("amount_minor", "")),
-                currency=fields.get("currency", ""),
-            ),
-        )
-    except (ValidationError, ValueError):
-        return _organizer_response(
-            request,
-            session=session,
-            identity=identity,
-            form_error=(
-                "Activity details are invalid; check required fields, capacity, price, "
-                "and the activity schedule."
-            ),
-            retry_action="create-activity",
-            retry_event_id=event_id,
-            retry_key=idempotency_key,
-            form_values=fields,
-            status_code=400,
-        )
-
-    clients = request.app.state.clients
-
-    async def create_activity(key: str, correlation_id: UUID):
-        return await clients.create_activity(
-            event_id,
-            activity_input,
-            token=identity["token"],
-            idempotency_key=key,
-            session_id=session.id,
-            correlation_id=correlation_id,
-        )
-
-    try:
-        outcome = await request.app.state.command_ledger.execute(
-            session,
-            idempotency_key=idempotency_key,
-            payload={
-                "eventId": str(event_id),
-                "activity": activity_input.model_dump(mode="json", by_alias=True),
-            },
-            operation=create_activity,
-        )
-    except CommandConflictError:
-        raise HTTPException(
-            status_code=409,
-            detail="This key belongs to a different activity creation intent.",
-        ) from None
-    except OverflowError:
-        raise HTTPException(
-            status_code=429,
-            detail="This browser session has reached its command limit.",
-        ) from None
-    except (TransportError, InvalidResponseError) as error:
-        if error.outcome_unknown:
-            return _organizer_response(
-                request,
-                session=session,
-                identity=identity,
-                message=(
-                    "The activity creation result is unknown. Retry the same step; "
-                    "the command key and form values are retained."
-                ),
-                retry_action="create-activity",
-                retry_event_id=event_id,
-                retry_key=idempotency_key,
-                form_values=fields,
-                status_code=503,
-            )
-        return _service_error_page(
-            request,
-            error=error,
-            message="Activity creation could not be completed.",
-        )
-    except ServiceError as error:
-        return _service_error_page(
-            request,
-            error=error,
-            message="Activity creation could not be completed.",
-        )
-
-    with session.lock:
-        draft.activities.setdefault(str(outcome.result.id), outcome.result)
-    return Response(status_code=303, headers={"Location": "/organizer"})
-
-
-@router.post("/organizer/events/{event_id}/publish")
-async def organizer_publish_event(request: Request, event_id: UUID) -> Response:
-    session = _existing_session(request)
-    await _validate_csrf(request, session)
-    identity = _organizer_identity(request, session)
-    draft = _session_event_draft(session, event_id)
-    if draft is None:
-        raise HTTPException(status_code=404, detail="The session event draft was not found.")
-    fields = await _validated_form_fields(
-        request,
-        allowed=frozenset({"csrf_token", "idempotency_key"}),
-    )
-    idempotency_key = _command_key(fields)
-    clients = request.app.state.clients
-
-    async def publish_event(key: str, correlation_id: UUID):
-        return await clients.publish_event(
-            event_id,
-            token=identity["token"],
-            idempotency_key=key,
-            session_id=session.id,
-            correlation_id=correlation_id,
-        )
-
-    try:
-        outcome = await request.app.state.command_ledger.execute(
-            session,
-            idempotency_key=idempotency_key,
-            payload={"action": "publish", "eventId": str(event_id)},
-            operation=publish_event,
-        )
-    except CommandConflictError:
-        raise HTTPException(
-            status_code=409,
-            detail="This key belongs to a different publish intent.",
-        ) from None
-    except OverflowError:
-        raise HTTPException(
-            status_code=429,
-            detail="This browser session has reached its command limit.",
-        ) from None
-    except (TransportError, InvalidResponseError) as error:
-        if error.outcome_unknown:
-            return _organizer_response(
-                request,
-                session=session,
-                identity=identity,
-                message=(
-                    "The publish result is unknown. Retry the same step; "
-                    "the command key is retained."
-                ),
-                retry_action="publish-event",
-                retry_event_id=event_id,
-                retry_key=idempotency_key,
-                status_code=503,
-            )
-        return _service_error_page(
-            request,
-            error=error,
-            message="The event could not be published.",
-        )
-    except ServiceError as error:
-        return _service_error_page(
-            request,
-            error=error,
-            message="The event could not be published.",
-        )
-
-    with session.lock:
-        draft.event = outcome.result
-    return Response(status_code=303, headers={"Location": "/organizer"})
 
 
 @router.get("/demo", response_class=HTMLResponse, dependencies=SIGNED_IN_PAGE)
@@ -1981,7 +1379,7 @@ async def issue_registration_certificate(
 @router.get(
     "/registrations/{registration_id}/certificate",
     response_class=HTMLResponse,
-    dependencies=SIGNED_IN_PAGE,
+    dependencies=PARTICIPANT_PAGE,
 )
 async def registration_certificate(request: Request, registration_id: UUID) -> HTMLResponse:
     session = _existing_session(request)
@@ -2255,7 +1653,7 @@ async def select_persona(request: Request, persona: str) -> Response:
         _session_store(request).set_persona(session, persona)
     except InvalidPersonaError:
         raise HTTPException(status_code=400, detail="The selected persona is invalid.") from None
-    return Response(status_code=303, headers={"Location": SIGNED_IN_LANDING})
+    return Response(status_code=303, headers={"Location": role_home(request, session)})
 
 
 @router.post("/logout")

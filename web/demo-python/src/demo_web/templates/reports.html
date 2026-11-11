@@ -1,125 +1,15 @@
 {% extends "base.html" %}
 
+{% block extra_head %}<script src="/static/reports.js" defer></script>{% endblock %}
+
 {% block content %}
-<section class="content-card report-controls"
-         data-section="report-filters"
-         aria-labelledby="report-controls-heading">
-  <h2 id="report-controls-heading">Filter this organization’s projection</h2>
-  <p class="card-copy">
-    Organization scope is fixed to the selected organizer fixture: <code>{{ organization_id }}</code>.
-    Reporting reads only its event-fed projection; it does not query upstream databases.
-  </p>
-  <form method="get" action="/reports" class="report-filter-form">
-    <label>
-      Activity ID
-      <input name="activityId" value="{{ activity_id }}" inputmode="text">
-    </label>
-    <label>
-      Rows per page
-      <select name="limit">
-        {% for size in [10, 20, 50, 100] %}
-        <option value="{{ size }}" {% if limit == size %}selected{% endif %}>{{ size }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    <input type="hidden" name="offset" value="0">
-    <button class="secondary-button action-button" type="submit">Apply report filters</button>
-  </form>
+<section class="content-card" data-section="reports" aria-labelledby="reports-heading">
+  <div class="card-heading">
+    <p class="eyebrow">{{ organization_label }}</p>
+    <h2 id="reports-heading">Published events</h2>
+  </div>
+  <div id="report-tables" data-refresh-url="/reports/table" data-refresh-ms="{{ refresh_ms }}" aria-live="polite">
+    {% include "partials/report_tables.html" %}
+  </div>
 </section>
-
-<section id="report-panel" class="content-card report-panel"
-         data-section="activity-reports"
-         data-poll-url="/reports/poll"
-         data-persona-version="{{ persona_version }}"
-         data-poll-interval-ms="{{ poll_interval_ms }}"
-         data-poll-timeout-ms="{{ poll_timeout_ms }}"
-         data-limit="{{ limit }}" data-offset="{{ offset }}"
-         data-activity-id="{{ activity_id }}"
-         data-polling="true"
-         aria-labelledby="report-heading">
-  <h2 id="report-heading">Activity report observations</h2>
-  <p class="card-copy">
-    This is an eventually consistent projection, not authoritative admission capacity, a heartbeat,
-    a payment receipt, or a notification-delivery receipt. <span data-report-observed>{% if observation_age %}Last observed {{ observation_age }}.{% endif %}</span>
-  </p>
-
-  {% if service_failure %}
-  <div class="service-error" role="alert">
-    <p>
-      {% if has_projection %}Reporting unavailable. Showing the last observed projection, marked stale.
-      {% else %}Reporting unavailable; no report values are available.{% endif %}
-    </p>
-    <p><strong>{{ service_failure.service }}</strong>
-      {% if service_failure.status_code %}returned HTTP {{ service_failure.status_code }}{% else %}could not be reached{% endif %}.
-      Code <code>{{ service_failure.code }}</code> · correlation <code>{{ service_failure.correlation_id }}</code>
-    </p>
-  </div>
-  {% endif %}
-
-  <p class="empty-state" data-report-empty {% if not empty_projection %}hidden{% endif %}>
-    No report rows are available in this projection yet.
-  </p>
-  <div class="report-table-scroll">
-    <table class="report-table" data-report-table {% if not report_rows %}hidden{% endif %}>
-      <thead>
-        <tr>
-          <th scope="col">Activity ID</th>
-          <th scope="col">Confirmed</th>
-          <th scope="col">Pending payment</th>
-          <th scope="col">Offered</th>
-          <th scope="col">Waiting</th>
-          <th scope="col">Occupied</th>
-          <th scope="col">Checked in</th>
-          <th scope="col">Certificates</th>
-          <th scope="col">Payments approved</th>
-          <th scope="col">Payments refused</th>
-          <th scope="col">Refunds approved</th>
-          <th scope="col">projectedAt (UTC)</th>
-        </tr>
-      </thead>
-      <tbody data-report-body>
-        {% for item in report_rows %}
-        <tr class="{{ 'is-stale' if item.stale else '' }}">
-          <td><code>{{ item.report.activity_id }}</code></td>
-          <td>{{ item.report.confirmed }} confirmed</td>
-          <td>{{ item.report.pending_payment }} pending payment{{ "" if item.report.pending_payment == 1 else "s" }}</td>
-          <td>{{ item.report.offered }} offered</td>
-          <td>{{ item.report.waiting }} waiting</td>
-          <td>{{ item.report.occupied }} occupied</td>
-          <td>{{ item.report.checked_in }} checked in</td>
-          <td>{{ item.report.certificates }} certificate{{ "" if item.report.certificates == 1 else "s" }}</td>
-          <td>{{ item.report.payments_approved }}</td>
-          <td>{{ item.report.payments_refused }}</td>
-          <td>{{ item.report.refunds_approved }}</td>
-          <td>{{ item.projected_at }} · {{ item.age_label }}{% if item.stale %} · stale{% endif %}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <div class="poll-controls report-refresh-controls" aria-label="Report refresh controls">
-    <button class="secondary-button" type="button" data-report-toggle aria-pressed="false">Pause updates</button>
-    <button class="secondary-button" type="button" data-report-refresh>Refresh now</button>
-    <p data-report-message role="status">Automatic refresh is bounded; it never touches registration state.</p>
-  </div>
-
-  {% if has_previous or has_next %}
-  <nav class="pagination" aria-label="Report pages">
-    {% if has_previous %}
-    <a class="secondary-button" href="/reports?limit={{ limit }}&amp;offset={{ previous_offset }}{% if activity_id %}&amp;activityId={{ activity_id }}{% endif %}">Previous page</a>
-    {% else %}<span></span>{% endif %}
-    <span>Offset {{ offset }} · up to {{ limit }} activities</span>
-    {% if has_next %}
-    <a class="secondary-button" href="/reports?limit={{ limit }}&amp;offset={{ next_offset }}{% if activity_id %}&amp;activityId={{ activity_id }}{% endif %}">Next page</a>
-    {% else %}<span></span>{% endif %}
-  </nav>
-  {% endif %}
-
-  <details class="history-card">
-    <summary>Recent browser-session service request history</summary>
-    {% include "partials/request_history.html" %}
-  </details>
-</section>
-<script src="/static/status.js" defer></script>
 {% endblock %}

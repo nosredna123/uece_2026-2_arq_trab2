@@ -21,11 +21,13 @@
       </a>
       {% if signed_in_user %}
       <nav class="primary-nav" aria-label="Primary">
-        <a href="/events">Browse events</a>
+        {% if signed_in_user.is_organizer %}
+        <a href="/organizer">My events</a>
+        <a href="/reports">Reports</a>
+        {% else %}
+        <a href="/events">Events</a>
         <a href="/registrations">My registrations</a>
-        <a href="/demo">Guided demo</a>
-        <a href="/scenario-lab">Scenario Lab</a>
-        <a href="/reports">Organizer reports</a>
+        {% endif %}
       </nav>
       <div class="signed-in-user" data-section="signed-in-user">
         <span class="signed-in-label">Signed in as <strong>{{ signed_in_user.label }}</strong></span>

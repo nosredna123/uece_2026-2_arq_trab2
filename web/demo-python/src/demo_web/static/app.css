@@ -877,19 +877,6 @@ h2 {
   }
 }
 
-.organizer-intro,
-.organizer-event-form,
-.organizer-drafts {
-  margin-bottom: 1rem;
-}
-
-.organizer-retention {
-  display: block;
-  margin: 0.8rem 0 0;
-  color: #33423a;
-  font-size: 0.86rem;
-}
-
 .organizer-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -922,37 +909,82 @@ h2 {
   resize: vertical;
 }
 
-.organizer-form > button,
-.organizer-form > h4 {
+.organizer-form > .form-actions,
+.organizer-form > p {
   grid-column: 1 / -1;
 }
 
-.organizer-draft-list {
-  margin-top: 1rem;
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-.organizer-draft {
-  padding: 1rem 0;
-  border-top: 1px solid var(--line);
-}
-
-.organizer-draft-heading {
+.organizer-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.organizer-draft-heading h3,
-.organizer-draft h4 {
+.organizer-row-actions,
+.organizer-commands {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.organizer-commands {
+  margin-top: 1rem;
+}
+
+.organizer-commands form {
   margin: 0;
 }
 
-.organizer-draft-heading p {
-  margin: 0.25rem 0 0;
+.organizer-activity-list {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.organizer-activity {
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--forest);
+  background: #f5f8f4;
+}
+
+.organizer-activity summary {
+  display: grid;
+  gap: 0.15rem;
+  cursor: pointer;
+}
+
+.organizer-activity summary span {
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.organizer-subheading {
+  margin: 1.5rem 0 0;
+}
+
+.report-event {
+  margin-top: 1.4rem;
+}
+
+.report-event h3 {
+  margin: 0;
+}
+
+.report-updated {
   color: var(--muted);
   font-size: 0.82rem;
-  overflow-wrap: anywhere;
+}
+
+.report-table tfoot th,
+.report-table tfoot td {
+  font-weight: 700;
 }
 
 .status-chip {
@@ -963,36 +995,19 @@ h2 {
   font-size: 0.75rem;
 }
 
-.organizer-activities {
-  display: grid;
-  gap: 0.45rem;
-  margin: 0.9rem 0;
-  padding: 0;
-  list-style: none;
+.status-published {
+  border-color: #7fb08a;
+  background: #e6f3e8;
 }
 
-.organizer-activities li {
-  display: grid;
-  gap: 0.1rem;
-  padding: 0.55rem 0.7rem;
-  border-left: 3px solid var(--forest);
-  background: #f5f8f4;
-  font-size: 0.83rem;
+.status-draft {
+  border-color: #d9b45c;
+  background: #fff4d6;
 }
 
-.organizer-activities span {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.organizer-activity-form {
-  padding: 0.85rem;
-  border: 1px solid var(--line);
-  border-radius: 0.7rem;
-}
-
-.organizer-publish-form {
-  margin-top: 0.5rem;
+.status-cancelled {
+  border-color: #c99;
+  background: #f8e6e6;
 }
 
 @media (max-width: 640px) {
@@ -1000,8 +1015,8 @@ h2 {
     grid-template-columns: 1fr;
   }
 
-  .organizer-form > button,
-  .organizer-form > h4 {
+  .organizer-form > .form-actions,
+  .organizer-form > p {
     grid-column: auto;
   }
 }
@@ -1420,33 +1435,6 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
-.report-filter-form {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 0.8rem;
-  margin-top: 1rem;
-}
-
-.report-filter-form label {
-  display: grid;
-  gap: 0.3rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.report-filter-form input,
-.report-filter-form select {
-  min-height: 2.7rem;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid #9cad9f;
-  border-radius: 0.45rem;
-  color: var(--ink);
-  background: #fff;
-  font: inherit;
-}
-
 .report-table-scroll {
   overflow-x: auto;
   margin: 1rem 0;
@@ -1478,10 +1466,6 @@ h2 {
 
 .report-table tr.is-stale {
   background: #fff7e6;
-}
-
-.report-refresh-controls {
-  margin-top: 1.2rem;
 }
 
 .site-header {
@@ -1552,18 +1536,6 @@ h2 {
   font-size: 0.78rem;
 }
 
-.visitor-sign-in {
-  margin: 1.4rem 0 0;
-  text-align: center;
-}
-
-.link-button {
-  padding: 0.3rem;
-  border: 0;
-  color: var(--forest-dark);
-  background: none;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.88rem;
-  text-decoration: underline;
+.organizer-form label:has(textarea) {
+  grid-column: 1 / -1;
 }

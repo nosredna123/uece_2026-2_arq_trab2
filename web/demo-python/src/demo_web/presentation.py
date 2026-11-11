@@ -79,13 +79,22 @@ PAGE_METADATA = {
         ),
     ),
     "organizer": PageMetadata(
-        title="Organizer setup",
-        eyebrow="Create a small synthetic program",
-        heading="Organizer workspace",
-        description=(
-            "Create, extend, and publish event records through Event Management. "
-            "Only references created in this browser session appear below."
-        ),
+        title="My events",
+        eyebrow="Organizer",
+        heading="My events",
+        description="Create, edit, publish or cancel your organization's events and activities.",
+    ),
+    "organizer_new_event": PageMetadata(
+        title="New event",
+        eyebrow="Organizer",
+        heading="New event",
+        description="The event is created as a draft. Add activities and publish it next.",
+    ),
+    "organizer_event": PageMetadata(
+        title="Manage event",
+        eyebrow="Organizer",
+        heading="Manage event",
+        description="Edit the event and its activities. Times are in UTC.",
     ),
     "certificate": PageMetadata(
         title="Certificate record",
@@ -106,12 +115,12 @@ PAGE_METADATA = {
         ),
     ),
     "reports": PageMetadata(
-        title="Organizer activity reports",
-        eyebrow="Event-fed Reporting projection",
-        heading="Activity reports",
+        title="Reports",
+        eyebrow="Organizer",
+        heading="Reports",
         description=(
-            "Observe eventually consistent activity counters from Reporting. "
-            "These projections may lag and do not determine admission capacity."
+            "Registrations, check-ins and certificates of your published events. "
+            "The page refreshes automatically."
         ),
     ),
     "lab": PageMetadata(
@@ -132,7 +141,6 @@ PAGE_METADATA = {
 }
 
 PERSONA_LABELS = (
-    ("visitor", "Visitante"),
     ("participant", "Participante simulado 01"),
     ("participantTwo", "Participante simulado 02"),
     ("organizer", "Organizador — GESAD/UECE"),
@@ -180,6 +188,7 @@ def _signed_in_user(request) -> dict:
     return {
         "signed_in_user": {
             "label": dict(PERSONA_LABELS)[session.persona],
+            "is_organizer": session.persona in ORGANIZER_PERSONAS,
             "csrf_token": session.csrf_token,
         }
     }

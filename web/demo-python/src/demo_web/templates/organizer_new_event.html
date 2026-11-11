@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="content-card" data-section="create-event" aria-labelledby="create-event-heading">
+  <div class="card-heading">
+    <p class="eyebrow">{{ organization_label }}</p>
+    <h2 id="create-event-heading">Event details</h2>
+  </div>
+  {% if form_error %}<div class="service-error" role="alert"><p>{{ form_error }}</p></div>{% endif %}
+  <form method="post" action="/organizer/events" class="organizer-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+    {% include "partials/event_fields.html" %}
+    <div class="form-actions">
+      <button class="primary-button action-button" type="submit">Create event</button>
+      <a class="text-link" href="/organizer">Back to my events</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

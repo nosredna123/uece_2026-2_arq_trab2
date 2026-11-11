@@ -31,10 +31,5 @@
     </div>
   </section>
   {% endfor %}
-
-  <form class="visitor-sign-in" method="post" action="/persona/visitor">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <button class="link-button" type="submit" aria-label="Visitante">Continue as visitor (Visitante)</button>
-  </form>
 </section>
 {% endblock %}

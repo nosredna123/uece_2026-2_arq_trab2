@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="content-card" data-section="event-summary" aria-labelledby="event-summary-heading">
+  <div class="card-heading organizer-heading">
+    <div>
+      <p class="eyebrow"><a class="text-link" href="/organizer">← My events</a></p>
+      <h2 id="event-summary-heading">{{ event.title }}</h2>
+      <p class="event-dates">{{ starts_at }} – {{ ends_at }}</p>
+    </div>
+    <strong class="status-chip status-{{ event.status|lower }}">{{ event.status }}</strong>
+  </div>
+  {% if notice %}<p class="notice-box" role="status">{{ notice }}</p>{% endif %}
+  {% if page_error %}<div class="service-error" role="alert"><p>{{ page_error }}</p></div>{% endif %}
+  {% if editable %}
+  <div class="organizer-commands">
+    {% if event.status == "DRAFT" %}
+    <form method="post" action="/organizer/events/{{ event.id }}/publish">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="idempotency_key" value="{{ publish_key }}">
+      <button class="primary-button action-button" type="submit">Publish event</button>
+    </form>
+    {% endif %}
+    <form method="post" action="/organizer/events/{{ event.id }}/cancel"
+          onsubmit="return confirm('Cancel this event? This cannot be undone.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="idempotency_key" value="{{ cancel_key }}">
+      <button class="secondary-button action-button" type="submit">Cancel event</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="empty-state">This event was cancelled and can no longer be edited.</p>
+  {% endif %}
+</section>
+
+{% if editable %}
+<section class="content-card" data-section="edit-event" aria-labelledby="edit-event-heading">
+  <h2 id="edit-event-heading">Event details</h2>
+  {% set form = event_form %}
+  {% if form.error %}<div class="service-error" role="alert"><p>{{ form.error }}</p></div>{% endif %}
+  <form method="post" action="/organizer/events/{{ event.id }}" class="organizer-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ form.key }}">
+    {% with values = form["values"] %}{% include "partials/event_fields.html" %}{% endwith %}
+    <div class="form-actions">
+      <button class="primary-button action-button" type="submit">Save event</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+<section class="content-card" data-section="event-activities" aria-labelledby="event-activities-heading">
+  <h2 id="event-activities-heading">Activities</h2>
+  {% if activities %}
+  <div class="organizer-activity-list">
+    {% for item in activities %}
+    <details class="organizer-activity" {% if item.form.error %}open{% endif %}>
+      <summary>
+        <strong>{{ item.activity.title }}</strong>
+        <span>{{ item.starts_at }} · {{ item.activity.location }} · {{ item.activity.capacity }} seats · {{ item.price }}</span>
+      </summary>
+      {% if editable %}
+      {% if item.form.error %}<div class="service-error" role="alert"><p>{{ item.form.error }}</p></div>{% endif %}
+      <form method="post" action="/organizer/events/{{ event.id }}/activities/{{ item.activity.id }}" class="organizer-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="idempotency_key" value="{{ item.form.key }}">
+        {% with values = item.form["values"] %}{% include "partials/activity_fields.html" %}{% endwith %}
+        {% if item.activity.capacity_frozen %}<p class="card-copy">Capacity is frozen because registrations have started.</p>{% endif %}
+        <div class="form-actions">
+          <button class="secondary-button action-button" type="submit">Save activity</button>
+        </div>
+      </form>
+      {% endif %}
+    </details>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty-state">No activities yet. An event needs at least one activity to be published.</p>
+  {% endif %}
+
+  {% if editable %}
+  <h3 class="organizer-subheading">Add an activity</h3>
+  {% set form = new_activity_form %}
+  {% if form.error %}<div class="service-error" role="alert"><p>{{ form.error }}</p></div>{% endif %}
+  <form method="post" action="/organizer/events/{{ event.id }}/activities" class="organizer-form" data-section="add-activity">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ form.key }}">
+    {% with values = form["values"] %}{% include "partials/activity_fields.html" %}{% endwith %}
+    <div class="form-actions">
+      <button class="primary-button action-button" type="submit">Add activity</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

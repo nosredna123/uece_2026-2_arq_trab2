@@ -1,131 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="content-card organizer-intro"
-         data-section="organizer-workspace"
-         aria-labelledby="organizer-workspace-heading">
-  <h2 id="organizer-workspace-heading">Organizador simulado — {{ organization_label }}</h2>
-  <p class="card-copy">Esta identidade é fictícia, não é uma autenticação de produção. O escopo organizacional é definido pelo perfil selecionado: <strong>{{ organization_label }}</strong> · <code>{{ organization_id }}</code>.</p>
-  <p class="notice-box organizer-retention">Draft references exist only in this browser session. They disappear after session expiry or application restart; Event Management remains the source of truth.</p>
-  {% if message %}
-  <div class="service-error" role="alert">
-    <p>{{ message }}</p>
-    {% if retry_action %}<p>Retry only the same step; do not create a new command.</p>{% endif %}
+<section class="content-card" data-section="organizer-events" aria-labelledby="organizer-events-heading">
+  <div class="card-heading organizer-heading">
+    <div>
+      <p class="eyebrow">{{ organization_label }}</p>
+      <h2 id="organizer-events-heading">Events</h2>
+    </div>
+    <a class="primary-button" href="/organizer/events/new">New event</a>
   </div>
-  {% endif %}
-  {% if form_error %}
-  <div class="service-error" role="alert"><p>{{ form_error }}</p></div>
-  {% endif %}
-</section>
-
-<section class="content-card organizer-event-form"
-         data-section="create-event"
-         aria-labelledby="create-event-heading">
-  <p class="eyebrow">Create an unpublished event</p>
-  <h2 id="create-event-heading">New event</h2>
-  <form method="post" action="/organizer/events" class="organizer-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="hidden" name="idempotency_key" value="{{ create_event_key }}">
-    <label>
-      Event title
-      <input name="title" maxlength="200" required value="{{ create_event_values.get('title', '') }}">
-    </label>
-    <label>
-      Description
-      <textarea name="description" maxlength="10000" rows="3">{{ create_event_values.get('description', '') }}</textarea>
-    </label>
-    <label>
-      Starts at (ISO 8601 with timezone)
-      <input name="starts_at" type="text" required placeholder="2027-03-02T10:00:00Z" value="{{ create_event_values.get('starts_at', '') }}">
-    </label>
-    <label>
-      Ends at (ISO 8601 with timezone)
-      <input name="ends_at" type="text" required placeholder="2027-03-02T12:00:00Z" value="{{ create_event_values.get('ends_at', '') }}">
-    </label>
-    <button class="primary-button action-button" type="submit">
-      {% if retry_action == "create-event" %}Retry same event step{% else %}Create event draft{% endif %}
-    </button>
-  </form>
-</section>
-
-<section class="content-card organizer-drafts"
-         data-section="session-drafts"
-         aria-labelledby="session-drafts-heading">
-  <div class="card-heading">
-    <p class="eyebrow">No draft inventory API is used</p>
-    <h2 id="session-drafts-heading">This session’s event references</h2>
-  </div>
-  {% if drafts %}
-  <div class="organizer-draft-list">
-    {% for item in drafts %}
-    <article class="organizer-draft">
-      <div class="organizer-draft-heading">
-        <div>
-          <h3>{{ item.event.title }}</h3>
-          <p>Event {{ item.event.id }} · {{ item.starts_at }} – {{ item.ends_at }}</p>
-        </div>
-        <strong class="status-chip">{{ item.event.status }}</strong>
+  {% if events %}
+  <ul class="event-list">
+    {% for item in events %}
+    <li class="event-row">
+      <div>
+        <h3><a href="/organizer/events/{{ item.event.id }}">{{ item.event.title }}</a></h3>
+        <p class="event-dates">{{ item.starts_at }} – {{ item.ends_at }}</p>
       </div>
-      {% if item.activities %}
-      <ul class="organizer-activities">
-        {% for activity_item in item.activities %}
-        <li>
-          <strong>{{ activity_item.activity.title }}</strong>
-          <span>Activity {{ activity_item.activity.id }} · {{ activity_item.price }}</span>
-          <span>{{ activity_item.starts_at }} – {{ activity_item.ends_at }}</span>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="empty-state">No activities have been added to this draft.</p>
-      {% endif %}
-
-      {% if item.event.status == "DRAFT" %}
-      <form method="post" action="/organizer/events/{{ item.event.id }}/activities" class="organizer-form organizer-activity-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="hidden" name="idempotency_key" value="{{ item.activity_key }}">
-        <h4>Add an activity</h4>
-        <label>Activity title
-          <input name="title" maxlength="200" required value="{{ item.activity_values.get('title', '') }}">
-        </label>
-        <label>Starts at (ISO 8601 with timezone)
-          <input name="starts_at" type="text" required placeholder="2027-03-02T10:30:00Z" value="{{ item.activity_values.get('starts_at', '') }}">
-        </label>
-        <label>Ends at (ISO 8601 with timezone)
-          <input name="ends_at" type="text" required placeholder="2027-03-02T11:30:00Z" value="{{ item.activity_values.get('ends_at', '') }}">
-        </label>
-        <label>Location
-          <input name="location" required value="{{ item.activity_values.get('location', '') }}">
-        </label>
-        <label>Responsible person
-          <input name="responsible" required value="{{ item.activity_values.get('responsible', '') }}">
-        </label>
-        <label>Capacity
-          <input name="capacity" type="number" min="1" required value="{{ item.activity_values.get('capacity', '') }}">
-        </label>
-        <label>Price (integer minor units)
-          <input name="amount_minor" type="number" min="0" required value="{{ item.activity_values.get('amount_minor', '') }}">
-        </label>
-        <label>Currency code
-          <input name="currency" maxlength="3" pattern="[A-Z]{3}" required value="{{ item.activity_values.get('currency', 'BRL') }}">
-        </label>
-        <button class="secondary-button action-button" type="submit">
-          {% if retry_action == "create-activity" and retry_event_id == item.event.id %}Retry same activity step{% else %}Add activity{% endif %}
-        </button>
-      </form>
-      <form method="post" action="/organizer/events/{{ item.event.id }}/publish" class="organizer-publish-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="hidden" name="idempotency_key" value="{{ item.publish_key }}">
-        <button class="primary-button action-button" type="submit">
-          {% if retry_action == "publish-event" and retry_event_id == item.event.id %}Retry same publish step{% else %}Publish event{% endif %}
-        </button>
-      </form>
-      {% endif %}
-    </article>
+      <div class="organizer-row-actions">
+        <strong class="status-chip status-{{ item.event.status|lower }}">{{ item.event.status }}</strong>
+        <a class="text-link" href="/organizer/events/{{ item.event.id }}">Manage <span aria-hidden="true">→</span></a>
+      </div>
+    </li>
     {% endfor %}
-  </div>
+  </ul>
   {% else %}
-  <p class="empty-state">This session has no created event references yet. Use the event form above to start.</p>
+  <p class="empty-state">Your organization has no events yet. Use “New event” to create one.</p>
   {% endif %}
 </section>
 {% endblock %}

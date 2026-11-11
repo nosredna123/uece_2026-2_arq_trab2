@@ -3,16 +3,15 @@ import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Callable, Mapping
 
 from demo_web.demo import DemoPreparation
-from demo_web.models import Activity, CheckIn, Event, Report
+from demo_web.models import CheckIn
 
 
+SIGNED_OUT_PERSONA = "visitor"
 PERSONAS = frozenset(
     {
-        "visitor",
         "participant",
         "participantTwo",
         "organizer",
@@ -27,33 +26,19 @@ class InvalidPersonaError(ValueError):
 
 
 @dataclass
-class SessionEventDraft:
-    event: Event
-    activities: OrderedDict[str, Activity] = field(default_factory=OrderedDict)
-
-
-@dataclass(frozen=True)
-class ReportObservation:
-    reports: tuple[Report, ...]
-    observed_at: datetime
-
-
-@dataclass
 class BrowserSession:
     id: str
     csrf_token: str
     created_at: float
     last_used_at: float
-    persona: str = "visitor"
+    persona: str = SIGNED_OUT_PERSONA
     signed_in: bool = False
     persona_version: int = 0
     commands: OrderedDict[str, object] = field(default_factory=OrderedDict)
-    drafts: OrderedDict[str, SessionEventDraft] = field(default_factory=OrderedDict)
     attendance_flashes: OrderedDict[str, CheckIn] = field(default_factory=OrderedDict)
     demo_runs: OrderedDict[str, DemoPreparation] = field(default_factory=OrderedDict)
     demo_intents: OrderedDict[str, str] = field(default_factory=OrderedDict)
     demo_start_key: str | None = None
-    report_observations: OrderedDict[str, ReportObservation] = field(default_factory=OrderedDict)
     lock: threading.RLock = field(default_factory=threading.RLock)
 
 
@@ -114,7 +99,7 @@ class SessionStore:
             return session_id in self._sessions
 
     def identity_for(self, session: BrowserSession) -> Mapping[str, str] | None:
-        if session.persona == "visitor":
+        if session.persona == SIGNED_OUT_PERSONA:
             return None
         fixture_name = {
             "participant": "participant",
@@ -137,7 +122,7 @@ class SessionStore:
     def sign_out(self, session: BrowserSession) -> None:
         with session.lock:
             session.signed_in = False
-            self._switch_persona(session, "visitor")
+            self._switch_persona(session, SIGNED_OUT_PERSONA)
 
     @staticmethod
     def _switch_persona(session: BrowserSession, persona: str) -> None:
@@ -145,7 +130,6 @@ class SessionStore:
         session.persona_version += 1
         session.csrf_token = secrets.token_urlsafe(32)
         session.attendance_flashes.clear()
-        session.report_observations.clear()
 
     def _remove_expired(self, now: float) -> None:
         expired = [

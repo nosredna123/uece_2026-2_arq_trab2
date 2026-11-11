@@ -167,13 +167,14 @@ def test_checkout_requires_participant_before_loading_service_data(monkeypatch, 
 
     def respond(request):
         requests.append(request)
-        raise AssertionError("Visitor checkout must not query service data.")
+        raise AssertionError("Organizer checkout must not query service data.")
 
     with _test_client(monkeypatch, web_environment, respond) as client:
-        sign_in(client)
-        response = client.get(f"/activities/{ACTIVITY_ID}/checkout")
+        sign_in(client, "organizer")
+        response = client.get(f"/activities/{ACTIVITY_ID}/checkout", follow_redirects=False)
 
-    assert response.status_code == 403
+    assert response.status_code == 303
+    assert response.headers["location"] == "/organizer"
     assert requests == []
 
 

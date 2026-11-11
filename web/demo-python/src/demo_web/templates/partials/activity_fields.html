@@ -1,0 +1,21 @@
+<label>Title
+  <input name="title" maxlength="200" required value="{{ values.get('title', '') }}">
+</label>
+<label>Starts at (UTC)
+  <input name="starts_at" type="datetime-local" required value="{{ values.get('starts_at', '') }}">
+</label>
+<label>Ends at (UTC)
+  <input name="ends_at" type="datetime-local" required value="{{ values.get('ends_at', '') }}">
+</label>
+<label>Location
+  <input name="location" required value="{{ values.get('location', '') }}">
+</label>
+<label>Responsible
+  <input name="responsible" required value="{{ values.get('responsible', '') }}">
+</label>
+<label>Capacity
+  <input name="capacity" type="number" min="1" required value="{{ values.get('capacity', '') }}">
+</label>
+<label>Price (R$, 0 = free)
+  <input name="price" inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" required value="{{ values.get('price', '0.00') }}">
+</label>

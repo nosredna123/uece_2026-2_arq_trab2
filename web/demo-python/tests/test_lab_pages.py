@@ -172,7 +172,6 @@ def test_lab_page_renders_fixed_predictions_and_provenance_without_mutations(
 
     html = response.text
     assert response.status_code == 200
-    assert 'href="/scenario-lab"' in home.text
     for preset in ("last-seat", "registration-rush", "duplicate-submission"):
         assert f'data-preset="{preset}"' in html
     assert 'data-preset="seat-opens"' in html

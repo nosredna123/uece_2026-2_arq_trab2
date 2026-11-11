@@ -1,0 +1,12 @@
+<label>Title
+  <input name="title" maxlength="200" required value="{{ values.get('title', '') }}">
+</label>
+<label>Description
+  <textarea name="description" maxlength="10000" rows="3">{{ values.get('description', '') }}</textarea>
+</label>
+<label>Starts at (UTC)
+  <input name="starts_at" type="datetime-local" required value="{{ values.get('starts_at', '') }}">
+</label>
+<label>Ends at (UTC)
+  <input name="ends_at" type="datetime-local" required value="{{ values.get('ends_at', '') }}">
+</label>

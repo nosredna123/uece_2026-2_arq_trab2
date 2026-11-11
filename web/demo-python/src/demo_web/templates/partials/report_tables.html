@@ -1,0 +1,48 @@
+<p class="card-copy report-updated">Updated at <span data-report-updated>{{ updated_at }}</span></p>
+{% for section in sections %}
+<article class="report-event" data-report-event="{{ section.event.id }}">
+  <h3>{{ section.event.title }}</h3>
+  <p class="event-dates">{{ section.starts_at }}</p>
+  <div class="report-table-scroll">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th scope="col">Activity</th>
+          <th scope="col">Capacity</th>
+          <th scope="col">Confirmed</th>
+          <th scope="col">Pending payment</th>
+          <th scope="col">Waiting list</th>
+          <th scope="col">Checked in</th>
+          <th scope="col">Certificates</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in section.rows %}
+        <tr>
+          <th scope="row">{{ row.title }}<br><small>{{ row.starts_at }}</small></th>
+          <td>{{ row.capacity }}</td>
+          <td>{{ row.confirmed }}</td>
+          <td>{{ row.pending_payment }}</td>
+          <td>{{ row.waiting }}</td>
+          <td>{{ row.checked_in }}</td>
+          <td>{{ row.certificates }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total</th>
+          <td>{{ section.totals.capacity }}</td>
+          <td>{{ section.totals.confirmed }}</td>
+          <td>{{ section.totals.pending_payment }}</td>
+          <td>{{ section.totals.waiting }}</td>
+          <td>{{ section.totals.checked_in }}</td>
+          <td>{{ section.totals.certificates }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</article>
+{% else %}
+<p class="empty-state">Your organization has no published events yet.</p>
+{% endfor %}

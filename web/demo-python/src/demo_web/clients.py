@@ -217,6 +217,116 @@ class DemoClients:
             correlation_id=correlation_id,
         )
 
+    async def list_organization_events(
+        self,
+        organization_id: UUID | str,
+        *,
+        token: str,
+        limit: int = 100,
+        offset: int = 0,
+        session_id: str | None = None,
+        correlation_id: UUID | str | None = None,
+    ) -> list[Event]:
+        return await self._request(
+            "event-management",
+            "GET",
+            f"/organizations/{_identifier(organization_id)}/events",
+            Event,
+            token=token,
+            session_id=session_id,
+            correlation_id=correlation_id,
+            params=_page_params(limit, offset),
+            many=True,
+        )
+
+    async def list_organization_activities(
+        self,
+        organization_id: UUID | str,
+        event_id: UUID | str,
+        *,
+        token: str,
+        limit: int = 100,
+        offset: int = 0,
+        session_id: str | None = None,
+        correlation_id: UUID | str | None = None,
+    ) -> list[Activity]:
+        return await self._request(
+            "event-management",
+            "GET",
+            f"/organizations/{_identifier(organization_id)}/events/"
+            f"{_identifier(event_id)}/activities",
+            Activity,
+            token=token,
+            session_id=session_id,
+            correlation_id=correlation_id,
+            params=_page_params(limit, offset),
+            many=True,
+        )
+
+    async def update_event(
+        self,
+        event_id: UUID | str,
+        event: EventInput,
+        *,
+        token: str,
+        idempotency_key: str,
+        session_id: str | None = None,
+        correlation_id: UUID | str | None = None,
+    ) -> Event:
+        return await self._request(
+            "event-management",
+            "PUT",
+            f"/events/{_identifier(event_id)}",
+            Event,
+            token=token,
+            idempotency_key=idempotency_key,
+            session_id=session_id,
+            correlation_id=correlation_id,
+            json_body=event.model_dump(mode="json", by_alias=True),
+        )
+
+    async def update_activity(
+        self,
+        activity_id: UUID | str,
+        activity: ActivityInput,
+        *,
+        token: str,
+        idempotency_key: str,
+        session_id: str | None = None,
+        correlation_id: UUID | str | None = None,
+    ) -> Activity:
+        return await self._request(
+            "event-management",
+            "PUT",
+            f"/activities/{_identifier(activity_id)}",
+            Activity,
+            token=token,
+            idempotency_key=idempotency_key,
+            session_id=session_id,
+            correlation_id=correlation_id,
+            json_body=activity.model_dump(mode="json", by_alias=True),
+        )
+
+    async def cancel_event(
+        self,
+        event_id: UUID | str,
+        *,
+        token: str,
+        idempotency_key: str,
+        session_id: str | None = None,
+        correlation_id: UUID | str | None = None,
+    ) -> Event:
+        return await self._request(
+            "event-management",
+            "POST",
+            f"/events/{_identifier(event_id)}/cancel",
+            Event,
+            token=token,
+            idempotency_key=idempotency_key,
+            session_id=session_id,
+            correlation_id=correlation_id,
+        )
+
     async def get_availability(
         self,
         activity_id: UUID | str,

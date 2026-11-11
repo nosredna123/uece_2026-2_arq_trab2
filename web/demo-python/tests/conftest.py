@@ -74,7 +74,7 @@ def web_environment(identity_fixtures):
     }
 
 
-def _sign_in(client, persona="visitor"):
+def _sign_in(client, persona="participant"):
     csrf_token = client.get("/session").json()["csrf_token"]
     response = client.post(
         f"/persona/{persona}",

@@ -22,8 +22,9 @@ def test_home_page_is_a_simulated_sign_in_with_prototype_banner_and_local_assets
     assert 'href="/static/app.css"' in response.text
     assert PAGE_METADATA["home"].heading in response.text
     for persona in ("organizer", "organizerUece", "organizerAcademicSim", "participant",
-                    "participantTwo", "visitor"):
+                    "participantTwo"):
         assert f'action="/persona/{persona}"' in response.text
+    assert 'action="/persona/visitor"' not in response.text
     assert "Implementation status" not in response.text
     assert 'aria-label="Primary"' not in response.text
     assert "Sign out" not in response.text
@@ -37,11 +38,12 @@ def test_pages_require_sign_in_and_user_stays_selected_until_sign_out(
     with TestClient(create_app(environ=web_environment)) as client:
         anonymous = [
             client.get(path, follow_redirects=False)
-            for path in ("/events", "/registrations", "/demo", "/scenario-lab", "/reports")
+            for path in ("/events", "/registrations", "/organizer", "/reports")
         ]
         selected = sign_in(client, "organizerUece")
         home = client.get("/", follow_redirects=False)
-        page = client.get("/scenario-lab", headers={"Accept": "text/html"})
+        participant_page = client.get("/events", follow_redirects=False)
+        page = client.get("/organizer/events/new", headers={"Accept": "text/html"})
         csrf = re.search(r'action="/logout">\s*<input type="hidden" name="csrf_token" value="([^"]+)"', page.text)
         assert csrf is not None
         forged = client.post(
@@ -63,11 +65,15 @@ def test_pages_require_sign_in_and_user_stays_selected_until_sign_out(
 
     assert all(response.status_code == 303 for response in anonymous)
     assert all(response.headers["location"] == "/" for response in anonymous)
-    assert selected.headers["location"] == "/events"
+    assert selected.headers["location"] == "/organizer"
     assert home.status_code == 303
-    assert home.headers["location"] == "/events"
+    assert home.headers["location"] == "/organizer"
+    assert participant_page.status_code == 303
+    assert participant_page.headers["location"] == "/organizer"
     assert "Signed in as <strong>Organizador — UECE</strong>" in page.text
     assert 'aria-label="Primary"' in page.text
+    assert 'href="/reports"' in page.text
+    assert 'href="/registrations"' not in page.text
     assert forged.status_code == 403
     assert still_signed_in["persona"] == "organizerUece"
     assert signed_out.status_code == 303
