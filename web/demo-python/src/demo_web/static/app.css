@@ -1198,3 +1198,67 @@ h2 {
   flex-wrap: wrap;
   gap: 0.6rem;
 }
+
+.report-filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.report-filter-form label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.report-filter-form input,
+.report-filter-form select {
+  min-height: 2.7rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #9cad9f;
+  border-radius: 0.45rem;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+
+.report-table-scroll {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.report-table th,
+.report-table td {
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.report-table th {
+  color: var(--muted);
+  background: #f5f8f4;
+  font-size: 0.76rem;
+}
+
+.report-table td code {
+  overflow-wrap: anywhere;
+}
+
+.report-table tr.is-stale {
+  background: #fff7e6;
+}
+
+.report-refresh-controls {
+  margin-top: 1.2rem;
+}

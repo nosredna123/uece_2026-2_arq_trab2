@@ -1,0 +1,131 @@
+batch_id: "B12"
+completed_tasks: ["T067", "T068"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T067:
+    - file: "web/demo-python/tests/test_reports.py"
+      change_type: "created"
+      description: "Test organizer gating and fixture scope, projection empty/counter/timestamp semantics, filters, pagination, unavailable/stale retention, and Reporting-only bounded refresh."
+  T068:
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Add fixture-scoped report page and poll routes with bounded query parameters, role enforcement, and successful-observation fallback."
+    - file: "web/demo-python/src/demo_web/sessions.py"
+      change_type: "modified"
+      description: "Retain bounded per-query report observations in the browser session and clear them on persona changes."
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "modified"
+      description: "Add Reporting page metadata."
+    - file: "web/demo-python/src/demo_web/templates/base.html"
+      change_type: "modified"
+      description: "Add Organizer reports navigation."
+    - file: "web/demo-python/src/demo_web/templates/reports.html"
+      change_type: "created"
+      description: "Render activity-level counters, projectedAt, filters/pagination, empty/unavailable/stale states, request history, and refresh controls."
+    - file: "web/demo-python/src/demo_web/static/status.js"
+      change_type: "modified"
+      description: "Add bounded report polling with pause/manual controls and stale retention, isolated from the existing registration poller."
+    - file: "web/demo-python/src/demo_web/static/app.css"
+      change_type: "modified"
+      description: "Style the responsive report table, stale rows, and filter/refresh controls."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T067-T068 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T067-T068 evidence and update completion counts."
+    - file: "docs/webapp/checkpoints/batch-report-T067-T068.yaml"
+      change_type: "created"
+      description: "Record batch scope, verification, endpoint evidence, and skip explanation."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Organizer scope, eventual-consistency semantics, counters, freshness, failure retention, and bounded refresh acceptance."
+  - artifact: "docs/contracts/openapi/reporting.yaml"
+    used_for: "Report schema, organization scope, activity filter, pagination, and empty-projection behavior."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "Existing typed service client, bounded session state, and preserved service ownership."
+evidence_mapping:
+  T067:
+    - upstream: "docs/webapp/plan.md#Plan-5.2"
+      output: "web/demo-python/tests/test_reports.py"
+      evidence: "Seven MockTransport tests cover authorization, foreign organization query resistance, empty projections, all counters and projectedAt, filters/pagination, unavailable/stale states, and no Registration calls during report refresh."
+  T068:
+    - upstream: "docs/contracts/openapi/reporting.yaml"
+      output: "web/demo-python/src/demo_web/routes.py and web/demo-python/src/demo_web/templates/reports.html"
+      evidence: "Only GET /organizations/{fixtureOrganizationId}/reports is called; the browser poll endpoint retains last successful projection data and surfaces failure codes/correlation IDs without success-shaped zeroes."
+traceability:
+  - requirement: "REQ-002"
+    plan_item: "5.2"
+    task: "T067-T068"
+    files: ["web/demo-python/tests/test_reports.py", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-003"
+    plan_item: "5.2"
+    task: "T067-T068"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/reports.html"]
+    status: "completed"
+  - requirement: "REQ-011"
+    plan_item: "5.2"
+    task: "T067-T068"
+    files: ["web/demo-python/tests/test_reports.py", "web/demo-python/src/demo_web/templates/reports.html", "web/demo-python/src/demo_web/static/status.js"]
+    status: "completed"
+  - requirement: "REQ-014"
+    plan_item: "5.2"
+    task: "T067-T068"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/reports.html"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "5.2"
+    task: "T067-T068"
+    files: ["web/demo-python/tests/test_reports.py", "web/demo-python/src/demo_web/static/status.js"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six existing integration/concurrency tests were skipped because their external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 330
+    failed: 0
+    skipped: 6
+    failures: []
+  docker_runtime:
+    command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+    passed: 136
+    failed: 0
+    skipped: 0
+    failures: []
+  lint:
+    command: ".venv/bin/python -m ruff check --no-cache and ruff format --check --cache-dir /tmp/ruff-check-cache; node --check web/demo-python/src/demo_web/static/status.js"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/reports"
+    status: 403
+    result: "PASS (visitor is denied before any Reporting request)"
+  - method: "GET"
+    path: "/reports"
+    status: 200
+    result: "PASS (organizer sees only fixture-scoped activity projections)"
+  - method: "GET"
+    path: "/reports"
+    status: 200
+    result: "PASS (empty projection is represented as empty, not unavailable or fabricated zeroes)"
+  - method: "GET"
+    path: "/reports"
+    status: 503
+    result: "PASS (unavailable Reporting response shows error and correlation without success-shaped counts)"
+  - method: "GET"
+    path: "/reports/poll"
+    status: 200
+    result: "PASS (bounded refresh observes Reporting only and returns projected counters)"
+  - method: "GET"
+    path: "/reports/poll"
+    status: 503
+    result: "PASS (poll failure identifies unavailable state and retains the prior report observation)"

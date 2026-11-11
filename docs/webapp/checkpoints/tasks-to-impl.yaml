@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 22
+  completed_tasks: 24
   in_progress_tasks: 0
-  pending_tasks: 14
-  completion_percentage: 61.1
+  pending_tasks: 12
+  completion_percentage: 66.7
 
 tasks:
   - task_id: "T045"
@@ -587,10 +587,60 @@ tasks:
       plan_item: "5.1"
       requirements: ["REQ-002", "REQ-005", "REQ-007", "REQ-010", "REQ-012", "REQ-013", "REQ-014"]
       full_trace: "REQ-002/005/007/010/012/013/014 → Phase-5.1 → T066 → resumable API-only event preparation and journey guide"
+  - task_id: "T067"
+    description: "Specify organizer report scoping and failure behavior."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_reports.py"
+          changes: ["Verify organizer-only access, fixture-derived organization scope, empty projections, counters/projectedAt, filtering/pagination, unavailable states, stale retention, and bounded refresh isolated from Registration."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 330
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "HTTPX MockTransport verifies Reporting-only calls and retains an explicit stale projection after failure."
+    upstream_trace:
+      plan_item: "5.2"
+      requirements: ["REQ-002", "REQ-003", "REQ-011", "REQ-014", "REQ-017"]
+      full_trace: "REQ-002/003/011/014/017 → Phase-5.2 → T067 → organizer report projection acceptance tests"
+  - task_id: "T068"
+    description: "Implement organization-scoped report observation pages."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add organizer-gated report list and poll routes, derive organization scope from the selected fixture, bound filters/page parameters, and retain query-keyed successful observations for stale fallback."]
+        - file: "web/demo-python/src/demo_web/sessions.py"
+          changes: ["Store bounded per-session Report observations and clear them on persona change."]
+        - file: "web/demo-python/src/demo_web/presentation.py"
+          changes: ["Add organizer report page metadata."]
+        - file: "web/demo-python/src/demo_web/templates/base.html"
+          changes: ["Add Organizer reports navigation."]
+        - file: "web/demo-python/src/demo_web/templates/reports.html"
+          changes: ["Render report counters, projectedAt, filter/pagination controls, explicit empty/unavailable/stale states, shared request history, and bounded refresh controls."]
+        - file: "web/demo-python/src/demo_web/static/status.js"
+          changes: ["Add bounded non-overlapping report polling, pause/manual refresh, persona-change stop, and stale-last-result retention without touching Registration."]
+        - file: "web/demo-python/src/demo_web/static/app.css"
+          changes: ["Style responsive report filters, tables, stale rows, and refresh controls."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+        passed: 136
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Full root suite, Ruff checks, status.js syntax, and packaged runtime tests passed."
+    upstream_trace:
+      plan_item: "5.2"
+      requirements: ["REQ-002", "REQ-003", "REQ-011", "REQ-014", "REQ-017"]
+      full_trace: "REQ-002/003/011/014/017 → Phase-5.2 → T068 → scoped eventual-consistency report views"
 
 pending_tasks:
-  - {task_id: "T067", description: "Specify report scoping and failure tests", blocked_by: ["T060", "T062"], priority: "P1"}
-  - {task_id: "T068", description: "Implement report observation pages", blocked_by: ["T067"], priority: "P1"}
   - {task_id: "T069", description: "Specify fixture authorization and limit tests", blocked_by: ["T052", "T068"], priority: "P1"}
   - {task_id: "T070", description: "Implement finite opt-in fixture pool", blocked_by: ["T069"], priority: "P1"}
   - {task_id: "T071", description: "Specify scenario workload and oracle tests", blocked_by: ["T070"], priority: "P1"}

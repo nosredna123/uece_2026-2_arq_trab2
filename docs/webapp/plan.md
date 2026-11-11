@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T066 are complete; T067-T080 remain unimplemented. Tests belong before the
+T045-T068 are complete; T069-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -514,8 +514,8 @@ after a partial setup failure, without scripts/SQL or fabricated backend events.
 
 **Requirements:** REQ-002, REQ-003, REQ-011, REQ-014, REQ-017.
 
-- [ ] T067 [Plan:5.2] Write `web/demo-python/tests/test_reports.py` for scoped organization, empty projection, `projectedAt`, counters, pagination/filtering, unavailable service, retained-but-stale data, and bounded report refresh independent of registration success.
-- [ ] T068 [Plan:5.2] Implement report routes and `templates/reports.html`, reusing `static/status.js` and shared badges/history; display counts in simple tables/cards, source timestamps, and explicit eventual-consistency text. Do not poll entire unrelated organizations or invent payment/notification receipts.
+- [x] T067 [Plan:5.2] Write `web/demo-python/tests/test_reports.py` for scoped organization, empty projection, `projectedAt`, counters, pagination/filtering, unavailable service, retained-but-stale data, and bounded report refresh independent of registration success.
+- [x] T068 [Plan:5.2] Implement report routes and `templates/reports.html`, reusing `static/status.js` and shared badges/history; display counts in simple tables/cards, source timestamps, and explicit eventual-consistency text. Do not poll entire unrelated organizations or invent payment/notification receipts.
 
 **Done when:** report lag/failure is visible without changing registration state;
 no unauthorized organization access or unavailable-as-zero behavior exists.

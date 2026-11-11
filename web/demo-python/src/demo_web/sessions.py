@@ -3,10 +3,11 @@ import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Callable, Mapping
 
 from demo_web.demo import DemoPreparation
-from demo_web.models import Activity, CheckIn, Event
+from demo_web.models import Activity, CheckIn, Event, Report
 
 
 PERSONAS = frozenset({"visitor", "participant", "participantTwo", "organizer"})
@@ -20,6 +21,12 @@ class InvalidPersonaError(ValueError):
 class SessionEventDraft:
     event: Event
     activities: OrderedDict[str, Activity] = field(default_factory=OrderedDict)
+
+
+@dataclass(frozen=True)
+class ReportObservation:
+    reports: tuple[Report, ...]
+    observed_at: datetime
 
 
 @dataclass
@@ -36,6 +43,7 @@ class BrowserSession:
     demo_runs: OrderedDict[str, DemoPreparation] = field(default_factory=OrderedDict)
     demo_intents: OrderedDict[str, str] = field(default_factory=OrderedDict)
     demo_start_key: str | None = None
+    report_observations: OrderedDict[str, ReportObservation] = field(default_factory=OrderedDict)
     lock: threading.RLock = field(default_factory=threading.RLock)
 
 
@@ -109,6 +117,7 @@ class SessionStore:
             session.persona_version += 1
             session.csrf_token = secrets.token_urlsafe(32)
             session.attendance_flashes.clear()
+            session.report_observations.clear()
 
     def _remove_expired(self, now: float) -> None:
         expired = [

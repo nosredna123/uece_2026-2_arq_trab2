@@ -140,6 +140,16 @@ PAGE_METADATA = {
         ),
         implementation_status="Guided preparation available",
     ),
+    "reports": PageMetadata(
+        title="Organizer activity reports",
+        eyebrow="Event-fed Reporting projection",
+        heading="Activity reports",
+        description=(
+            "Observe eventually consistent activity counters from Reporting. "
+            "These projections may lag and do not determine admission capacity."
+        ),
+        implementation_status="Organizer report projection available",
+    ),
     "error": PageMetadata(
         title="Request not completed",
         eyebrow="The prototype could not complete this page",
