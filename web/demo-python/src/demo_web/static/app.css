@@ -976,6 +976,135 @@ h2 {
   }
 }
 
+.organizer-intro,
+.organizer-event-form,
+.organizer-drafts {
+  margin-bottom: 1rem;
+}
+
+.organizer-retention {
+  display: block;
+  margin: 0.8rem 0 0;
+  color: #33423a;
+  font-size: 0.86rem;
+}
+
+.organizer-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
+.organizer-form label {
+  display: grid;
+  gap: 0.3rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.organizer-form input,
+.organizer-form textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #aebdb3;
+  border-radius: 0.55rem;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.organizer-form textarea {
+  resize: vertical;
+}
+
+.organizer-form > button,
+.organizer-form > h4 {
+  grid-column: 1 / -1;
+}
+
+.organizer-draft-list {
+  margin-top: 1rem;
+}
+
+.organizer-draft {
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.organizer-draft-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.organizer-draft-heading h3,
+.organizer-draft h4 {
+  margin: 0;
+}
+
+.organizer-draft-heading p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.status-chip {
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f5f8f4;
+  font-size: 0.75rem;
+}
+
+.organizer-activities {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.9rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.organizer-activities li {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid var(--forest);
+  background: #f5f8f4;
+  font-size: 0.83rem;
+}
+
+.organizer-activities span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.organizer-activity-form {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+}
+
+.organizer-publish-form {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .organizer-form {
+    grid-template-columns: 1fr;
+  }
+
+  .organizer-form > button,
+  .organizer-form > h4 {
+    grid-column: auto;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .persona-button,
   .skip-link {

@@ -6,9 +6,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import ValidationError
 
 from demo_web.commands import CommandConflictError
 from demo_web.errors import InvalidResponseError, ServiceError, TransportError
+from demo_web.models import ActivityInput, EventInput, Money
 from demo_web.presentation import (
     PAGE_METADATA,
     PERSONA_LABELS,
@@ -18,7 +20,12 @@ from demo_web.presentation import (
     service_failure,
     templates,
 )
-from demo_web.sessions import BrowserSession, InvalidPersonaError, SessionStore
+from demo_web.sessions import (
+    BrowserSession,
+    InvalidPersonaError,
+    SessionEventDraft,
+    SessionStore,
+)
 
 
 router = APIRouter()
@@ -111,7 +118,7 @@ async def _form_csrf_token(request: Request) -> str:
             body.decode("utf-8"),
             keep_blank_values=True,
             strict_parsing=True,
-            max_num_fields=8,
+            max_num_fields=16,
         )
     except (UnicodeDecodeError, ValueError):
         return ""
@@ -132,6 +139,124 @@ def _participant_identity(request: Request, session: BrowserSession) -> dict[str
     if identity is None or identity.get("role") != "PARTICIPANT":
         raise HTTPException(status_code=403, detail="Select a participant persona to continue.")
     return dict(identity)
+
+
+def _organizer_identity(request: Request, session: BrowserSession) -> dict[str, str]:
+    identity = _session_store(request).identity_for(session)
+    if identity is None or identity.get("role") != "ORGANIZER":
+        raise HTTPException(status_code=403, detail="Select the organizer persona to continue.")
+    return dict(identity)
+
+
+async def _validated_form_fields(
+    request: Request,
+    *,
+    allowed: frozenset[str],
+) -> dict[str, str]:
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip()
+    if content_type != "application/x-www-form-urlencoded":
+        raise HTTPException(status_code=400, detail="A valid form is required.")
+    body = await request.body()
+    if len(body) > 8192:
+        raise HTTPException(status_code=400, detail="The form is too large.")
+    try:
+        parsed = parse_qs(
+            body.decode("utf-8"),
+            keep_blank_values=True,
+            strict_parsing=True,
+            max_num_fields=16,
+        )
+    except (UnicodeDecodeError, ValueError):
+        raise HTTPException(status_code=400, detail="A valid form is required.") from None
+    if set(parsed) - allowed or any(len(values) != 1 for values in parsed.values()):
+        raise HTTPException(status_code=400, detail="The form contains unexpected fields.")
+    return {key: values[0] for key, values in parsed.items()}
+
+
+def _command_key(fields: dict[str, str]) -> str:
+    key = fields.get("idempotency_key", "")
+    if not 1 <= len(key) <= 200:
+        raise HTTPException(status_code=400, detail="A valid command key is required.")
+    return key
+
+
+def _session_event_draft(
+    session: BrowserSession,
+    event_id: UUID,
+) -> SessionEventDraft | None:
+    with session.lock:
+        return session.drafts.get(str(event_id))
+
+
+def _record_session_event(session: BrowserSession, event) -> SessionEventDraft:
+    with session.lock:
+        return session.drafts.setdefault(str(event.id), SessionEventDraft(event=event))
+
+
+def _organizer_response(
+    request: Request,
+    *,
+    session: BrowserSession,
+    identity: dict[str, str],
+    form_error: str | None = None,
+    message: str | None = None,
+    retry_action: str | None = None,
+    retry_event_id: UUID | None = None,
+    retry_key: str | None = None,
+    form_values: dict[str, str] | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    drafts = []
+    with session.lock:
+        current_drafts = tuple(session.drafts.values())
+    for draft in current_drafts:
+        event = draft.event
+        is_activity_retry = retry_action == "create-activity" and str(event.id) == str(
+            retry_event_id
+        )
+        is_publish_retry = retry_action == "publish-event" and str(event.id) == str(retry_event_id)
+        drafts.append(
+            {
+                "event": event,
+                "starts_at": format_datetime(event.starts_at),
+                "ends_at": format_datetime(event.ends_at),
+                "activities": [
+                    {
+                        "activity": activity,
+                        "starts_at": format_datetime(activity.starts_at),
+                        "ends_at": format_datetime(activity.ends_at),
+                        "price": format_money(activity.price),
+                    }
+                    for activity in draft.activities.values()
+                ],
+                "activity_key": (retry_key if is_activity_retry else secrets.token_urlsafe(32)),
+                "publish_key": retry_key if is_publish_retry else secrets.token_urlsafe(32),
+                "activity_values": form_values if is_activity_retry else {},
+            }
+        )
+    response = templates.TemplateResponse(
+        request=request,
+        name="organizer.html",
+        context={
+            "page": PAGE_METADATA["organizer"],
+            "operational_status": "Organizer actions use existing Event Management APIs.",
+            "csrf_token": session.csrf_token,
+            "organization_id": identity["organizationId"],
+            "drafts": drafts,
+            "create_event_key": retry_key
+            if retry_action == "create-event"
+            else secrets.token_urlsafe(32),
+            "create_event_values": form_values if retry_action == "create-event" else {},
+            "form_error": form_error,
+            "message": message,
+            "retry_action": retry_action,
+            "retry_event_id": retry_event_id,
+            "entries": request.app.state.clients.history_for(session.id),
+        },
+        status_code=status_code,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def _registration_is_pollable(registration) -> bool:
@@ -817,6 +942,297 @@ async def cancel_registration(request: Request, registration_id: UUID) -> Respon
 @router.post("/registrations/{registration_id}/accept-offer")
 async def accept_registration_offer(request: Request, registration_id: UUID) -> Response:
     return await _registration_action(request, registration_id, action="accept-offer")
+
+
+@router.get("/organizer", response_class=HTMLResponse)
+async def organizer_page(request: Request) -> HTMLResponse:
+    session = _existing_session(request)
+    identity = _organizer_identity(request, session)
+    return _organizer_response(request, session=session, identity=identity)
+
+
+@router.post("/organizer/events")
+async def organizer_create_event(request: Request) -> Response:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    identity = _organizer_identity(request, session)
+    fields = await _validated_form_fields(
+        request,
+        allowed=frozenset(
+            {"csrf_token", "idempotency_key", "title", "description", "starts_at", "ends_at"}
+        ),
+    )
+    idempotency_key = _command_key(fields)
+    try:
+        event_input = EventInput(
+            organizationId=identity["organizationId"],
+            title=fields.get("title", ""),
+            description=fields.get("description", ""),
+            startsAt=fields.get("starts_at", ""),
+            endsAt=fields.get("ends_at", ""),
+        )
+    except ValidationError:
+        return _organizer_response(
+            request,
+            session=session,
+            identity=identity,
+            form_error="Event details are invalid; check required fields and the event schedule.",
+            retry_action="create-event",
+            retry_key=idempotency_key,
+            form_values=fields,
+            status_code=400,
+        )
+
+    clients = request.app.state.clients
+
+    async def create_event(key: str, correlation_id: UUID):
+        return await clients.create_event(
+            event_input,
+            token=identity["token"],
+            idempotency_key=key,
+            session_id=session.id,
+            correlation_id=correlation_id,
+        )
+
+    try:
+        outcome = await request.app.state.command_ledger.execute(
+            session,
+            idempotency_key=idempotency_key,
+            payload=event_input.model_dump(mode="json", by_alias=True),
+            operation=create_event,
+        )
+    except CommandConflictError:
+        raise HTTPException(
+            status_code=409,
+            detail="This key belongs to a different event creation intent.",
+        ) from None
+    except OverflowError:
+        raise HTTPException(
+            status_code=429,
+            detail="This browser session has reached its command limit.",
+        ) from None
+    except (TransportError, InvalidResponseError) as error:
+        if error.outcome_unknown:
+            return _organizer_response(
+                request,
+                session=session,
+                identity=identity,
+                message=(
+                    "The event creation result is unknown. Retry the same step; "
+                    "the command key and form values are retained."
+                ),
+                retry_action="create-event",
+                retry_key=idempotency_key,
+                form_values=fields,
+                status_code=503,
+            )
+        return _service_error_page(
+            request,
+            error=error,
+            message="Event creation could not be completed.",
+        )
+    except ServiceError as error:
+        return _service_error_page(
+            request,
+            error=error,
+            message="Event creation could not be completed.",
+        )
+
+    _record_session_event(session, outcome.result)
+    return Response(status_code=303, headers={"Location": "/organizer"})
+
+
+@router.post("/organizer/events/{event_id}/activities")
+async def organizer_create_activity(request: Request, event_id: UUID) -> Response:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    identity = _organizer_identity(request, session)
+    draft = _session_event_draft(session, event_id)
+    if draft is None:
+        raise HTTPException(status_code=404, detail="The session event draft was not found.")
+    fields = await _validated_form_fields(
+        request,
+        allowed=frozenset(
+            {
+                "csrf_token",
+                "idempotency_key",
+                "title",
+                "starts_at",
+                "ends_at",
+                "location",
+                "responsible",
+                "capacity",
+                "amount_minor",
+                "currency",
+            }
+        ),
+    )
+    idempotency_key = _command_key(fields)
+    try:
+        activity_input = ActivityInput(
+            title=fields.get("title", ""),
+            startsAt=fields.get("starts_at", ""),
+            endsAt=fields.get("ends_at", ""),
+            location=fields.get("location", ""),
+            responsible=fields.get("responsible", ""),
+            capacity=int(fields.get("capacity", "")),
+            price=Money(
+                amountMinor=int(fields.get("amount_minor", "")),
+                currency=fields.get("currency", ""),
+            ),
+        )
+    except (ValidationError, ValueError):
+        return _organizer_response(
+            request,
+            session=session,
+            identity=identity,
+            form_error=(
+                "Activity details are invalid; check required fields, capacity, price, "
+                "and the activity schedule."
+            ),
+            retry_action="create-activity",
+            retry_event_id=event_id,
+            retry_key=idempotency_key,
+            form_values=fields,
+            status_code=400,
+        )
+
+    clients = request.app.state.clients
+
+    async def create_activity(key: str, correlation_id: UUID):
+        return await clients.create_activity(
+            event_id,
+            activity_input,
+            token=identity["token"],
+            idempotency_key=key,
+            session_id=session.id,
+            correlation_id=correlation_id,
+        )
+
+    try:
+        outcome = await request.app.state.command_ledger.execute(
+            session,
+            idempotency_key=idempotency_key,
+            payload={
+                "eventId": str(event_id),
+                "activity": activity_input.model_dump(mode="json", by_alias=True),
+            },
+            operation=create_activity,
+        )
+    except CommandConflictError:
+        raise HTTPException(
+            status_code=409,
+            detail="This key belongs to a different activity creation intent.",
+        ) from None
+    except OverflowError:
+        raise HTTPException(
+            status_code=429,
+            detail="This browser session has reached its command limit.",
+        ) from None
+    except (TransportError, InvalidResponseError) as error:
+        if error.outcome_unknown:
+            return _organizer_response(
+                request,
+                session=session,
+                identity=identity,
+                message=(
+                    "The activity creation result is unknown. Retry the same step; "
+                    "the command key and form values are retained."
+                ),
+                retry_action="create-activity",
+                retry_event_id=event_id,
+                retry_key=idempotency_key,
+                form_values=fields,
+                status_code=503,
+            )
+        return _service_error_page(
+            request,
+            error=error,
+            message="Activity creation could not be completed.",
+        )
+    except ServiceError as error:
+        return _service_error_page(
+            request,
+            error=error,
+            message="Activity creation could not be completed.",
+        )
+
+    with session.lock:
+        draft.activities.setdefault(str(outcome.result.id), outcome.result)
+    return Response(status_code=303, headers={"Location": "/organizer"})
+
+
+@router.post("/organizer/events/{event_id}/publish")
+async def organizer_publish_event(request: Request, event_id: UUID) -> Response:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    identity = _organizer_identity(request, session)
+    draft = _session_event_draft(session, event_id)
+    if draft is None:
+        raise HTTPException(status_code=404, detail="The session event draft was not found.")
+    fields = await _validated_form_fields(
+        request,
+        allowed=frozenset({"csrf_token", "idempotency_key"}),
+    )
+    idempotency_key = _command_key(fields)
+    clients = request.app.state.clients
+
+    async def publish_event(key: str, correlation_id: UUID):
+        return await clients.publish_event(
+            event_id,
+            token=identity["token"],
+            idempotency_key=key,
+            session_id=session.id,
+            correlation_id=correlation_id,
+        )
+
+    try:
+        outcome = await request.app.state.command_ledger.execute(
+            session,
+            idempotency_key=idempotency_key,
+            payload={"action": "publish", "eventId": str(event_id)},
+            operation=publish_event,
+        )
+    except CommandConflictError:
+        raise HTTPException(
+            status_code=409,
+            detail="This key belongs to a different publish intent.",
+        ) from None
+    except OverflowError:
+        raise HTTPException(
+            status_code=429,
+            detail="This browser session has reached its command limit.",
+        ) from None
+    except (TransportError, InvalidResponseError) as error:
+        if error.outcome_unknown:
+            return _organizer_response(
+                request,
+                session=session,
+                identity=identity,
+                message=(
+                    "The publish result is unknown. Retry the same step; "
+                    "the command key is retained."
+                ),
+                retry_action="publish-event",
+                retry_event_id=event_id,
+                retry_key=idempotency_key,
+                status_code=503,
+            )
+        return _service_error_page(
+            request,
+            error=error,
+            message="The event could not be published.",
+        )
+    except ServiceError as error:
+        return _service_error_page(
+            request,
+            error=error,
+            message="The event could not be published.",
+        )
+
+    with session.lock:
+        draft.event = outcome.result
+    return Response(status_code=303, headers={"Location": "/organizer"})
 
 
 @router.get("/session")

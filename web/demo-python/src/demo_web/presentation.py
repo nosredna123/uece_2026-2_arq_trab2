@@ -110,6 +110,16 @@ PAGE_METADATA = {
         ),
         implementation_status="Registration status available",
     ),
+    "organizer": PageMetadata(
+        title="Organizer setup",
+        eyebrow="Create a small synthetic program",
+        heading="Organizer workspace",
+        description=(
+            "Create, extend, and publish event records through Event Management. "
+            "Only references created in this browser session appear below."
+        ),
+        implementation_status="Organizer setup available",
+    ),
     "error": PageMetadata(
         title="Request not completed",
         eyebrow="The prototype could not complete this page",

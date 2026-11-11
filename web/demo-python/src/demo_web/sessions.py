@@ -5,12 +5,20 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Callable, Mapping
 
+from demo_web.models import Activity, Event
+
 
 PERSONAS = frozenset({"visitor", "participant", "participantTwo", "organizer"})
 
 
 class InvalidPersonaError(ValueError):
     """Raised when a requested persona is not part of the demo fixture set."""
+
+
+@dataclass
+class SessionEventDraft:
+    event: Event
+    activities: OrderedDict[str, Activity] = field(default_factory=OrderedDict)
 
 
 @dataclass
@@ -22,6 +30,7 @@ class BrowserSession:
     persona: str = "visitor"
     persona_version: int = 0
     commands: OrderedDict[str, object] = field(default_factory=OrderedDict)
+    drafts: OrderedDict[str, SessionEventDraft] = field(default_factory=OrderedDict)
     lock: threading.RLock = field(default_factory=threading.RLock)
 
 

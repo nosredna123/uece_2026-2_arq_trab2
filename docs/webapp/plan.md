@@ -1,7 +1,7 @@
 # Implementation plan: EventHub Python demonstration web app
 
 **Date:** 2026-11-10  
-**Status:** Implementation in progress; T045-T060 are complete.
+**Status:** Implementation in progress; T045-T062 are complete.
 **Scope:** A small, didactic, local presentation client for the existing prototype.  
 **Task namespace:** T045-T080, continuing after the completed backend T001-T044.  
 **Authority:** [constitution](../../constitution.md), approved domain scenarios,
@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T060 are complete; T061-T080 remain unimplemented. Tests belong before the
+T045-T062 are complete; T063-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -482,8 +482,8 @@ prematurely release/display a cancelled slot.
 
 **Requirements:** REQ-003, REQ-010, REQ-012, REQ-013.
 
-- [ ] T061 [Plan:4.1] Add `web/demo-python/tests/test_organizer.py` for organizer-only event/activity creation, scoped organization, schedule errors, session-local drafts, replay of failed steps, explicit publish, and no cross-organization override.
-- [ ] T062 [Plan:4.1] Implement `templates/organizer.html` and create/add/publish routes in `routes.py`, reusing the command ledger. Show returned IDs/current-session draft steps, validate forms without duplicating domain policy, and explain loss of UI draft references after session expiry/restart.
+- [x] T061 [Plan:4.1] Add `web/demo-python/tests/test_organizer.py` for organizer-only event/activity creation, scoped organization, schedule errors, session-local drafts, replay of failed steps, explicit publish, and no cross-organization override.
+- [x] T062 [Plan:4.1] Implement `templates/organizer.html` and create/add/publish routes in `routes.py`, reusing the command ledger. Show returned IDs/current-session draft steps, validate forms without duplicating domain policy, and explain loss of UI draft references after session expiry/restart.
 
 **Done when:** an organizer can create/add/publish using only existing APIs;
 the interface does not claim to list all drafts or store a second domain database.

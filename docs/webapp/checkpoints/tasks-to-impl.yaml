@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 16
+  completed_tasks: 18
   in_progress_tasks: 0
-  pending_tasks: 20
-  completion_percentage: 44.4
+  pending_tasks: 18
+  completion_percentage: 50.0
 
 tasks:
   - task_id: "T045"
@@ -433,10 +433,56 @@ tasks:
       plan_item: "3.3"
       requirements: ["REQ-003", "REQ-006", "REQ-007", "REQ-013", "REQ-014"]
       full_trace: "REQ-003/006/007/013/014 → Phase-3.3 → T060 → scoped registration status and actions"
+  - task_id: "T061"
+    description: "Specify organizer role, scope, draft, and command-replay behavior."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_organizer.py"
+          changes: ["Verify organizer-only access, fixture-scoped organization IDs, schedule validation, session-local drafts, no cross-session draft access, explicit publication, duplicate replay, and uncertain event/activity retry."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 309
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "HTTPX MockTransport verifies service commands, organization scope, idempotency and correlation continuity."
+    upstream_trace:
+      plan_item: "4.1"
+      requirements: ["REQ-003", "REQ-010", "REQ-012", "REQ-013", "REQ-017"]
+      full_trace: "REQ-003/010/012/013/017 → Phase-4.1 → T061 → organizer workflow contract tests"
+  - task_id: "T062"
+    description: "Implement API-only event, activity, and publish workflow."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/sessions.py"
+          changes: ["Retain returned event/activity references only in the bounded browser session."]
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add organizer-gated create/add/publish routes using fixture organization scope, typed request models, session draft ownership, and retained commands."]
+        - file: "web/demo-python/src/demo_web/presentation.py"
+          changes: ["Add organizer workspace metadata."]
+        - file: "web/demo-python/src/demo_web/templates/organizer.html"
+          changes: ["Render event creation, session-local event/activity references, add-activity forms, explicit publish controls, validation and retry feedback."]
+        - file: "web/demo-python/src/demo_web/static/app.css"
+          changes: ["Style responsive organizer forms and session draft cards."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+        passed: 115
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "The complete root suite passed; Ruff, formatting, and packaged runtime tests passed."
+    upstream_trace:
+      plan_item: "4.1"
+      requirements: ["REQ-003", "REQ-010", "REQ-012", "REQ-013"]
+      full_trace: "REQ-003/010/012/013 → Phase-4.1 → T062 → organizer event creation and publication"
 
 pending_tasks:
-  - {task_id: "T061", description: "Specify organizer workflow tests", blocked_by: ["T054", "T052"], priority: "P1"}
-  - {task_id: "T062", description: "Implement create, add, and publish pages", blocked_by: ["T061"], priority: "P1"}
   - {task_id: "T063", description: "Specify attendance, eligibility, and print tests", blocked_by: ["T060"], priority: "P1"}
   - {task_id: "T064", description: "Implement Attendance actions and certificate views", blocked_by: ["T063"], priority: "P1"}
   - {task_id: "T065", description: "Specify safe preparation and timing tests", blocked_by: ["T062", "T064"], priority: "P1"}

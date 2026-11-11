@@ -1,0 +1,133 @@
+batch_id: "B09"
+completed_tasks: ["T061", "T062"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T061:
+    - file: "web/demo-python/tests/test_organizer.py"
+      change_type: "created"
+      description: "Test organizer authorization, organization scope, schedule validation, session-local draft ownership, event/activity command retries, and explicit publication."
+  T062:
+    - file: "web/demo-python/src/demo_web/sessions.py"
+      change_type: "modified"
+      description: "Store returned Event/Activity references in bounded browser-session memory only."
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Add organizer-only create-event, add-activity, and publish routes; derive organization scope from the fixture, validate contracts, and use the retained command ledger."
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "modified"
+      description: "Add organizer workspace metadata."
+    - file: "web/demo-python/src/demo_web/templates/organizer.html"
+      change_type: "created"
+      description: "Render organizer forms, live session draft/activity references, explicit publish controls, validation feedback, and retry guidance."
+    - file: "web/demo-python/src/demo_web/static/app.css"
+      change_type: "modified"
+      description: "Style accessible responsive organizer forms and session draft cards."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T061-T062 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T061-T062 evidence and update completion counts."
+    - file: "docs/webapp/checkpoints/batch-report-T061-T062.yaml"
+      change_type: "created"
+      description: "Record batch scope, verification, endpoint probes, and skip explanation."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Organizer-only scope, API-only workflow, command retries, draft retention, and explicit publish acceptance."
+  - artifact: "docs/contracts/openapi/event-management.yaml"
+    used_for: "Event/activity input constraints, fixture organization authority, and publish protocol."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "No new data store, bounded session scope, and use of existing typed service clients."
+evidence_mapping:
+  T061:
+    - upstream: "docs/webapp/plan.md#Plan-4.1"
+      output: "web/demo-python/tests/test_organizer.py"
+      evidence: "Nine HTTP contract tests cover role gating, fixture organization binding, invalid schedules, session draft isolation, duplicate/retried event and activity creation, explicit publish, and rejection of organization override fields."
+  T062:
+    - upstream: "docs/contracts/openapi/event-management.yaml"
+      output: "web/demo-python/src/demo_web/routes.py and organizer template"
+      evidence: "MockTransport assertions verify only existing Event Management API operations are called; activity/publish IDs must be current-session drafts; no publish request occurs before explicit submission."
+traceability:
+  - requirement: "REQ-003"
+    plan_item: "4.1"
+    task: "T061-T062"
+    files: ["web/demo-python/tests/test_organizer.py", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-010"
+    plan_item: "4.1"
+    task: "T061-T062"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/organizer.html"]
+    status: "completed"
+  - requirement: "REQ-012"
+    plan_item: "4.1"
+    task: "T062"
+    files: ["web/demo-python/src/demo_web/sessions.py", "web/demo-python/src/demo_web/templates/organizer.html"]
+    status: "completed"
+  - requirement: "REQ-013"
+    plan_item: "4.1"
+    task: "T061-T062"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/tests/test_organizer.py"]
+    status: "completed"
+  - requirement: "REQ-017"
+    plan_item: "4.1"
+    task: "T061"
+    files: ["web/demo-python/tests/test_organizer.py"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six existing backend integration/concurrency tests were skipped because their external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 309
+    failed: 0
+    skipped: 6
+    failures: []
+  docker_runtime:
+    command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+    passed: 115
+    failed: 0
+    skipped: 0
+    failures: []
+  lint:
+    command: "ruff check --no-cache and ruff format --check on modified Python files"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/organizer"
+    status: 403
+    result: "PASS (visitor cannot access organizer workflow)"
+  - method: "GET"
+    path: "/organizer"
+    status: 200
+    result: "PASS (organizer sees only current-session event references)"
+  - method: "POST"
+    path: "/organizer/events"
+    status: 303
+    result: "PASS (event creation uses fixture organization ID and remains a draft)"
+  - method: "POST"
+    path: "/organizer/events/{event_id}/activities"
+    status: 303
+    result: "PASS (activity creation uses a session-owned event draft and backend command)"
+  - method: "POST"
+    path: "/organizer/events/{event_id}/publish"
+    status: 303
+    result: "PASS (publication occurs only after explicit form submission; replay is deduplicated)"
+  - method: "POST"
+    path: "/organizer/events/{event_id}/publish"
+    status: 404
+    result: "PASS (another browser session cannot address this session's draft)"
+  - method: "POST"
+    path: "/organizer/events"
+    status: 400
+    result: "PASS (invalid schedule and attempted organization override rejected without service mutation)"
+  - method: "POST"
+    path: "/organizer/events"
+    status: 503
+    result: "PASS (unknown result retains same event form values and command key for retry)"
