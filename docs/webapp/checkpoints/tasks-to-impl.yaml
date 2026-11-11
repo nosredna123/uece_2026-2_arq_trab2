@@ -5,10 +5,10 @@ metadata:
 
 summary:
   total_tasks: 36
-  completed_tasks: 20
+  completed_tasks: 22
   in_progress_tasks: 0
-  pending_tasks: 16
-  completion_percentage: 55.6
+  pending_tasks: 14
+  completion_percentage: 61.1
 
 tasks:
   - task_id: "T045"
@@ -533,10 +533,62 @@ tasks:
       plan_item: "4.2"
       requirements: ["REQ-002", "REQ-008", "REQ-009", "REQ-013", "REQ-017"]
       full_trace: "REQ-002/008/009/013/017 → Phase-4.2 → T064 → service-owned check-in and certificate presentation"
+  - task_id: "T065"
+    description: "Specify safe preparation and timing behavior."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/tests/test_demo.py"
+          changes: ["Cover no-side-effect preview, explicit fresh-run confirmation, schedule validity and configured offsets, repeated/new run behavior, partial timeout retry with stable run/command identifiers, no reset, stale schedules, and countdown boundaries."]
+    verification:
+      build_passed: true
+      test_results:
+        command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+        passed: 323
+        failed: 0
+        skipped: 6
+        failures: []
+      notes: "HTTPX MockTransport verifies only existing Event Management API operations are used."
+    upstream_trace:
+      plan_item: "5.1"
+      requirements: ["REQ-002", "REQ-005", "REQ-007", "REQ-010", "REQ-012", "REQ-013", "REQ-014"]
+      full_trace: "REQ-002/005/007/010/012/013/014 → Phase-5.1 → T065 → safe preparation and schedule tests"
+  - task_id: "T066"
+    description: "Implement guided API-only preparation."
+    status: "completed"
+    implementation:
+      files_changed:
+        - file: "web/demo-python/src/demo_web/demo.py"
+          changes: ["Build UUID-scoped event and paid/free activity payloads from configured UTC timing, persist per-step idempotency keys, and format schedule-only countdowns."]
+        - file: "web/demo-python/src/demo_web/routes.py"
+          changes: ["Add read-only preview and organizer-gated preparation/resume routes using the session command ledger and existing Event Management clients; retain backend results per run."]
+        - file: "web/demo-python/src/demo_web/sessions.py"
+          changes: ["Retain bounded-by-command-budget preparation runs and fresh-run intent keys in the browser session."]
+        - file: "web/demo-python/src/demo_web/presentation.py"
+          changes: ["Add guided demo page metadata."]
+        - file: "web/demo-python/src/demo_web/templates/base.html"
+          changes: ["Add Guided demo navigation."]
+        - file: "web/demo-python/src/demo_web/templates/demo.html"
+          changes: ["Show explicit fresh-run confirmation, resumable observed steps, actual times/countdowns, stale warnings, persona switches, and participant journey links."]
+        - file: "web/demo-python/src/demo_web/static/demo.js"
+          changes: ["Progressively update schedule countdowns without inferring registration state or making service requests."]
+        - file: "web/demo-python/src/demo_web/static/app.css"
+          changes: ["Style guided preparation, step progress, activity schedules, and persona controls."]
+    verification:
+      build_passed: true
+      test_results:
+        command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+        passed: 129
+        failed: 0
+        skipped: 0
+        failures: []
+      notes: "Full root suite, Ruff checks, JavaScript syntax, and packaged runtime tests passed."
+    upstream_trace:
+      plan_item: "5.1"
+      requirements: ["REQ-002", "REQ-005", "REQ-007", "REQ-010", "REQ-012", "REQ-013", "REQ-014"]
+      full_trace: "REQ-002/005/007/010/012/013/014 → Phase-5.1 → T066 → resumable API-only event preparation and journey guide"
 
 pending_tasks:
-  - {task_id: "T065", description: "Specify safe preparation and timing tests", blocked_by: ["T062", "T064"], priority: "P1"}
-  - {task_id: "T066", description: "Implement guided API-only preparation", blocked_by: ["T065"], priority: "P1"}
   - {task_id: "T067", description: "Specify report scoping and failure tests", blocked_by: ["T060", "T062"], priority: "P1"}
   - {task_id: "T068", description: "Implement report observation pages", blocked_by: ["T067"], priority: "P1"}
   - {task_id: "T069", description: "Specify fixture authorization and limit tests", blocked_by: ["T052", "T068"], priority: "P1"}

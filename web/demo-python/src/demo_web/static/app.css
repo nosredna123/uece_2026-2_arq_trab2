@@ -1111,3 +1111,90 @@ h2 {
     transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
   }
 }
+
+.demo-action-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem 1rem;
+  margin-top: 1.2rem;
+}
+
+.confirmation-control {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  max-width: 55ch;
+  color: var(--muted);
+}
+
+.confirmation-control input {
+  margin-top: 0.3rem;
+}
+
+.demo-step-list {
+  display: grid;
+  gap: 0.65rem;
+  padding-left: 1.5rem;
+}
+
+.demo-step-list li {
+  padding-left: 0.2rem;
+}
+
+.demo-step-list li span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.demo-step-list .is-complete strong {
+  color: var(--forest);
+}
+
+.demo-activity-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  margin: 1.2rem 0;
+}
+
+.demo-activity-card {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: #fbfcfa;
+}
+
+.demo-activity-card h3 {
+  margin: 0.7rem 0 0.25rem;
+}
+
+.demo-activity-card dl {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.demo-activity-card dl div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.demo-activity-card dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.demo-activity-card dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.persona-switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}

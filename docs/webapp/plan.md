@@ -378,7 +378,7 @@ be reviewed as a labeled **Recorded observations** timeline, not a new live run.
 
 ## 6. Implementation phases and ordered tasks
 
-T045-T064 are complete; T065-T080 remain unimplemented. Tests belong before the
+T045-T066 are complete; T067-T080 remain unimplemented. Tests belong before the
 corresponding behavior within each phase. File paths below are repository-relative
 **planned** outputs.
 No parallel markers are used: the primary execution order is T045 through T080.
@@ -504,8 +504,8 @@ the printable view contains a real issued record and a prototype disclaimer.
 
 **Requirements:** REQ-002, REQ-005, REQ-007, REQ-010, REQ-012, REQ-013, REQ-014.
 
-- [ ] T065 [Plan:5.1] Write `web/demo-python/tests/test_demo.py` for unique valid schedules, one paid/one free activity, repeated/partially failed preparation, explicit fresh-run intent, no data reset, stale schedule warnings, fixed run IDs, and no backend success inferred from countdowns.
-- [ ] T066 [Plan:5.1] Implement `src/demo_web/demo.py`, `templates/demo.html`, and guided routes in `routes.py`; call the existing command/client helpers, show resumable setup steps and observed outcomes, link each persona/action explicitly, and display actual schedule/countdown. No Docker controls, business-rule override, unattended check-in, or per-payment scenario mutation.
+- [x] T065 [Plan:5.1] Write `web/demo-python/tests/test_demo.py` for unique valid schedules, one paid/one free activity, repeated/partially failed preparation, explicit fresh-run intent, no data reset, stale schedule warnings, fixed run IDs, and no backend success inferred from countdowns.
+- [x] T066 [Plan:5.1] Implement `src/demo_web/demo.py`, `templates/demo.html`, and guided routes in `routes.py`; call the existing command/client helpers, show resumable setup steps and observed outcomes, link each persona/action explicitly, and display actual schedule/countdown. No Docker controls, business-rule override, unattended check-in, or per-payment scenario mutation.
 
 **Done when:** a presenter can prepare and follow both journeys, including retry
 after a partial setup failure, without scripts/SQL or fabricated backend events.

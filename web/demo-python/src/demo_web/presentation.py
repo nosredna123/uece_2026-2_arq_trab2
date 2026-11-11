@@ -130,6 +130,16 @@ PAGE_METADATA = {
         ),
         implementation_status="Certificate view available",
     ),
+    "demo": PageMetadata(
+        title="Guided event demonstration",
+        eyebrow="Prepare synthetic service-owned records",
+        heading="Follow the registration journeys",
+        description=(
+            "Prepare a paid and a one-seat free activity through Event Management, "
+            "then follow the participant journeys using actual service responses."
+        ),
+        implementation_status="Guided preparation available",
+    ),
     "error": PageMetadata(
         title="Request not completed",
         eyebrow="The prototype could not complete this page",

@@ -2,15 +2,16 @@ import secrets
 from datetime import datetime, timezone
 from typing import Annotated
 from urllib.parse import parse_qs
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import ValidationError
 
 from demo_web.commands import CommandConflictError
+from demo_web.demo import DemoPreparation, countdown_label, create_preparation
 from demo_web.errors import InvalidResponseError, ServiceError, TransportError
-from demo_web.models import ActivityInput, Certificate, CheckIn, EventInput, Money
+from demo_web.models import Activity, ActivityInput, Certificate, CheckIn, Event, EventInput, Money
 from demo_web.presentation import (
     PAGE_METADATA,
     PERSONA_LABELS,
@@ -146,6 +147,86 @@ def _organizer_identity(request: Request, session: BrowserSession) -> dict[str, 
     if identity is None or identity.get("role") != "ORGANIZER":
         raise HTTPException(status_code=403, detail="Select the organizer persona to continue.")
     return dict(identity)
+
+
+def _demo_response(
+    request: Request,
+    *,
+    session: BrowserSession,
+    run: DemoPreparation | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
+    now = datetime.now(timezone.utc)
+    with session.lock:
+        if session.demo_start_key is None:
+            session.demo_start_key = secrets.token_urlsafe(32)
+        new_run_key = session.demo_start_key
+        runs = list(session.demo_runs.values())
+
+    activity_cards = []
+    stale_warnings = []
+    if run is not None:
+        for label, configured_activity, returned_activity in (
+            ("Paid activity", run.paid_activity_input, run.paid_activity),
+            ("Free waiting-list activity", run.free_activity_input, run.free_activity),
+        ):
+            activity = returned_activity or configured_activity
+            activity_cards.append(
+                {
+                    "label": label,
+                    "activity": activity,
+                    "returned": returned_activity is not None,
+                    "starts_at": format_datetime(activity.starts_at),
+                    "ends_at": format_datetime(activity.ends_at),
+                    "price": format_money(activity.price),
+                    "countdown": countdown_label(
+                        activity.starts_at,
+                        activity.ends_at,
+                        now=now,
+                    ),
+                }
+            )
+            if returned_activity is not None and now >= returned_activity.ends_at:
+                stale_warnings.append(f"{label} window has closed.")
+
+    steps = []
+    if run is not None:
+        steps = [
+            ("Event created", run.event is not None),
+            ("Paid activity created", run.paid_activity is not None),
+            ("Free waiting-list activity created", run.free_activity is not None),
+            ("Event published", run.published_event is not None),
+        ]
+    response = templates.TemplateResponse(
+        request=request,
+        name="demo.html",
+        context={
+            "page": PAGE_METADATA["demo"],
+            "operational_status": (
+                "Preview only; no service mutation has been requested."
+                if run is None
+                else "Event Management published this preparation."
+                if run.complete
+                else "Preparation progress is retained in this browser session."
+            ),
+            "session": session,
+            "csrf_token": session.csrf_token,
+            "can_prepare": session.persona == "organizer",
+            "new_run_key": new_run_key,
+            "run": run,
+            "runs": runs,
+            "steps": steps,
+            "activity_cards": activity_cards,
+            "stale_warnings": stale_warnings,
+            "failure": run.failure if run is not None else None,
+            "failure_step": run.failure_step if run is not None else None,
+            "failure_retryable": run.failure_retryable if run is not None else False,
+            "now": now,
+        },
+        status_code=status_code,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 async def _validated_form_fields(
@@ -1265,6 +1346,240 @@ async def organizer_publish_event(request: Request, event_id: UUID) -> Response:
     with session.lock:
         draft.event = outcome.result
     return Response(status_code=303, headers={"Location": "/organizer"})
+
+
+@router.get("/demo", response_class=HTMLResponse)
+async def guided_demo(
+    request: Request,
+    run_id: Annotated[UUID | None, Query()] = None,
+) -> HTMLResponse:
+    store = _session_store(request)
+    session, is_new = _session_or_create(request)
+    run = None
+    with session.lock:
+        if run_id is not None:
+            run = session.demo_runs.get(str(run_id))
+            if run is None:
+                raise HTTPException(status_code=404, detail="The preparation run was not found.")
+        elif session.demo_runs:
+            run = next(reversed(session.demo_runs.values()))
+    response = _demo_response(request, session=session, run=run)
+    _set_cookie_if_new(response, is_new=is_new, session=session, store=store)
+    return response
+
+
+@router.post("/demo/prepare")
+async def prepare_demo(request: Request) -> Response:
+    session = _existing_session(request)
+    await _validate_csrf(request, session)
+    identity = _organizer_identity(request, session)
+    fields = await _validated_form_fields(
+        request,
+        allowed=frozenset({"csrf_token", "idempotency_key", "intent", "confirm_new_run", "run_id"}),
+    )
+    intent = fields.get("intent")
+
+    if intent == "new":
+        if fields.get("confirm_new_run") != "yes":
+            raise HTTPException(
+                status_code=400,
+                detail="Confirm explicitly before preparing a new run.",
+            )
+        intent_key = _command_key(fields)
+        with session.lock:
+            run_id_value = session.demo_intents.get(intent_key)
+            run = session.demo_runs.get(run_id_value) if run_id_value is not None else None
+            if run is None:
+                pending_demo_steps = sum(
+                    sum(
+                        result is None
+                        for result in (
+                            preparation.event,
+                            preparation.paid_activity,
+                            preparation.free_activity,
+                            preparation.published_event,
+                        )
+                    )
+                    for preparation in session.demo_runs.values()
+                )
+                if (
+                    intent_key != session.demo_start_key
+                    or len(session.commands) + pending_demo_steps + 4
+                    > request.app.state.settings.max_commands_per_session
+                ):
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Refresh the guide and explicitly confirm a new preparation.",
+                    )
+                run = create_preparation(
+                    run_id=uuid4(),
+                    organization_id=UUID(identity["organizationId"]),
+                    settings=request.app.state.settings,
+                    now=datetime.now(timezone.utc),
+                )
+                run_id_value = str(run.run_id)
+                session.demo_runs[run_id_value] = run
+                session.demo_intents[intent_key] = run_id_value
+                session.demo_intents.move_to_end(intent_key)
+                session.demo_start_key = None
+    elif intent == "resume":
+        try:
+            run_id_value = str(UUID(fields.get("run_id", "")))
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail="A valid preparation run is required."
+            ) from None
+        with session.lock:
+            run = session.demo_runs.get(run_id_value)
+        if run is None:
+            raise HTTPException(status_code=404, detail="The preparation run was not found.")
+    else:
+        raise HTTPException(status_code=400, detail="Choose a valid preparation action.")
+
+    if run is None:
+        raise RuntimeError("The preparation intent was not retained in the browser session.")
+    if run.complete:
+        return Response(
+            status_code=303,
+            headers={"Location": f"/demo?run_id={run.run_id}"},
+        )
+
+    clients = request.app.state.clients
+    run.failure = None
+    run.failure_step = None
+    run.failure_retryable = False
+
+    try:
+        if run.event is None:
+
+            async def create_event(key: str, correlation_id: UUID):
+                return await clients.create_event(
+                    run.event_input,
+                    token=identity["token"],
+                    idempotency_key=key,
+                    session_id=session.id,
+                    correlation_id=correlation_id,
+                )
+
+            outcome = await request.app.state.command_ledger.execute(
+                session,
+                idempotency_key=run.command_keys["event"],
+                payload=run.event_input.model_dump(mode="json", by_alias=True),
+                operation=create_event,
+            )
+            if not isinstance(outcome.result, Event):
+                raise RuntimeError("The event client returned an invalid preparation result.")
+            with session.lock:
+                run.event = outcome.result
+
+        if run.paid_activity is None:
+
+            async def create_paid_activity(key: str, correlation_id: UUID):
+                return await clients.create_activity(
+                    run.event.id,
+                    run.paid_activity_input,
+                    token=identity["token"],
+                    idempotency_key=key,
+                    session_id=session.id,
+                    correlation_id=correlation_id,
+                )
+
+            outcome = await request.app.state.command_ledger.execute(
+                session,
+                idempotency_key=run.command_keys["paid_activity"],
+                payload={
+                    "eventId": str(run.event.id),
+                    "activity": run.paid_activity_input.model_dump(mode="json", by_alias=True),
+                },
+                operation=create_paid_activity,
+            )
+            if not isinstance(outcome.result, Activity):
+                raise RuntimeError("The activity client returned an invalid preparation result.")
+            with session.lock:
+                run.paid_activity = outcome.result
+
+        if run.free_activity is None:
+
+            async def create_free_activity(key: str, correlation_id: UUID):
+                return await clients.create_activity(
+                    run.event.id,
+                    run.free_activity_input,
+                    token=identity["token"],
+                    idempotency_key=key,
+                    session_id=session.id,
+                    correlation_id=correlation_id,
+                )
+
+            outcome = await request.app.state.command_ledger.execute(
+                session,
+                idempotency_key=run.command_keys["free_activity"],
+                payload={
+                    "eventId": str(run.event.id),
+                    "activity": run.free_activity_input.model_dump(mode="json", by_alias=True),
+                },
+                operation=create_free_activity,
+            )
+            if not isinstance(outcome.result, Activity):
+                raise RuntimeError("The activity client returned an invalid preparation result.")
+            with session.lock:
+                run.free_activity = outcome.result
+
+        if run.published_event is None:
+
+            async def publish_event(key: str, correlation_id: UUID):
+                return await clients.publish_event(
+                    run.event.id,
+                    token=identity["token"],
+                    idempotency_key=key,
+                    session_id=session.id,
+                    correlation_id=correlation_id,
+                )
+
+            outcome = await request.app.state.command_ledger.execute(
+                session,
+                idempotency_key=run.command_keys["publish"],
+                payload={"eventId": str(run.event.id), "action": "publish"},
+                operation=publish_event,
+            )
+            if not isinstance(outcome.result, Event):
+                raise RuntimeError("The publish client returned an invalid preparation result.")
+            with session.lock:
+                run.event = outcome.result
+                run.published_event = outcome.result
+    except CommandConflictError:
+        raise HTTPException(
+            status_code=409,
+            detail="This preparation command was invalidated; start a fresh run explicitly.",
+        ) from None
+    except OverflowError:
+        raise HTTPException(
+            status_code=429,
+            detail="This browser session has reached its command limit.",
+        ) from None
+    except SERVICE_ERRORS as error:
+        run.failure = service_failure(error)
+        run.failure_step = (
+            "event creation"
+            if run.event is None
+            else "paid activity creation"
+            if run.paid_activity is None
+            else "free activity creation"
+            if run.free_activity is None
+            else "event publication"
+        )
+        run.failure_retryable = error.outcome_unknown
+        status_code = 503 if error.outcome_unknown else error.status_code or 502
+        return _demo_response(
+            request,
+            session=session,
+            run=run,
+            status_code=status_code,
+        )
+
+    return Response(
+        status_code=303,
+        headers={"Location": f"/demo?run_id={run.run_id}"},
+    )
 
 
 async def _attendance_action(

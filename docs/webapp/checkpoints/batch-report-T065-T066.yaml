@@ -1,0 +1,144 @@
+batch_id: "B11"
+completed_tasks: ["T065", "T066"]
+blocked_tasks: []
+required_endpoints: []
+files_changed:
+  T065:
+    - file: "web/demo-python/tests/test_demo.py"
+      change_type: "created"
+      description: "Test preview safety, explicit new-run intent, valid paid/free schedules, repeat and fresh runs, resume after unknown partial failure, stale timing, stable IDs, and no countdown-derived service success."
+  T066:
+    - file: "web/demo-python/src/demo_web/demo.py"
+      change_type: "created"
+      description: "Construct unique UTC-scheduled preparation payloads and stable per-step command keys; compute schedule-only countdown labels."
+    - file: "web/demo-python/src/demo_web/routes.py"
+      change_type: "modified"
+      description: "Add read-only guided demo and organizer-gated, idempotent prepare/resume routes that use existing Event Management clients."
+    - file: "web/demo-python/src/demo_web/sessions.py"
+      change_type: "modified"
+      description: "Retain preparation references in bounded browser-session memory without deleting backend data."
+    - file: "web/demo-python/src/demo_web/presentation.py"
+      change_type: "modified"
+      description: "Add guided demo page metadata."
+    - file: "web/demo-python/src/demo_web/templates/base.html"
+      change_type: "modified"
+      description: "Add the Guided demo navigation item."
+    - file: "web/demo-python/src/demo_web/templates/demo.html"
+      change_type: "created"
+      description: "Render explicit fresh-run consent, retained steps, service-observed IDs, schedules, stale warnings, operator prerequisites, persona controls, and journey links."
+    - file: "web/demo-python/src/demo_web/static/demo.js"
+      change_type: "created"
+      description: "Enhance countdown labels using returned schedule timestamps only; perform no network requests or mutations."
+    - file: "web/demo-python/src/demo_web/static/app.css"
+      change_type: "modified"
+      description: "Style the responsive guided preparation workflow."
+    - file: "docs/webapp/plan.md"
+      change_type: "modified"
+      description: "Mark T065-T066 complete."
+    - file: "docs/webapp/checkpoints/tasks-to-impl.yaml"
+      change_type: "modified"
+      description: "Record T065-T066 evidence and update completion counts."
+    - file: "docs/webapp/checkpoints/batch-report-T065-T066.yaml"
+      change_type: "created"
+      description: "Record batch scope, verification, endpoint evidence, and skip explanation."
+upstream_artifacts_consumed:
+  - artifact: "docs/webapp/plan.md"
+    used_for: "Configured schedule offsets, unique synthetic runs, partial-failure recovery, explicit fresh-run intent, and no data reset."
+  - artifact: "docs/contracts/openapi/event-management.yaml"
+    used_for: "Event/activity creation and publication request/response contracts."
+  - artifact: "docs/adr/ADR-006-demo-webapp.md"
+    used_for: "Use existing APIs, bounded session references, and no new service/database or hidden-state mutation."
+evidence_mapping:
+  T065:
+    - upstream: "docs/webapp/plan.md#Plan-5.1"
+      output: "web/demo-python/tests/test_demo.py"
+      evidence: "Five MockTransport tests cover read-only preview, confirmation, valid schedules, stable run IDs, duplicate prevention, partial timeout retry with the same step key/correlation, no deletion, stale schedules, and countdown semantics."
+  T066:
+    - upstream: "docs/contracts/openapi/event-management.yaml"
+      output: "web/demo-python/src/demo_web/routes.py and web/demo-python/src/demo_web/demo.py"
+      evidence: "Runtime tests verify event creation, two activity creations, explicit publication, fixture organization authority, command replay, and no non-GET side effects on preview/countdown."
+traceability:
+  - requirement: "REQ-002"
+    plan_item: "5.1"
+    task: "T065-T066"
+    files: ["web/demo-python/tests/test_demo.py", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-005"
+    plan_item: "5.1"
+    task: "T065-T066"
+    files: ["web/demo-python/src/demo_web/demo.py", "web/demo-python/src/demo_web/templates/demo.html"]
+    status: "completed"
+  - requirement: "REQ-007"
+    plan_item: "5.1"
+    task: "T065-T066"
+    files: ["web/demo-python/tests/test_demo.py", "web/demo-python/src/demo_web/templates/demo.html"]
+    status: "completed"
+  - requirement: "REQ-010"
+    plan_item: "5.1"
+    task: "T065-T066"
+    files: ["web/demo-python/src/demo_web/routes.py", "web/demo-python/src/demo_web/templates/demo.html"]
+    status: "completed"
+  - requirement: "REQ-012"
+    plan_item: "5.1"
+    task: "T065-T066"
+    files: ["web/demo-python/src/demo_web/demo.py", "web/demo-python/src/demo_web/sessions.py"]
+    status: "completed"
+  - requirement: "REQ-013"
+    plan_item: "5.1"
+    task: "T065-T066"
+    files: ["web/demo-python/tests/test_demo.py", "web/demo-python/src/demo_web/routes.py"]
+    status: "completed"
+  - requirement: "REQ-014"
+    plan_item: "5.1"
+    task: "T065-T066"
+    files: ["web/demo-python/src/demo_web/demo.py", "web/demo-python/src/demo_web/static/demo.js"]
+    status: "completed"
+protocol_violation: false
+errors: []
+warnings:
+  - severity: "LOW"
+    message: "Six existing integration/concurrency tests were skipped because their external infrastructure was unavailable."
+test_results:
+  full_suite:
+    command: ".venv/bin/python -m pytest -x --import-mode=importlib"
+    passed: 323
+    failed: 0
+    skipped: 6
+    failures: []
+  docker_runtime:
+    command: "docker build --target runtime -f web/demo-python/Dockerfile web/demo-python"
+    passed: 129
+    failed: 0
+    skipped: 0
+    failures: []
+  lint:
+    command: ".venv/bin/python -m ruff check --no-cache and ruff format --check --cache-dir /tmp/ruff-check-cache; node --check web/demo-python/src/demo_web/static/demo.js"
+    passed: 1
+    failed: 0
+    skipped: 0
+    failures: []
+endpoint_probes:
+  - method: "GET"
+    path: "/demo"
+    status: 200
+    result: "PASS (preview is read-only and requires explicit fresh-run confirmation)"
+  - method: "POST"
+    path: "/demo/prepare"
+    status: 303
+    result: "PASS (successful setup creates an event, paid/free activities, and explicitly publishes once)"
+  - method: "POST"
+    path: "/demo/prepare"
+    status: 400
+    result: "PASS (missing fresh-run confirmation performs no service mutation)"
+  - method: "POST"
+    path: "/demo/prepare"
+    status: 503
+    result: "PASS (uncertain partial failure retains progress and offers resume with the same step key)"
+  - method: "POST"
+    path: "/demo/prepare"
+    status: 303
+    result: "PASS (resume reuses completed results and retries only the uncertain step)"
+  - method: "GET"
+    path: "/static/demo.js"
+    status: 200
+    result: "PASS (countdown enhancement is packaged and performs no requests)"

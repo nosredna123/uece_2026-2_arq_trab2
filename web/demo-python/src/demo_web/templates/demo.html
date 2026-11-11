@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="content-card demo-preview"
+         data-section="guided-preparation" data-provenance="demo_presentation"
+         aria-labelledby="demo-preview-heading">
+  {% set kind = "demo_presentation" %}
+  {% include "partials/badge.html" %}
+  <h2 id="demo-preview-heading">Prepare a real service-backed journey</h2>
+  <p class="card-copy">
+    Preparation creates one event, a paid activity, and a one-seat free activity through Event Management.
+    Existing runs are never deleted or reset.
+  </p>
+  <p class="notice-box">
+    Before the demonstration, the operator must configure Billing approval and enable Registration waiting-list
+    support in the service environment. This guide observes returned outcomes; it cannot change or reset mock
+    scenarios, service configuration, or existing data.
+  </p>
+  <p class="notice-box">No registration has been created by this countdown; schedules are not Registration outcomes.</p>
+  {% if can_prepare %}
+  <form method="post" action="/demo/prepare" class="demo-action-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="idempotency_key" value="{{ new_run_key }}">
+    <input type="hidden" name="intent" value="new">
+    <label class="confirmation-control">
+      <input type="checkbox" name="confirm_new_run" value="yes" required>
+      I intend to create a fresh run; previously created backend records will remain.
+    </label>
+    <button class="primary-button action-button" type="submit">Prepare a new run</button>
+  </form>
+  {% else %}
+  <p class="card-copy">Select the Organizer persona to prepare records. Previewing this guide makes no service calls.</p>
+  {% endif %}
+</section>
+
+{% if run %}
+<section class="content-card demo-run"
+         data-section="preparation-run" data-provenance="live_service"
+         data-run-id="{{ run.run_id }}"
+         aria-labelledby="demo-run-heading">
+  {% set kind = "live_service" %}
+  {% include "partials/badge.html" %}
+  <p class="eyebrow">Preparation run {{ run.run_id }}</p>
+  <h2 id="demo-run-heading">Setup progress</h2>
+  <p class="card-copy">
+    Run IDs and command results are retained in this browser session only. Restarting or expiring the session
+    clears guide references, not backend records.
+  </p>
+
+  {% if failure %}
+  <div class="service-error" role="alert">
+    <p>Preparation stopped during {{ failure_step }}. No later step is reported as complete.</p>
+    <p><strong>{{ failure.service }}</strong>
+      {% if failure.status_code %}returned HTTP {{ failure.status_code }}{% else %}could not be reached{% endif %}.
+      Code <code>{{ failure.code }}</code> · correlation <code>{{ failure.correlation_id }}</code>
+    </p>
+    {% if failure_retryable and can_prepare %}
+    <p>Retry resumes the same run and reuses the same command key for its uncertain step.</p>
+    {% else %}
+    <p>Review the service or operator prerequisite before explicitly preparing another run.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <ol class="demo-step-list">
+    {% for label, completed in steps %}
+    <li class="{{ 'is-complete' if completed else 'is-pending' }}">
+      <strong>{{ label }}</strong>
+      <span>{{ "Returned by Event Management" if completed else "Not yet observed from Event Management" }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+
+  {% if run.event %}
+  <p>Event Management event <code>{{ run.event.id }}</code> · status <strong>{{ run.event.status }}</strong></p>
+  {% endif %}
+
+  {% if activity_cards %}
+  <div class="demo-activity-grid">
+    {% for item in activity_cards %}
+    <article class="demo-activity-card"
+             data-provenance="{{ 'live_service' if item.returned else 'demo_presentation' }}"
+             data-starts-at="{{ item.activity.starts_at.isoformat() }}"
+             data-ends-at="{{ item.activity.ends_at.isoformat() }}">
+      {% set kind = "live_service" if item.returned else "demo_presentation" %}
+      {% include "partials/badge.html" %}
+      <h3>{{ item.activity.title }}</h3>
+      <p>{{ item.label }} · {{ item.price }} · capacity {{ item.activity.capacity }}</p>
+      {% if item.activity.id %}
+      <p>Activity ID <code>{{ item.activity.id }}</code></p>
+      {% else %}
+      <p>Activity ID is pending the Event Management response.</p>
+      {% endif %}
+      <dl>
+        <div><dt>Starts</dt><dd>{{ item.starts_at }}</dd></div>
+        <div><dt>Ends</dt><dd>{{ item.ends_at }}</dd></div>
+        <div><dt>Schedule countdown</dt><dd data-countdown>{{ item.countdown }}</dd></div>
+        <div><dt>Schedule source</dt><dd>{{ "Event Management response" if item.returned else "Configured plan; not yet confirmed" }}</dd></div>
+      </dl>
+      {% if run.published_event and item.activity.id %}
+      <a class="text-link" href="/activities/{{ item.activity.id }}/checkout">Open participant checkout</a>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% for warning in stale_warnings %}
+  <p class="notice-box" role="status">{{ warning }} The schedule may be stale; inspect current service state before presenting.</p>
+  {% endfor %}
+  <p class="notice-box">
+    Registration status is not determined by countdowns. A countdown describes only the returned activity schedule;
+    Registration outcomes appear only after explicit participant commands and service responses.
+  </p>
+  <p class="card-copy">
+    Event window margin: it begins before the paid activity and ends 60 seconds after the free activity.
+    No registration, check-in, payment, or certificate is created by preparation.
+  </p>
+
+  {% if can_prepare and not run.complete and (not failure or failure_retryable) %}
+  <form method="post" action="/demo/prepare" class="demo-action-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="intent" value="resume">
+    <input type="hidden" name="run_id" value="{{ run.run_id }}">
+    <button class="secondary-button action-button" type="submit">Resume preparation</button>
+  </form>
+  {% endif %}
+
+  {% if run.published_event %}
+  <p><a class="text-link" href="/events/{{ run.published_event.id }}">Open published event</a></p>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="content-card demo-guide" data-section="participant-guide" data-provenance="demo_presentation"
+         aria-labelledby="demo-guide-heading">
+  {% set kind = "demo_presentation" %}
+  {% include "partials/badge.html" %}
+  <h2 id="demo-guide-heading">Presenter sequence</h2>
+  <ol>
+    <li>Switch to Participant 1, open the paid activity checkout, and submit only when ready.</li>
+    <li>Switch between Participant 1 and Participant 2 to demonstrate the one-seat free journey.</li>
+    <li>Use the registration pages to observe actual states; cancel, accept, check in, and request a certificate only through explicit forms.</li>
+  </ol>
+  <div class="persona-switches" aria-label="Select a synthetic persona">
+    {% for persona, label in [("organizer", "Organizer"), ("participant", "Participant 1"), ("participantTwo", "Participant 2")] %}
+    <form method="post" action="/persona/{{ persona }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="secondary-button action-button" type="submit">{{ label }}</button>
+    </form>
+    {% endfor %}
+  </div>
+  <p><a class="text-link" href="/registrations">Open the selected participant’s registrations</a></p>
+</section>
+
+{% if runs|length > 1 %}
+<section class="content-card demo-history" data-section="preparation-history" data-provenance="demo_presentation"
+         aria-labelledby="demo-history-heading">
+  {% set kind = "demo_presentation" %}
+  {% include "partials/badge.html" %}
+  <h2 id="demo-history-heading">Earlier preparation references</h2>
+  <ul>
+    {% for saved_run in runs %}
+    <li><a href="/demo?run_id={{ saved_run.run_id }}">Run {{ saved_run.run_id }}</a>
+      · {{ "complete" if saved_run.complete else "incomplete" }}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+<script src="/static/demo.js" defer></script>
+{% endblock %}
