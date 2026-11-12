@@ -379,6 +379,7 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
             "cancelled": "0",
             "no_shows": "0",
             "expired_refused": "0",
+            "cancellation_rate": "0%",
         }
         trend_by_key = {key: trend for trend, key in re.findall(r'data-trend="([\w-]+)" data-summary="(\w+)"', html)}
         assert trend_by_key["confirmed"] == "up-good"
@@ -391,12 +392,11 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
 
 
 def _summary(html: str) -> dict[str, str]:
-    return dict(
-        re.findall(
-            r'data-summary="(\w+)">\s*<dt>[^<]*</dt>\s*<dd>([^<]*)</dd>',
-            html,
-        )
+    values = re.findall(
+        r'data-summary="(\w+)">\s*<dt>[^<]*</dt>\s*<dd><span data-summary-value>([^<]*)</span>',
+        html,
     )
+    return dict(values + re.findall(r'data-summary-rate="(\w+)">([^<]*)<', html))
 
 
 def test_report_summary_reads_every_page_of_events_and_reports(client, backend):
@@ -486,5 +486,5 @@ def test_report_summary_shows_cancellations_no_shows_and_expirations(client, bac
     assert summary["cancelled"] == "6"
     assert summary["no_shows"] == "2"
     assert summary["expired_refused"] == "4"
-    assert "cancellation_rate" not in summary
-    assert "no_show_rate" not in summary
+    assert summary["cancellation_rate"] == "30%"
+    assert summary["no_show_rate"] == "25%"

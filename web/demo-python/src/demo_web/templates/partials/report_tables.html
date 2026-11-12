@@ -1,31 +1,32 @@
 <p class="card-copy report-updated">Updated at <span data-report-updated>{{ updated_at }}</span></p>
 <section class="report-summary" data-report-summary aria-label="Overview of published events">
   <dl class="summary-grid">
-    {% for key, label, trend in [
-      ("events", "Events", "neutral"),
-      ("activities", "Activities", "neutral"),
-      ("capacity", "Capacity", "neutral"),
-      ("confirmed", "Confirmed", "up-good"),
-      ("pending_payment", "Pending payment", "neutral"),
-      ("waiting", "Waiting list", "down-good"),
-      ("free_seats", "Free seats", "neutral"),
-      ("checked_in", "Checked in", "up-good"),
-      ("certificates", "Certificates", "up-good"),
-      ("occupancy", "Occupancy", "up-good"),
-      ("attendance", "Attendance", "up-good"),
-      ("cancelled", "Cancellations", "up-bad"),
-      ("no_shows", "No-shows", "up-bad"),
-      ("expired_refused", "Expired / refused", "up-bad"),
+    {# The optional fourth item names a rate shown in small type next to the count. #}
+    {% for key, label, trend, rate in [
+      ("events", "Events", "neutral", None),
+      ("activities", "Activities", "neutral", None),
+      ("capacity", "Capacity", "neutral", None),
+      ("confirmed", "Confirmed", "up-good", None),
+      ("pending_payment", "Pending payment", "neutral", None),
+      ("waiting", "Waiting list", "down-good", None),
+      ("free_seats", "Free seats", "neutral", None),
+      ("checked_in", "Checked in", "up-good", None),
+      ("certificates", "Certificates", "up-good", None),
+      ("occupancy", "Occupancy", "up-good", None),
+      ("attendance", "Attendance", "up-good", None),
+      ("cancelled", "Cancellations", "up-bad", "cancellation_rate"),
+      ("no_shows", "No-shows", "up-bad", "no_show_rate"),
+      ("expired_refused", "Expired / refused", "up-bad", None),
     ] %}
     <div class="summary-card{% if trend == 'up-bad' %} is-negative{% endif %}" data-trend="{{ trend }}" data-summary="{{ key }}">
       <dt>{{ label }}</dt>
-      <dd>{{ summary[key] }}</dd>
+      <dd><span data-summary-value>{{ summary[key] }}</span>{% if rate and summary[rate] != "—" %} <span class="summary-rate" data-summary-rate="{{ rate }}">{{ summary[rate] }}</span>{% endif %}</dd>
       <dd class="summary-delta" data-summary-delta></dd>
     </div>
     {% endfor %}
   </dl>
   <p class="summary-note">Occupancy = confirmed ÷ capacity · Attendance = checked in ÷ confirmed</p>
-  <p class="summary-note">No-shows = confirmed without check-in once the activity has ended · Expired / refused = offers or payments not completed in time, plus refused payments</p>
+  <p class="summary-note">Cancellations: count and share of confirmed + cancelled · No-shows: confirmed without check-in once the activity has ended, and share of confirmed in ended activities · Expired / refused = offers or payments not completed in time, plus refused payments</p>
 </section>
 {% for section in sections %}
 <article class="report-event" data-report-event="{{ section.event.id }}">

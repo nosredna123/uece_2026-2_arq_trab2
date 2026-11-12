@@ -8,7 +8,7 @@
   const readSummary = () => {
     const values = new Map();
     container.querySelectorAll(".summary-card[data-summary]").forEach((card) => {
-      const text = card.querySelector("dd")?.textContent.trim() ?? "";
+      const text = card.querySelector("[data-summary-value]")?.textContent.trim() ?? "";
       const value = Number.parseFloat(text);
       if (Number.isFinite(value)) values.set(card.dataset.summary, { value, percent: text.endsWith("%") });
     });
