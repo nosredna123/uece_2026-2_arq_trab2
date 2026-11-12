@@ -123,7 +123,7 @@ Pre-defined load scenarios run from the terminal while the organizer watches
 **Reports** in the browser:
 
 ```sh
-bash scripts/cenario.sh pico-inscricoes   # many participants, 5 seats
+bash scripts/cenario.sh pico-inscricoes   # many participants, seats for 25% of them
 bash scripts/cenario.sh ultima-vaga       # two participants, one seat
 bash scripts/cenario.sh envios-repetidos  # same request 10 times (idempotency)
 bash scripts/cenario.sh                   # all of the above in parallel + mixed load
@@ -131,9 +131,11 @@ bash scripts/cenario.sh                   # all of the above in parallel + mixed
 
 Without an argument, the three scenarios run in parallel with a random **mixed
 load** (`carga-mista`). The mixed load publishes 3 more GESAD/UECE events
-(`[CENÁRIO] Carga mista · …`) with 3 activities each, capacities 2–5 and one
-paid activity per event. Over `SCENARIO_MIXED_DURATION_SECONDS` (10–300, default
-60), each of the 20 scenario participants registers in 2–4 random activities.
+(`[CENÁRIO] Carga mista · …`) with 3 activities each and one paid activity per
+event. Over `SCENARIO_MIXED_DURATION_SECONDS` (10–300, default 60), each of the
+`SCENARIO_PEAK_PARTICIPANTS` participants registers in 2–4 random activities.
+Capacities scale with that number: 2–5 seats per activity for 20 participants,
+20–50 for 200.
 About 20% of the confirmed seats in free activities are then cancelled; the
 freed seat is offered to the next person on the waiting list, who accepts it.
 Paid registrations show as `PENDING_PAYMENT` until the Billing mock approves
@@ -154,7 +156,9 @@ fails clearly if the app is not running or the scenarios are disabled.
 The peak scenario reads two optional settings, from the shell or `infra/.env`
 (defaults come from `infra/.env.example`):
 - `SCENARIO_PEAK_PARTICIPANTS`: 1–20000, default 20. Each participant is a
-  distinct identity from the scenario pool (20,000 identities).
+  distinct identity from the scenario pool (20,000 identities). The peak
+  activity gets seats for 25% of them, rounded up (20 → 5 seats, 200 → 50), so
+  the rest go to the waiting list. The mixed load uses the same number.
 - `SCENARIO_PEAK_DURATION_SECONDS`: 1–300, default 30. Use a longer value to
   watch the numbers change in Reports while you refresh it.
 

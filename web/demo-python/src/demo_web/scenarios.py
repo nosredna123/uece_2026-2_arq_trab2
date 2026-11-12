@@ -11,11 +11,12 @@ The organizer can follow the run live on the Reports page.
 import argparse
 import asyncio
 import json
+import math
 import os
 import random
 import sys
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from time import monotonic
 from typing import Awaitable, Callable, Mapping, Sequence
@@ -27,7 +28,8 @@ from demo_web.models import ActivityInput, Availability, EventInput, Money
 from demo_web.settings import Settings, SettingsError
 
 
-MIXED_LOAD_PARTICIPANTS = 20
+PEAK_SEAT_RATIO = 0.25
+MIXED_BASE_PARTICIPANTS = 20
 MAX_PEAK_DURATION_SECONDS = 300
 DEFAULT_PEAK_PARTICIPANTS = 20
 DEFAULT_PEAK_DURATION_SECONDS = 30
@@ -46,7 +48,8 @@ SCENARIOS = {
     "pico-inscricoes": Scenario(
         "pico-inscricoes",
         "Pico de inscrições",
-        "Muitos participantes se inscrevem em poucos segundos numa atividade de 5 vagas.",
+        "Muitos participantes se inscrevem em poucos segundos numa atividade com vagas "
+        "para 25% deles.",
         capacity=5,
     ),
     "ultima-vaga": Scenario(
@@ -92,6 +95,10 @@ class Verdict:
     lines: tuple[str, ...]
 
 
+def scenario_clients(settings: Settings) -> DemoClients:
+    return DemoClients(settings, wait_for_connection=True)
+
+
 def participant_label(index: int) -> str:
     return f"Participante de cenário {index:02}"
 
@@ -103,6 +110,11 @@ def _bounded_integer(environ: Mapping[str, str], key: str, default: int, maximum
     if not raw.isdigit() or not 1 <= int(raw) <= maximum:
         raise ScenarioConfigError(f"{key} must be an integer between 1 and {maximum}.")
     return int(raw)
+
+
+def peak_capacity(participants: int) -> int:
+    """Seats of the peak activity: 25% of the participants, at least one."""
+    return max(1, math.ceil(participants * PEAK_SEAT_RATIO))
 
 
 def peak_settings(environ: Mapping[str, str], pool_size: int) -> tuple[int, int]:
@@ -339,6 +351,8 @@ async def _run_single(
         participants=participants,
         duration_seconds=duration,
     )
+    if scenario.key == "pico-inscricoes":
+        scenario = replace(scenario, capacity=peak_capacity(len(submissions)))
     out(f"Cenário: {scenario.title}")
     out(scenario.description)
     if scenario.key == "pico-inscricoes":
@@ -384,7 +398,7 @@ async def run_scenario(
     *,
     environ: Mapping[str, str],
     out: Callable[[str], None] = print,
-    clients_factory: Callable[[Settings], DemoClients] = DemoClients,
+    clients_factory: Callable[[Settings], DemoClients] = scenario_clients,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
 ) -> int:
@@ -473,7 +487,11 @@ def mixed_duration(environ: Mapping[str, str]) -> int:
 
 
 def plan_mixed_load(participants: int, duration_seconds: int, rng: random.Random) -> MixedPlan:
-    """Random registrations over 3 events x 3 activities, with some cancellations."""
+    """Random registrations over 3 events x 3 activities, with some cancellations.
+
+    Seats (2-5 per activity for 20 participants) scale with the participant count.
+    """
+    scale = participants / MIXED_BASE_PARTICIPANTS
     activities = []
     for event_index, (_, titles) in enumerate(MIXED_EVENTS):
         paid_index = rng.randrange(len(titles))
@@ -482,7 +500,7 @@ def plan_mixed_load(participants: int, duration_seconds: int, rng: random.Random
                 MixedActivity(
                     event_index,
                     title,
-                    capacity=rng.randint(2, 5),
+                    capacity=max(1, round(rng.randint(2, 5) * scale)),
                     price_minor=rng.choice(MIXED_PRICES_MINOR) if index == paid_index else 0,
                 )
             )
@@ -557,6 +575,7 @@ async def _run_mixed_load(
     organizer: Mapping[str, str],
     identities: Sequence[Mapping[str, str]],
     *,
+    participants: int,
     duration: int,
     out: Callable[[str], None],
     sleep: Callable[[float], Awaitable[None]],
@@ -564,7 +583,7 @@ async def _run_mixed_load(
     rng: random.Random,
     clock: Callable[[], float] = monotonic,
 ) -> bool:
-    identities = identities[:MIXED_LOAD_PARTICIPANTS]
+    identities = identities[:participants]
     plan = plan_mixed_load(len(identities), duration, rng)
     run_id = uuid4()
     paid = sum(spec.price_minor > 0 for spec in plan.activities)
@@ -602,8 +621,10 @@ async def _run_mixed_load(
                     current = await clients.get_registration(
                         registration_id, token=identity["token"]
                     )
-                    if current.status != "OFFERED":
+                    if current.status != "OFFERED" or entry not in waiting[activity_index]:
                         continue
+                    # Claim the offer so a concurrent promotion skips it.
+                    waiting[activity_index].remove(entry)
                     accepted = await clients.accept_offer(
                         registration_id,
                         token=identity["token"],
@@ -613,7 +634,6 @@ async def _run_mixed_load(
                     errors[_error_code(error)] += 1
                     log(participant, activity_index, f"erro {_error_code(error)}")
                     return
-                waiting[activity_index].remove(entry)
                 promoted += 1
                 log(participant, activity_index, f"saiu da lista de espera → {accepted.status}")
                 return
@@ -692,7 +712,7 @@ async def run_all(
     *,
     environ: Mapping[str, str],
     out: Callable[[str], None] = print,
-    clients_factory: Callable[[Settings], DemoClients] = DemoClients,
+    clients_factory: Callable[[Settings], DemoClients] = scenario_clients,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
     rng: random.Random | None = None,
@@ -733,6 +753,7 @@ async def run_all(
             clients,
             organizer,
             identities,
+            participants=participants,
             duration=duration,
             out=prefixed(MIXED_KEY),
             sleep=sleep,

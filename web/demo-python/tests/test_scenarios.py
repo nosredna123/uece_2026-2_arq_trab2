@@ -10,17 +10,25 @@ from demo_web.errors import ServiceError
 from demo_web.models import Activity, Availability, Event, Registration
 from demo_web.scenarios import (
     SCENARIOS,
+    MixedAction,
+    MixedActivity,
+    MixedPlan,
     Outcome,
     ScenarioConfigError,
     evaluate,
     main,
     mixed_duration,
+    peak_capacity,
     peak_settings,
     plan_mixed_load,
     plan_submissions,
     run_all,
     run_scenario,
+    scenario_clients,
 )
+from demo_web import scenarios
+from demo_web.clients import DemoClients
+from demo_web.settings import Settings
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -161,6 +169,14 @@ def test_peak_settings_defaults_and_bounds():
             peak_settings({key: value}, 20)
 
 
+def test_peak_capacity_is_a_quarter_of_the_participants():
+    assert peak_capacity(1) == 1
+    assert peak_capacity(3) == 1
+    assert peak_capacity(20) == 5
+    assert peak_capacity(21) == 6
+    assert peak_capacity(200) == 50
+
+
 def test_peak_plan_spreads_submissions_over_the_duration():
     run_id = uuid4()
     plan = plan_submissions(
@@ -202,13 +218,13 @@ def test_registration_peak_run_prints_progress_and_verdict(web_environment):
     assert fake.closed
     assert [call[0] for call in fake.calls] == ["create_event", "create_activity", "publish_event"]
     assert fake.event.title.startswith("[CENÁRIO] Pico de inscrições")
-    assert fake.capacity == 5
+    assert fake.capacity == 3
     progress = [line for line in lines if "→" in line]
     assert len(progress) == 12
-    assert sum("CONFIRMED" in line for line in progress) == 5
-    assert sum("WAITLISTED" in line for line in progress) == 7
-    assert "12 participantes em 6 s · 5 vagas" in lines
-    assert "Vagas ocupadas: 5 de 5 — sem overbooking." in lines
+    assert sum("CONFIRMED" in line for line in progress) == 3
+    assert sum("WAITLISTED" in line for line in progress) == 9
+    assert "12 participantes em 6 s · 3 vagas" in lines
+    assert "Vagas ocupadas: 3 de 3 — sem overbooking." in lines
     assert lines[-1] == "Veredito: OK"
 
 
@@ -297,7 +313,8 @@ def test_peak_accepts_more_than_twenty_participants(web_environment):
         SCENARIO_PEAK_DURATION_SECONDS="1",
     )
     assert code == 0, lines
-    assert "Resultado: 5 CONFIRMED, 195 WAITLISTED" in lines
+    assert "200 participantes em 1 s · 50 vagas" in lines
+    assert "Resultado: 50 CONFIRMED, 150 WAITLISTED" in lines
 
 
 def test_cli_rejects_unknown_scenarios():
@@ -367,9 +384,11 @@ class FakeEventHub(FakeRegistration):
         return registration
 
     async def get_registration(self, registration_id, *, token):
+        await asyncio.sleep(0)
         return self.registrations[registration_id]
 
     async def accept_offer(self, registration_id, *, token, idempotency_key):
+        await asyncio.sleep(0)
         return self._store(self.registrations[registration_id], "CONFIRMED")
 
     async def get_availability(self, activity_id):
@@ -423,6 +442,13 @@ def test_mixed_plan_spreads_load_over_nine_activities():
     assert plan_mixed_load(20, 60, random.Random(3)) == plan
 
 
+def test_mixed_plan_scales_seats_with_the_participants():
+    plan = plan_mixed_load(200, 60, random.Random(3))
+    assert all(20 <= spec.capacity <= 50 for spec in plan.activities)
+    assert {action.participant_index for action in plan.actions} == set(range(200))
+    assert all(spec.capacity >= 1 for spec in plan_mixed_load(2, 60, random.Random(3)).activities)
+
+
 def test_run_all_runs_every_scenario_in_parallel(web_environment):
     fake = FakeEventHub()
     code, lines = _run_all(web_environment, fake, SCENARIO_MIXED_DURATION_SECONDS="30")
@@ -440,6 +466,61 @@ def test_run_all_runs_every_scenario_in_parallel(web_environment):
     assert any("saiu da lista de espera → CONFIRMED" in line for line in mixed)
     assert any("Atividades sem overbooking: 9 de 9." in line for line in mixed)
     assert lines[-1] == "Veredito geral: OK"
+
+
+def test_run_all_scales_with_many_participants(web_environment):
+    fake = FakeEventHub()
+    code, lines = _run_all(
+        web_environment, fake, seed=1, SCENARIO_PEAK_PARTICIPANTS="400"
+    )
+
+    assert code == 0, [line for line in lines if "erro" in line or "Veredito" in line]
+    assert "[pico-inscricoes ] 400 participantes em 60 s · 100 vagas" in lines
+    mixed = [line for line in lines if line.startswith("[carga-mista")]
+    assert sum("saiu da lista de espera" in line for line in mixed) > 1
+    assert lines[-1] == "Veredito geral: OK"
+
+
+def test_simultaneous_cancellations_promote_distinct_waiting_participants(monkeypatch):
+    plan = MixedPlan(
+        (MixedActivity(0, "Oficina", capacity=2, price_minor=0),),
+        tuple(
+            MixedAction(index, 0, delay_seconds=0.0, cancel_after_seconds=cancel)
+            for index, cancel in ((0, 1.0), (1, 1.0), (2, None), (3, None))
+        ),
+    )
+    monkeypatch.setattr(scenarios, "plan_mixed_load", lambda *args: plan)
+    fake = FakeEventHub()
+    lines = []
+    passed = asyncio.run(
+        scenarios._run_mixed_load(
+            fake,
+            {"token": "organizer", "organizationId": str(ORGANIZATION_ID)},
+            IDENTITIES,
+            participants=4,
+            duration=30,
+            out=lines.append,
+            sleep=_no_sleep,
+            now=lambda: NOW,
+            rng=random.Random(0),
+        )
+    )
+
+    assert passed, lines
+    assert "Desistências: 2 · vagas repassadas da lista de espera: 2" in lines
+    promoted = [line for line in lines if "saiu da lista de espera" in line]
+    assert {line.split(" · ")[0].split("] ")[1] for line in promoted} == {
+        "Participante de cenário 03",
+        "Participante de cenário 04",
+    }
+
+
+def test_scenario_clients_wait_for_a_free_connection(web_environment):
+    settings = Settings.from_environment(_environment(web_environment))
+    timeout = scenario_clients(settings)._client.timeout
+    assert timeout.pool is None
+    assert timeout.read == settings.http_timeout_seconds
+    assert DemoClients(settings)._client.timeout.pool == settings.http_timeout_seconds
 
 
 def test_run_all_reports_overbooking(web_environment):

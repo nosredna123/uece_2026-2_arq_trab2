@@ -42,6 +42,7 @@ class DemoClients:
         settings: Settings,
         *,
         transport: httpx.AsyncBaseTransport | None = None,
+        wait_for_connection: bool = False,
     ):
         self._settings = settings
         self._base_urls = {
@@ -52,7 +53,12 @@ class DemoClients:
         }
         self._client = httpx.AsyncClient(
             transport=transport,
-            timeout=httpx.Timeout(settings.http_timeout_seconds),
+            # Load scenarios queue far more requests than the pool holds; waiting
+            # for a free connection must not count as a service timeout there.
+            timeout=httpx.Timeout(
+                settings.http_timeout_seconds,
+                pool=None if wait_for_connection else settings.http_timeout_seconds,
+            ),
             limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
             follow_redirects=False,
         )

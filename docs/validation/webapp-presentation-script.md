@@ -219,7 +219,8 @@ GESAD/UECE seminar activities; select one and click **View certificate**.
    ```
 
 3. Watch the Reports page refresh: in the new event's table **Confirmed** stops
-   at 5 and **Waiting list** grows to 15; the overview panel totals rise with it.
+   at 5 and **Waiting list** grows to 15 (with the default 20 participants; the
+   activity always has seats for 25% of `SCENARIO_PEAK_PARTICIPANTS`); the overview panel totals rise with it.
    Each changed card shows an arrow and the difference from the previous update
    (`▲ +1`, `▼ −1 pp`) until that card changes again. Green means good news
    (more confirmed, check-ins, certificates, occupancy, attendance; a shorter
