@@ -285,6 +285,7 @@ stack. See the [validation evidence](./webapp-evidence.md).
 | Why separate stores and APIs? | Each domain owns its records and invariants. Services exchange API requests and events rather than reading another service's tables. |
 | Is this a real payment? | No. Billing is a mock with configured outcomes; the UI collects no card details. |
 | Is delivery exactly once? | No. Transport is at-least-once; idempotency keys and the outbox tolerate retries and duplicates. |
+| Can a participant cancel a paid seat? | Not yet. The refund workflow is designed and contracted, and the Billing mock supports it. Registration does not implement it yet, so it answers `409 REFUND_WORKFLOW_REQUIRED` and keeps the seat. It fails closed: a paid seat is never freed without a refund. This is a known limitation (ADR-005 1.1.0). |
 | Why can the report lag? | Reporting builds an event-fed projection asynchronously. Registration and Attendance remain authoritative. |
 | How does the peak avoid overbooking? | Registration serializes admission per activity against the published capacity snapshot; extra requests go to the waiting list. |
 | Does the peak prove production scalability? | No. It is a small local burst with synthetic identities: evidence for that run, not an SLA. |

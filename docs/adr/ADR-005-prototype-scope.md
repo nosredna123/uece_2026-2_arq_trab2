@@ -1,8 +1,8 @@
 # ADR-005: Executable prototype scope and minimum security boundary
 
 **Status:** Accepted for the prototype\
-**Date:** 2026-11-09\
-**Version:** 1.0.0\
+**Date:** 2026-11-09 (revised 2026-11-12)\
+**Version:** 1.1.0\
 **Traceability:** RF01-RF11, RN06-RN07, RQ01, RQ05-RQ08; plan 1.3 / T008
 
 ## Context
@@ -88,6 +88,22 @@ percentage attendance measurement or high availability. Frozen admission
 capacity is the additional user-approved limitation in
 [ADR-002](ADR-002-data-ownership.md). Business-rule changes require human approval
 and versioned decision/rationale updates, not quiet mock behavior changes.
+
+**Known limitation — paid cancellation refund (revision 1.1.0).** The refund
+workflow for a *confirmed paid* registration is designed but not implemented in
+Registration. The rule, contract and Billing mock exist:
+[paid-registration-flow.md](../architecture/paid-registration-flow.md), the
+`202`/`refundStatus` contract in `registration.yaml`, the `REFUND` Billing
+message, and `CANCELLATION_WINDOW_DAYS`/`REFUND_PERCENTAGE` settings. Registration,
+however, rejects that cancellation with `409 REFUND_WORKFLOW_REQUIRED`. It does
+not request the refund, change `refundStatus`, release the seat or promote the
+waiting list. The participant keeps the paid seat. This fails closed: a paid
+seat is never freed without a refund. Free registrations, and paid ones still
+`PENDING_PAYMENT` or `OFFERED`, cancel normally. The terminal mixed-load scenario
+therefore cancels only free seats. Implementing the workflow requires storing
+the approved payment ID, a cancellation-window check, a `REFUND` outbox request,
+`REFUND` result handling with unlimited retry, and a single idempotent seat
+release with FIFO promotion. That is recorded as follow-up work, not done here.
 
 ## Validation and follow-up
 

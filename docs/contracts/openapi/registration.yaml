@@ -84,7 +84,7 @@ paths:
     parameters: [{$ref: './common.yaml#/components/parameters/ResourceId'}]
     post:
       operationId: cancelOwnRegistration
-      description: Cancel own eligible registration. Paid confirmed cancellation requires configured window and pre-start request, keeps CONFIRMED with refund PENDING until approval; failures retry without limit. Other occupied states release once and promote FIFO atomically.
+      description: Cancel own eligible registration. Paid confirmed cancellation requires configured window and pre-start request, keeps CONFIRMED with refund PENDING until approval; failures retry without limit. Known limitation per ADR-005 1.1.0 - the refund path is not implemented yet; paid confirmed cancellation currently returns 409 REFUND_WORKFLOW_REQUIRED and keeps the seat. Other occupied states release once and promote FIFO atomically.
       x-roles: [PARTICIPANT]
       parameters: [{$ref: './common.yaml#/components/parameters/IdempotencyKey'}]
       responses:

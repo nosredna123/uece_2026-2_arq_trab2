@@ -137,7 +137,8 @@ paid activity per event. Over `SCENARIO_MIXED_DURATION_SECONDS` (10–300, defau
 About 20% of the confirmed seats in free activities are then cancelled; the
 freed seat is offered to the next person on the waiting list, who accepts it.
 Paid registrations show as `PENDING_PAYMENT` until the Billing mock approves
-them. Paid seats are never cancelled, because that needs the refund workflow.
+them. Paid confirmed seats are never cancelled: the refund workflow is a known
+limitation (ADR-005 1.1.0), and Registration answers `409 REFUND_WORKFLOW_REQUIRED`.
 In this mode the peak also lasts `SCENARIO_MIXED_DURATION_SECONDS`. Each output
 line is prefixed with its scenario, and the run ends with a summary and
 `Veredito geral: OK` or `Veredito geral: VERIFICAR`. The mixed load is random,

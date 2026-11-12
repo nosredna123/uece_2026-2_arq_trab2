@@ -1,7 +1,7 @@
 {
   "artifact": "docs/adr/ADR-005-prototype-scope.md",
-  "version": "1.0.0",
-  "rationale": "Implement four persistent domain services and three deterministic contract-backed mocks under local Docker Compose. Retain protected-operation authorization despite simulated identity; derive principals from trusted identity validation, not command fields. Keep production user lifecycle, real settlement/delivery, percentage attendance, gateway, Kubernetes and vector infrastructure outside scope. Git-versioned rationale JSON provides decision memory without premature infrastructure.",
+  "version": "1.1.0",
+  "rationale": "Implement four persistent domain services and three deterministic contract-backed mocks under local Docker Compose. Retain protected-operation authorization despite simulated identity; derive principals from trusted identity validation, not command fields. Keep production user lifecycle, real settlement/delivery, percentage attendance, gateway, Kubernetes and vector infrastructure outside scope. Git-versioned rationale JSON provides decision memory without premature infrastructure. Revision 1.1.0 records a known limitation: the paid-cancellation refund workflow is designed and contracted but not implemented in Registration, which rejects cancellation of a confirmed paid registration with 409 REFUND_WORKFLOW_REQUIRED and keeps the seat (fail closed).",
   "invariants": [
     "Participants access only their own resources; organizers are restricted to their organization.",
     "Global administrators manage events/activities and read reports across organizations but do not administer users or organizations.",
@@ -10,6 +10,7 @@
     "Certificate issuance requires confirmed registration, an idempotent check-in and completed activity.",
     "Business and operational configuration is external and validated without silent permissive defaults.",
     "Real credentials and .env files are never committed or logged.",
-    "Mocks and documentation checks cannot substitute for real database/broker integration evidence or the required 95 percent domain mutation gate."
+    "Mocks and documentation checks cannot substitute for real database/broker integration evidence or the required 95 percent domain mutation gate.",
+    "A confirmed paid seat is never released without an approved refund; until the refund workflow exists, its cancellation is rejected with REFUND_WORKFLOW_REQUIRED."
   ]
 }

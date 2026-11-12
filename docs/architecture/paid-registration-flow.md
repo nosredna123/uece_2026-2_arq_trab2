@@ -165,6 +165,12 @@ The percentages, time window, persistence of retries, and Billing mock
 result-message details are configuration and contract decisions, not constants
 to embed in this diagram.
 
+> **Implementation status:** this refund path is a known limitation of the
+> prototype ([ADR-005](../adr/ADR-005-prototype-scope.md), revision 1.1.0).
+> Registration currently rejects cancellation of a confirmed paid registration
+> with `409 REFUND_WORKFLOW_REQUIRED`. No refund is requested and the seat stays
+> occupied. The Billing mock already supports `REFUND` requests.
+
 ## Validation scenarios
 
 The sequence and failure table are intended to be exercised by:
