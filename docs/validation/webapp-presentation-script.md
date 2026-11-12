@@ -147,10 +147,9 @@ it.
    **Capacity**, **Confirmed**, **Pending payment**, **Waiting list**,
    **Free seats**, **Checked in**, **Certificates**, **Occupancy**
    (confirmed ÷ capacity) and **Attendance** (checked in ÷ confirmed).
-   Red cards count bad news: **Cancellations**, **Cancellation rate**,
-   **No-shows** (confirmed but not checked in after the activity ended),
-   **No-show rate** and **Expired / refused** (expired offers or reservations
-   and refused payments).
+   Red cards count bad news: **Cancellations**, **No-shows** (confirmed but not
+   checked in after the activity ended) and **Expired / refused** (expired
+   offers or reservations and refused payments).
    Below it, the page lists each of the organization's
    **Published events** with, per activity: **Capacity**, **Confirmed**,
    **Pending payment**, **Waiting list**, **Checked in** and **Certificates**,

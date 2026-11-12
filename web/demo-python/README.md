@@ -198,11 +198,9 @@ The peak scenario reads two optional settings, from the shell or `infra/.env`
   `infra/.env` to see them expire during a run (the default is 30 minutes).
 
 The Reports overview also shows negative counts, tinted red, whose arrows turn
-red when they grow: **Cancellations**, **Cancellation rate** (cancelled ÷
-(confirmed + cancelled)), **No-shows** (confirmed registrations without a
-check-in in activities that already ended), **No-show rate** (no-shows ÷
-confirmed in ended activities) and **Expired / refused** (expired offers or
-reservations plus refused payments).
+red when they grow: **Cancellations**, **No-shows** (confirmed registrations
+without a check-in in activities that already ended) and **Expired / refused**
+(expired offers or reservations plus refused payments).
 
 Reports reads the counts from Reporting, which receives registration changes
 through the Registration outbox relay. The relay runs every 30 s by default.

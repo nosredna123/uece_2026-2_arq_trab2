@@ -377,9 +377,7 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
             "occupancy": "23%",
             "attendance": "67%",
             "cancelled": "0",
-            "cancellation_rate": "0%",
             "no_shows": "0",
-            "no_show_rate": "—",
             "expired_refused": "0",
         }
         trend_by_key = {key: trend for trend, key in re.findall(r'data-trend="([\w-]+)" data-summary="(\w+)"', html)}
@@ -387,8 +385,8 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
         assert trend_by_key["waiting"] == "down-good"
         assert trend_by_key["free_seats"] == "neutral"
         assert trend_by_key["no_shows"] == "up-bad"
-        assert html.count("data-summary-delta") == 16
-        assert html.count('class="summary-card is-negative"') == 5
+        assert html.count("data-summary-delta") == 14
+        assert html.count('class="summary-card is-negative"') == 3
     assert "<html" not in fragment.text
 
 
@@ -486,7 +484,7 @@ def test_report_summary_shows_cancellations_no_shows_and_expirations(client, bac
     summary = _summary(client.get("/reports/table").text)
 
     assert summary["cancelled"] == "6"
-    assert summary["cancellation_rate"] == "30%"
     assert summary["no_shows"] == "2"
-    assert summary["no_show_rate"] == "25%"
     assert summary["expired_refused"] == "4"
+    assert "cancellation_rate" not in summary
+    assert "no_show_rate" not in summary
