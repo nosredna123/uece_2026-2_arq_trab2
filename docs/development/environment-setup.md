@@ -234,7 +234,7 @@ chmod 600 infra/.env
 If `git check-ignore` does not identify an ignore rule, stop and do not enter
 secrets. Keep passwords, tokens, and keys out of tracked files, examples,
 documentation, and command output. Store and share actual secrets only through
-an approved secret-management channel. See [README](../../README.md) for the
+an approved secret-management channel. See the [local execution guide](running-locally.md) for the
 strict environment validator, service mappings, policy values and containerized
 validation command. The readiness check does not read or print `.env` values.
 

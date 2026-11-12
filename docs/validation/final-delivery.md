@@ -129,7 +129,7 @@ script/API-based demonstration below; it does not replace that defense guide.
 
 Allow about 7–10 minutes for the walkthrough, plus up to two minutes for the
 live paid-registration scenario. Prepare the local environment and synthetic
-`infra/.env` as described in the [README](../../README.md); never display or
+`infra/.env` as described in the [local execution guide](../development/running-locally.md); never display or
 share real secrets.
 
 1. **Introduce the scope (1 minute).** Explain the four executable domain
