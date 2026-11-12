@@ -71,6 +71,23 @@ def test_scenario_log_gives_verdicts_counts_and_request_metrics():
     assert parsed["event_management_p95_ms"] == ""
 
 
+def test_peak_only_log_takes_the_single_scenario_verdict():
+    log = f"""Cenário: Pico de inscrições
+[  0.1s] Participante de cenário 01 → CONFIRMED
+
+Resultado: 50 CONFIRMED, 150 WAITLISTED
+Vagas ocupadas: 50 de 50 — sem overbooking.
+Veredito: OK
+METRICS {json.dumps(METRICS)}
+"""
+    parsed = parse_scenario_log(log, "pico-inscricoes")
+
+    assert (parsed["verdict"], parsed["pico_inscricoes"], parsed["carga_mista"]) == ("OK", "OK", "")
+    assert parsed["requests_per_second"] == 38.5
+    assert parsed["mixed_confirmed"] == 0
+    assert parse_scenario_log(log)["verdict"] == "ERRO"
+
+
 def test_scenario_log_without_summary_is_an_error():
     parsed = parse_scenario_log("ERRO: O app de apresentação não está rodando\n")
     assert parsed["verdict"] == "ERRO"
@@ -345,6 +362,13 @@ def test_report_lists_host_configuration_results_and_charts():
         in report
     )
     assert "Limit: *host* when the CPU stayed at or above 90%" in report
+    assert "every load scenario in parallel" in report
+
+    peak = render_report(
+        started_at="2026-11-12 17:00 UTC", command="bash scripts/benchmark.sh --scenario pico-inscricoes",
+        host=HOST, config={}, runs=[], peaks_by_run={}, charts=[], reset=False, scenario="pico-inscricoes",
+    )
+    assert "only the `pico-inscricoes` scenario (`bash scripts/cenario.sh pico-inscricoes`)" in peak
 
 
 def test_arguments_default_and_validate():
@@ -357,9 +381,12 @@ def test_arguments_default_and_validate():
     assert parse_args(["30", "60", "--repeat", "2", "--no-reset"]).participants == [30, 60]
     assert parse_args(["--connections", "100"]).connections == 100
     assert parse_args([]).connections is None
+    assert parse_args([]).scenario == "all"
+    assert parse_args(["--scenario", "pico-inscricoes", "--duration", "5"]).duration == 5
     for bad in (
         ["0"], ["--repeat", "0"], ["--duration", "5"], ["--baseline", "-1"], ["--stop-at", "x"],
-        ["--connections", "0"], ["--connections", "201"],
+        ["--connections", "0"], ["--connections", "201"], ["--scenario", "ultima-vaga"],
+        ["--scenario", "pico-inscricoes", "--duration", "301"],
     ):
         try:
             parse_args(bad)

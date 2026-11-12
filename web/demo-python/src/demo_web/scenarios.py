@@ -195,6 +195,19 @@ class RequestMetrics:
         }
 
 
+def _attach_metrics(clients: DemoClients, environ: Mapping[str, str]) -> RequestMetrics | None:
+    if environ.get(METRICS_ENV, "").strip().lower() not in {"1", "true"}:
+        return None
+    metrics = RequestMetrics()
+    clients.observer = metrics.record
+    return metrics
+
+
+def _report_metrics(metrics: RequestMetrics | None, clients, out: Callable[[str], None]) -> None:
+    if metrics is not None:
+        out("METRICS " + json.dumps(metrics.summary(clients.resent), separators=(",", ":")))
+
+
 def _latency_percentiles(values: Sequence[int]) -> dict[str, int | None]:
     if not values:
         return {"p50": None, "p95": None, "p99": None, "max": None}
@@ -527,7 +540,9 @@ async def run_scenario(
         out(f"Erro de configuração: {error}")
         return 2
 
-    clients = ResendingClients(_make_clients(clients_factory, settings, connections), sleep)
+    base_clients = _make_clients(clients_factory, settings, connections)
+    metrics = _attach_metrics(base_clients, environ)
+    clients = ResendingClients(base_clients, sleep)
     try:
         passed = await _run_single(
             scenario,
@@ -543,6 +558,7 @@ async def run_scenario(
     finally:
         await clients.aclose()
     _report_resends(clients, out)
+    _report_metrics(metrics, clients, out)
     return 0 if passed else 1
 
 
@@ -1199,10 +1215,7 @@ async def run_all(
     out("Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.")
     out("")
     base_clients = _make_clients(clients_factory, settings, connections)
-    metrics = None
-    if environ.get(METRICS_ENV, "").strip().lower() in {"1", "true"}:
-        metrics = RequestMetrics()
-        base_clients.observer = metrics.record
+    metrics = _attach_metrics(base_clients, environ)
     clients = ResendingClients(base_clients, sleep)
     try:
         single = [
@@ -1241,8 +1254,7 @@ async def run_all(
     for key, passed in zip(PARALLEL_KEYS, results):
         out(f"  {key:<{width}} {'OK' if passed else 'VERIFICAR'}")
     out("Veredito geral: OK" if all(results) else "Veredito geral: VERIFICAR")
-    if metrics is not None:
-        out("METRICS " + json.dumps(metrics.summary(clients.resent), separators=(",", ":")))
+    _report_metrics(metrics, clients, out)
     return 0 if all(results) else 1
 
 

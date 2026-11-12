@@ -252,7 +252,16 @@ behaved:
 ```sh
 bash scripts/benchmark.sh                     # 100 500 1000 2000 3000 participants
 bash scripts/benchmark.sh 500 1000 2000 --duration 60 --repeat 2
+bash scripts/benchmark.sh 5000 10000 20000 --scenario pico-inscricoes --no-reset
 ```
+
+`--scenario pico-inscricoes` runs only the registration peak
+(`bash scripts/cenario.sh pico-inscricoes`) instead of every scenario with the
+mixed load. It is much faster, since each participant sends a single
+registration within `SCENARIO_PEAK_DURATION_SECONDS`, but it exercises only
+Identity, Registration and PostgreSQL: payments, the waiting list, check-ins,
+certificates and most of the Reporting work are left out. Use it to find the
+registration limit; use the default (`--scenario all`) for the whole system.
 
 **Warning:** before each run it restores the initial data with
 `scripts/reset-demo.sh --yes`, which deletes every local registration and
@@ -260,8 +269,9 @@ signs out every browser session. Each reset adds a few minutes. Use
 `--no-reset` to keep the data (faster, but later runs start from a fuller
 database and are less comparable).
 
-Options: `--repeat N` (runs per count), `--duration S`
-(`SCENARIO_MIXED_DURATION_SECONDS`, 10–300), `--connections N`
+Options: `--scenario all|pico-inscricoes` (default `all`), `--repeat N` (runs
+per count), `--duration S` (`SCENARIO_MIXED_DURATION_SECONDS`, 10–300, or
+`SCENARIO_PEAK_DURATION_SECONDS`, 1–300, with `--scenario pico-inscricoes`), `--connections N`
 (`SCENARIO_MAX_CONNECTIONS`, 1–200), `--stop-at` (see below),
 `--keep-going` (same as `--stop-at never`), `--baseline S` (idle host sampling
 before each run, default 10, 0 to skip), `--catch-up-timeout S` (default 300)

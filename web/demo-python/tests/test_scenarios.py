@@ -659,6 +659,20 @@ def test_run_all_prints_request_metrics_only_when_asked(web_environment):
     assert callable(fake.observer)
 
 
+def test_single_scenario_prints_request_metrics_when_asked(web_environment):
+    _, quiet = _run(web_environment, "pico-inscricoes", FakeEventHub())
+    assert not any(line.startswith("METRICS ") for line in quiet)
+
+    fake = FakeEventHub()
+    code, lines = _run(web_environment, "pico-inscricoes", fake, SCENARIO_METRICS="1")
+
+    assert code == 0
+    assert lines[-2] == "Veredito: OK"
+    metrics = json.loads(lines[-1].removeprefix("METRICS "))
+    assert metrics["resent"] == 0
+    assert callable(fake.observer)
+
+
 def test_request_metrics_summarize_latency_and_failures():
     ticks = iter([100.0, 110.0])
     metrics = scenarios.RequestMetrics(clock=lambda: next(ticks))

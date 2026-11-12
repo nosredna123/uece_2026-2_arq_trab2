@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Load benchmark for the presentation stack.
 
-Runs ``scripts/cenario.sh`` (all scenarios in parallel) once per participant count,
+Runs ``scripts/cenario.sh`` (all scenarios in parallel, or only the registration peak
+with ``--scenario pico-inscricoes``) once per participant count,
 optionally resetting the data first, while sampling container and host resources.
 After each run it measures how long Reporting takes to catch up with the source
 services. Results go to a timestamped folder: runs.csv (one row per run),
@@ -30,8 +31,16 @@ from typing import Callable, Iterable, Mapping, Sequence
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PARTICIPANTS = (100, 500, 1000, 2000, 3000)
 SCENARIO_KEYS = ("pico-inscricoes", "ultima-vaga", "envios-repetidos", "carga-mista")
+ALL_SCENARIOS = "all"
+PEAK_SCENARIO = "pico-inscricoes"
+# Variable that --duration sets for each --scenario choice, and its valid range.
+DURATION_KEYS = {
+    ALL_SCENARIOS: ("SCENARIO_MIXED_DURATION_SECONDS", 10, 300),
+    PEAK_SCENARIO: ("SCENARIO_PEAK_DURATION_SECONDS", 1, 300),
+}
 PROJECT_PREFIX = "eventhub-"
 CONFIG_KEYS = (
+    "SCENARIO_PEAK_DURATION_SECONDS",
     "SCENARIO_MIXED_DURATION_SECONDS",
     "SCENARIO_CHECK_IN_MIN_PERCENT",
     "SCENARIO_CHECK_IN_MAX_PERCENT",
@@ -132,13 +141,18 @@ LIMITS = {
 # ---------------------------------------------------------------- parsing
 
 
-def parse_scenario_log(text: str) -> dict[str, object]:
+def parse_scenario_log(text: str, scenario: str = ALL_SCENARIOS) -> dict[str, object]:
     """Extract the verdicts, counts and METRICS line printed by cenario.sh."""
     result: dict[str, object] = {}
     for key in SCENARIO_KEYS:
         match = re.search(rf"^  {re.escape(key)}\s+(OK|VERIFICAR)$", text, re.MULTILINE)
         result[key.replace("-", "_")] = match.group(1) if match else ""
-    verdict = re.search(r"^Veredito geral: (\w+)", text, re.MULTILINE)
+    if scenario == ALL_SCENARIOS:
+        verdict = re.search(r"^Veredito geral: (\w+)", text, re.MULTILINE)
+    else:
+        verdict = re.search(r"^Veredito: (OK|VERIFICAR)$", text, re.MULTILINE)
+        if verdict:
+            result[scenario.replace("-", "_")] = verdict.group(1)
     result["verdict"] = verdict.group(1) if verdict else "ERRO"
 
     mixed = "\n".join(
@@ -681,13 +695,18 @@ def render_report(
     peaks_by_run: Mapping[int, Mapping[str, tuple[float, float, float]]],
     charts: Sequence[str],
     reset: bool,
+    scenario: str = ALL_SCENARIOS,
 ) -> str:
     lines = [
         "# Load benchmark",
         "",
         f"Started at {started_at} · commit `{host.git_commit}` · command `{command}`",
         "",
-        "Each run executes every load scenario in parallel (`bash scripts/cenario.sh`) with the given",
+        (
+            "Each run executes every load scenario in parallel (`bash scripts/cenario.sh`) with the given"
+            if scenario == ALL_SCENARIOS
+            else f"Each run executes only the `{scenario}` scenario (`bash scripts/cenario.sh {scenario}`) with the given"
+        ),
         "number of participants"
         + (", after restoring the initial data (`scripts/reset-demo.sh`)." if reset else ", without resetting the data between runs."),
         "",
@@ -1073,7 +1092,19 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         help=f"participant counts, 1-20000 (default: {' '.join(map(str, DEFAULT_PARTICIPANTS))})",
     )
     parser.add_argument("--repeat", type=int, default=1, help="runs per participant count (default 1)")
-    parser.add_argument("--duration", type=int, help="SCENARIO_MIXED_DURATION_SECONDS for every run (default: infra/.env)")
+    parser.add_argument(
+        "--scenario",
+        choices=(ALL_SCENARIOS, PEAK_SCENARIO),
+        default=ALL_SCENARIOS,
+        help="all (default): every scenario in parallel with the mixed load; "
+        "pico-inscricoes: only the registration peak (much faster, exercises Registration only)",
+    )
+    parser.add_argument(
+        "--duration",
+        type=int,
+        help="seconds per run: SCENARIO_MIXED_DURATION_SECONDS (10-300) for all, "
+        "SCENARIO_PEAK_DURATION_SECONDS (1-300) for pico-inscricoes (default: infra/.env)",
+    )
     parser.add_argument(
         "--connections", type=int, help="SCENARIO_MAX_CONNECTIONS for every run, 1-200 (default: infra/.env)"
     )
@@ -1102,8 +1133,9 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         parser.error("participant counts must be between 1 and 20000")
     if args.repeat < 1:
         parser.error("--repeat must be at least 1")
-    if args.duration is not None and not 10 <= args.duration <= 300:
-        parser.error("--duration must be between 10 and 300")
+    _, low, high = DURATION_KEYS[args.scenario]
+    if args.duration is not None and not low <= args.duration <= high:
+        parser.error(f"--duration must be between {low} and {high} for --scenario {args.scenario}")
     if args.connections is not None and not 1 <= args.connections <= 200:
         parser.error("--connections must be between 1 and 200")
     if args.baseline < 0:
@@ -1142,13 +1174,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     host = stack.host_info()
     (out_dir / "host.json").write_text(json.dumps(host.__dict__, indent=2) + "\n")
     config = {key: stack.env_value(key) for key in CONFIG_KEYS}
+    duration_key = DURATION_KEYS[args.scenario][0]
     if args.duration is not None:
-        config["SCENARIO_MIXED_DURATION_SECONDS"] = str(args.duration)
+        config[duration_key] = str(args.duration)
     if args.connections is not None:
         config["SCENARIO_MAX_CONNECTIONS"] = str(args.connections)
     command = "bash scripts/benchmark.sh " + " ".join(argv if argv is not None else sys.argv[1:])
     plan = [(value, repeat) for value in args.participants for repeat in range(1, args.repeat + 1)]
-    print(f"Benchmark: {len(plan)} run(s) -> {out_dir.relative_to(ROOT) if out_dir.is_relative_to(ROOT) else out_dir}")
+    print(f"Benchmark: {len(plan)} run(s) of {args.scenario} -> {out_dir.relative_to(ROOT) if out_dir.is_relative_to(ROOT) else out_dir}")
     print(f"Host: {host.cpu_model} · {host.docker_cpus} CPUs · {host.docker_memory_mib / 1024:.1f} GiB for Docker")
 
     runs: list[dict[str, object]] = []
@@ -1177,7 +1210,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         sampler = ResourceSampler(number, participants, stack.docker_stats, HostProbe(), cpus=host.logical_cpus)
         env = {"SCENARIO_PEAK_PARTICIPANTS": str(participants), "SCENARIO_METRICS": "1"}
         if args.duration is not None:
-            env["SCENARIO_MIXED_DURATION_SECONDS"] = str(args.duration)
+            env[duration_key] = str(args.duration)
         if args.connections is not None:
             env["SCENARIO_MAX_CONNECTIONS"] = str(args.connections)
         if args.baseline:
@@ -1191,14 +1224,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not args.baseline:
             sampler.start()
         began = time.monotonic()
-        stack.run_logged(["bash", "scripts/cenario.sh"], out_dir / "logs" / f"{tag}-scenario.log", env)
+        cenario = ["bash", "scripts/cenario.sh"] + ([] if args.scenario == ALL_SCENARIOS else [args.scenario])
+        stack.run_logged(cenario, out_dir / "logs" / f"{tag}-scenario.log", env)
         scenario_seconds = round(time.monotonic() - began, 1)
         sampler.begin("catch-up")
         print("  waiting for Reports to catch up...")
         lag = wait_for_catch_up(stack.counts, args.catch_up_timeout)
         sampler.stop()
 
-        parsed = parse_scenario_log((out_dir / "logs" / f"{tag}-scenario.log").read_text())
+        parsed = parse_scenario_log((out_dir / "logs" / f"{tag}-scenario.log").read_text(), args.scenario)
         row = {
             "run": number,
             "participants": participants,
@@ -1239,6 +1273,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         peaks_by_run=peaks_by_run,
         charts=charts,
         reset=not args.no_reset,
+        scenario=args.scenario,
     )
     (out_dir / "report.md").write_text(report)
     if not charts:
