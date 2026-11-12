@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
+import time
 from collections.abc import Generator
 
 
@@ -54,6 +55,10 @@ class BillingStore:
                     ON outbox(published_at, event_id);
                 """
             )
+            columns = {row["name"] for row in connection.execute("PRAGMA table_info(outbox)")}
+            if "available_at" not in columns:
+                # Epoch seconds before which a result is held back; NULL publishes at once.
+                connection.execute("ALTER TABLE outbox ADD COLUMN available_at REAL")
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path, timeout=30)
@@ -69,11 +74,15 @@ class BillingStore:
             with connection:
                 yield connection
 
-    def pending_outbox(self) -> list[OutboxMessage]:
+    def pending_outbox(self, now: float | None = None) -> list[OutboxMessage]:
+        """Unpublished results that are due at ``now`` (epoch seconds)."""
+        current = time.time() if now is None else now
         with closing(self._connect()) as connection:
             rows = connection.execute(
                 "SELECT event_id, body, correlation_id FROM outbox "
-                "WHERE published_at IS NULL ORDER BY rowid"
+                "WHERE published_at IS NULL "
+                "AND (available_at IS NULL OR available_at <= ?) ORDER BY rowid",
+                (current,),
             ).fetchall()
         return [
             OutboxMessage(

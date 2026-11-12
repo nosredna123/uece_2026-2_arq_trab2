@@ -18,6 +18,8 @@ from billing_mock.store import BillingStore
 
 
 LOGGER = logging.getLogger(__name__)
+# How often delayed payment results are checked for publication.
+DELAYED_PUBLISH_POLL_SECONDS = 0.5
 
 
 def create_connection(settings: WorkerSettings) -> pika.BlockingConnection:
@@ -93,6 +95,14 @@ def run_worker(settings: WorkerSettings) -> None:
             declare_topology(channel)
             channel.confirm_delivery()
             processor.publish_pending(channel)
+
+            if settings.billing.payment_delay_seconds[1] > 0:
+                # Delayed results are published by this timer, so consuming never waits.
+                def publish_due(active_connection=connection, active_channel=channel) -> None:
+                    processor.publish_pending(active_channel)
+                    active_connection.call_later(DELAYED_PUBLISH_POLL_SECONDS, publish_due)
+
+                connection.call_later(DELAYED_PUBLISH_POLL_SECONDS, publish_due)
 
             def on_message(
                 active_channel: pika.adapters.blocking_connection.BlockingChannel,

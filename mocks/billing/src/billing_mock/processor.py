@@ -1,7 +1,10 @@
 from datetime import datetime, timezone
 import hashlib
 import json
+import random
 import sqlite3
+import time
+from collections.abc import Callable
 from uuid import UUID, uuid4
 
 import pika
@@ -17,9 +20,25 @@ class PublishNotConfirmed(RuntimeError):
 
 
 class BillingProcessor:
-    def __init__(self, settings: BillingSettings, store: BillingStore):
+    def __init__(
+        self,
+        settings: BillingSettings,
+        store: BillingStore,
+        *,
+        rng: random.Random | None = None,
+        clock: Callable[[], float] = time.time,
+    ):
         self.settings = settings
         self.store = store
+        self._rng = rng or random.Random()
+        self._clock = clock
+
+    def _available_at(self, kind: str) -> float | None:
+        """When a result may be published; payment results wait a random delay."""
+        low, high = self.settings.payment_delay_seconds
+        if kind != "PAYMENT" or high == 0:
+            return None
+        return self._clock() + self._rng.uniform(low, high)
 
     def process_message(
         self,
@@ -213,13 +232,14 @@ class BillingProcessor:
             )
             connection.execute(
                 """
-                INSERT INTO outbox (event_id, body, correlation_id)
-                VALUES (?, ?, ?)
+                INSERT INTO outbox (event_id, body, correlation_id, available_at)
+                VALUES (?, ?, ?, ?)
                 """,
                 (
                     result["eventId"],
                     result_json,
                     result["correlationId"],
+                    self._available_at(request.data.kind),
                 ),
             )
             return result
@@ -229,7 +249,7 @@ class BillingProcessor:
         channel: pika.adapters.blocking_connection.BlockingChannel,
     ) -> int:
         published = 0
-        for message in self.store.pending_outbox():
+        for message in self.store.pending_outbox(self._clock()):
             confirmed = channel.basic_publish(
                 exchange="eventhub.v1",
                 routing_key="billing.result",

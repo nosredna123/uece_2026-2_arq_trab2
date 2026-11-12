@@ -139,7 +139,9 @@ Capacities scale with that number: 2–5 seats per activity for 20 participants,
 About 20% of the confirmed seats in free activities are then cancelled; the
 freed seat is offered to the next person on the waiting list, who accepts it.
 Paid registrations show as `PENDING_PAYMENT` until the Billing mock approves
-them. Paid confirmed seats are never cancelled: the refund workflow is a known
+them. With the load scenarios enabled, `scripts/run-demo-web.sh` makes the mock
+wait a random 2–8 s before each approval (`BILLING_MOCK_APPROVAL_DELAY_SECONDS`),
+so the Pending payment card in Reports rises and falls during a run. Paid confirmed seats are never cancelled: the refund workflow is a known
 limitation (ADR-005 1.1.0), and Registration answers `409 REFUND_WORKFLOW_REQUIRED`.
 Every activity also starts and ends during the run, at staggered moments (from
 about 40% of the duration on). The activities are created far in the future,

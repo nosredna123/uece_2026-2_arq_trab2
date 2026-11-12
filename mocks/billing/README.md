@@ -16,6 +16,15 @@ Refund attempts must reference a successful matching payment; the result amount
 is calculated from the original amount and `REFUND_PERCENTAGE` using integer
 half-up rounding.
 
+Optional `BILLING_MOCK_APPROVAL_DELAY_SECONDS` (`N` or `MIN-MAX` whole seconds,
+0–60, default `0`) holds each payment result in the outbox for a random time in
+that range before publishing it, so the registration stays `PENDING_PAYMENT`
+for a while, as with a real payment provider. Refund results are not delayed.
+The worker keeps consuming requests while results wait, and a 0.5 s timer
+publishes them when they are due. The delay is stored with the result, so it
+survives a restart. `scripts/run-demo-web.sh` uses `2-8` when the load scenarios
+are enabled and the setting is unset.
+
 Startup requires the RabbitMQ credentials, both mock scenarios,
 `REFUND_PERCENTAGE`, `BILLING_STORE_PATH`, and retry limits from the validated
 environment template. The store directory must be mounted durably at

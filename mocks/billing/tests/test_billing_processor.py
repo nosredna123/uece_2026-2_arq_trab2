@@ -1,4 +1,7 @@
 import json
+import random
+import sqlite3
+from contextlib import closing
 
 import pytest
 
@@ -8,7 +11,7 @@ from billing_mock.processor import (
     BillingSettings,
     PublishNotConfirmed,
 )
-from billing_mock.settings import WorkerSettings
+from billing_mock.settings import WorkerSettings, parse_delay_range
 from billing_mock.store import BillingStore
 
 
@@ -416,4 +419,98 @@ def test_worker_settings_require_valid_inputs_and_hide_broker_password(monkeypat
 
     monkeypatch.setenv("BILLING_MOCK_SCENARIO", "UNKNOWN")
     with pytest.raises(RuntimeError, match="BILLING_MOCK_SCENARIO"):
+        WorkerSettings.from_environment()
+
+
+class RecordingChannel:
+    def __init__(self):
+        self.published = []
+
+    def basic_publish(self, **kwargs):
+        self.published.append(json.loads(kwargs["body"]))
+        return True
+
+
+def test_payment_results_wait_for_the_configured_delay(tmp_path):
+    now = [1000.0]
+    store = BillingStore(tmp_path / "billing.sqlite3")
+    worker = BillingProcessor(
+        BillingSettings("APPROVED", "APPROVED", 90, payment_delay_seconds=(2, 8)),
+        store,
+        rng=random.Random(1),
+        clock=lambda: now[0],
+    )
+    process(worker, payment_request())
+    channel = RecordingChannel()
+
+    assert worker.publish_pending(channel) == 0
+    now[0] += 1.99
+    assert worker.publish_pending(channel) == 0
+    assert store.count_unpublished() == 1
+    now[0] += 6.02
+    assert worker.publish_pending(channel) == 1
+    assert channel.published[0]["data"]["status"] == "APPROVED"
+
+    process(worker, refund_request())
+    assert worker.publish_pending(channel) == 1
+    assert channel.published[1]["data"]["kind"] == "REFUND"
+
+
+def test_zero_delay_publishes_payment_results_at_once(tmp_path):
+    worker, _ = processor(tmp_path)
+    process(worker, payment_request())
+    assert worker.publish_pending(RecordingChannel()) == 1
+
+
+def test_existing_store_gains_the_delay_column(tmp_path):
+    path = tmp_path / "billing.sqlite3"
+    with closing(sqlite3.connect(path)) as connection:
+        connection.execute(
+            "CREATE TABLE outbox (event_id TEXT PRIMARY KEY, body TEXT NOT NULL, "
+            "correlation_id TEXT NOT NULL, published_at TEXT)"
+        )
+        connection.execute("INSERT INTO outbox VALUES ('e1', '{}', 'c1', NULL)")
+        connection.commit()
+
+    store = BillingStore(path)
+
+    assert [message.event_id for message in store.pending_outbox()] == ["e1"]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [("0", (0, 0)), ("5", (5, 5)), ("2-8", (2, 8)), (" 0-60 ", (0, 60))],
+)
+def test_payment_delay_accepts_a_value_or_a_range(value, expected):
+    assert parse_delay_range(value) == expected
+
+
+@pytest.mark.parametrize("value", ["", "-1", "8-2", "1-61", "a", "1-2-3", "1.5"])
+def test_payment_delay_rejects_invalid_values(value):
+    with pytest.raises(ValueError):
+        parse_delay_range(value)
+
+
+def test_worker_settings_read_the_payment_delay(monkeypatch, tmp_path):
+    for key, value in {
+        "RABBITMQ_HOST": "rabbitmq",
+        "RABBITMQ_PORT": "5672",
+        "RABBITMQ_USER": "eventhub_billing",
+        "RABBITMQ_PASSWORD": "synthetic-broker-secret",
+        "BILLING_MOCK_SCENARIO": "APPROVED",
+        "BILLING_MOCK_REFUND_SCENARIO": "APPROVED",
+        "REFUND_PERCENTAGE": "90",
+        "BILLING_STORE_PATH": str(tmp_path / "billing.sqlite3"),
+        "MESSAGE_RETRY_INITIAL_SECONDS": "1",
+        "MESSAGE_RETRY_MAX_SECONDS": "60",
+    }.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.delenv("BILLING_MOCK_APPROVAL_DELAY_SECONDS", raising=False)
+    assert WorkerSettings.from_environment().billing.payment_delay_seconds == (0, 0)
+
+    monkeypatch.setenv("BILLING_MOCK_APPROVAL_DELAY_SECONDS", "2-8")
+    assert WorkerSettings.from_environment().billing.payment_delay_seconds == (2, 8)
+
+    monkeypatch.setenv("BILLING_MOCK_APPROVAL_DELAY_SECONDS", "9-3")
+    with pytest.raises(RuntimeError, match="BILLING_MOCK_APPROVAL_DELAY_SECONDS"):
         WorkerSettings.from_environment()

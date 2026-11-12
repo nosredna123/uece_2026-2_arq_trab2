@@ -48,6 +48,11 @@ port_number=$((10#$web_port))
 
 outbox_interval="$(read_env_value REGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS)"
 export REGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS="${outbox_interval:-1000}"
+approval_delay="$(read_env_value BILLING_MOCK_APPROVAL_DELAY_SECONDS)"
+if [[ -z "$approval_delay" && "$demo_lab_enabled" == true ]]; then
+  approval_delay="2-8"
+fi
+export BILLING_MOCK_APPROVAL_DELAY_SECONDS="${approval_delay:-0}"
 
 COMPOSE=(
   docker compose
