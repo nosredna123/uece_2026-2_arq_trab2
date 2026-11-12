@@ -355,7 +355,12 @@ def test_arguments_default_and_validate():
     assert parse_args(["--keep-going"]).stop_at == "never"
     assert parse_args(["--stop-at", "verificar", "--baseline", "0"]).stop_at == "verificar"
     assert parse_args(["30", "60", "--repeat", "2", "--no-reset"]).participants == [30, 60]
-    for bad in (["0"], ["--repeat", "0"], ["--duration", "5"], ["--baseline", "-1"], ["--stop-at", "x"]):
+    assert parse_args(["--connections", "100"]).connections == 100
+    assert parse_args([]).connections is None
+    for bad in (
+        ["0"], ["--repeat", "0"], ["--duration", "5"], ["--baseline", "-1"], ["--stop-at", "x"],
+        ["--connections", "0"], ["--connections", "201"],
+    ):
         try:
             parse_args(bad)
         except SystemExit:

@@ -826,6 +826,87 @@ def test_simultaneous_cancellations_promote_distinct_waiting_participants(monkey
     }
 
 
+def test_promotion_polls_only_the_head_of_the_waiting_list(monkeypatch):
+    class NoOffer(FakeEventHub):
+        """The freed seat goes to nobody the scenario tracks, so no entry turns OFFERED."""
+
+        waiting_polls = 0
+
+        async def cancel_registration(self, registration_id, *, token, idempotency_key):
+            return self._store(self.registrations[registration_id], "CANCELLED")
+
+        async def get_registration(self, registration_id, *, token):
+            self.waiting_polls += self.registrations[registration_id].status == "WAITLISTED"
+            return await super().get_registration(registration_id, token=token)
+
+    participants = len(IDENTITIES)
+    plan = MixedPlan(
+        (
+            MixedActivity(
+                0, "Oficina", capacity=1, price_minor=0, starts_at_seconds=20, ends_at_seconds=25
+            ),
+        ),
+        tuple(
+            MixedAction(index, 0, delay_seconds=0.1 * index, cancel_after_seconds=1.0 if index == 0 else None)
+            for index in range(participants)
+        ),
+    )
+    monkeypatch.setattr(scenarios, "plan_mixed_load", lambda *args: plan)
+    fake = NoOffer()
+    lines = []
+    asyncio.run(
+        scenarios._run_mixed_load(
+            fake,
+            {"token": "organizer", "organizationId": str(ORGANIZATION_ID)},
+            IDENTITIES,
+            participants=participants,
+            duration=30,
+            out=lines.append,
+            sleep=_no_sleep,
+            now=lambda: NOW,
+            rng=random.Random(0),
+        )
+    )
+
+    assert "Desistências: 1 · vagas repassadas da lista de espera: 0" in lines
+    assert 0 < fake.waiting_polls <= 3 * scenarios.PROMOTE_SCAN < 3 * (participants - 1)
+
+
+def test_scenario_connections_default_and_bounds():
+    assert scenarios.scenario_connections({}) == 20
+    assert scenarios.scenario_connections({"SCENARIO_MAX_CONNECTIONS": "100"}) == 100
+    for invalid in ("0", "201", "abc"):
+        with pytest.raises(scenarios.ScenarioConfigError, match="SCENARIO_MAX_CONNECTIONS"):
+            scenarios.scenario_connections({"SCENARIO_MAX_CONNECTIONS": invalid})
+
+
+def test_scenario_clients_use_the_configured_connection_limit(web_environment, monkeypatch):
+    created = []
+
+    def factory(settings, max_connections):
+        created.append(max_connections)
+        return FakeEventHub()
+
+    monkeypatch.setattr(scenarios, "scenario_clients", factory)
+    lines = []
+    asyncio.run(
+        run_all(
+            environ=_environment(web_environment, SCENARIO_MAX_CONNECTIONS="64"),
+            out=lines.append,
+            sleep=_no_sleep,
+            now=lambda: NOW,
+            rng=random.Random(7),
+        )
+    )
+    assert created == [64]
+
+
+def test_invalid_connection_limit_is_a_configuration_error(web_environment):
+    code, lines = _run_all(web_environment, FakeEventHub(), SCENARIO_MAX_CONNECTIONS="500")
+    assert code == 2
+    assert lines == ["Erro de configuração: SCENARIO_MAX_CONNECTIONS must be an integer between 1 and 200."]
+
+
 def test_timeouts_are_resent_with_the_same_idempotency_key(web_environment):
     class Flaky(FakeEventHub):
         keys = []

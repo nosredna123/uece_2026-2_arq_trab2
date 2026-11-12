@@ -97,6 +97,7 @@
     "BILLING_MOCK_PAYMENT_REFUSAL_PERCENT": {"type": "string", "pattern": "^([0-9]|[1-9][0-9]|100)$"},
     "SCENARIO_CANCEL_PERCENT": {"type": "string", "pattern": "^([0-9]|[1-9][0-9]|100)$"},
     "SCENARIO_OFFER_LAPSE_PERCENT": {"type": "string", "pattern": "^([0-9]|[1-9][0-9]|100)$"},
+    "SCENARIO_MAX_CONNECTIONS": {"type": "string", "pattern": "^([1-9]|[1-9][0-9]|1[0-9]{2}|200)$"},
     "SCENARIO_CHECK_IN_MIN_PERCENT": {"type": "string", "pattern": "^([0-9]|[1-9][0-9]|100)$"},
     "SCENARIO_CHECK_IN_MAX_PERCENT": {"type": "string", "pattern": "^([0-9]|[1-9][0-9]|100)$"},
     "SCENARIO_CERTIFICATE_MIN_PERCENT": {"type": "string", "pattern": "^([0-9]|[1-9][0-9]|100)$"},

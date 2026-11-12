@@ -22,7 +22,7 @@ from time import monotonic
 from typing import Awaitable, Callable, Mapping, Sequence
 from uuid import UUID, uuid4
 
-from demo_web.clients import DemoClients
+from demo_web.clients import MAX_CONNECTIONS, DemoClients
 from demo_web.errors import InvalidResponseError, ServiceError, TransportError
 from demo_web.models import ActivityInput, Availability, EventInput, Money
 from demo_web.settings import Settings, SettingsError
@@ -95,8 +95,25 @@ class Verdict:
     lines: tuple[str, ...]
 
 
-def scenario_clients(settings: Settings) -> DemoClients:
-    return DemoClients(settings, wait_for_connection=True)
+CONNECTIONS_ENV = "SCENARIO_MAX_CONNECTIONS"
+MAX_SCENARIO_CONNECTIONS = 200
+
+
+def scenario_clients(settings: Settings, max_connections: int = MAX_CONNECTIONS) -> DemoClients:
+    return DemoClients(settings, wait_for_connection=True, max_connections=max_connections)
+
+
+def _make_clients(
+    factory: Callable[[Settings], DemoClients] | None, settings: Settings, connections: int
+) -> DemoClients:
+    if factory is None:
+        return scenario_clients(settings, connections)
+    return factory(settings)
+
+
+def scenario_connections(environ: Mapping[str, str]) -> int:
+    """Concurrent requests the load generator keeps in flight (SCENARIO_MAX_CONNECTIONS)."""
+    return _bounded_integer(environ, CONNECTIONS_ENV, MAX_CONNECTIONS, MAX_SCENARIO_CONNECTIONS)
 
 
 TRANSPORT_RESENDS = 3
@@ -498,18 +515,19 @@ async def run_scenario(
     *,
     environ: Mapping[str, str],
     out: Callable[[str], None] = print,
-    clients_factory: Callable[[Settings], DemoClients] = scenario_clients,
+    clients_factory: Callable[[Settings], DemoClients] | None = None,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
 ) -> int:
     scenario = SCENARIOS[scenario_key]
     try:
         settings, organizer, identities, participants, duration = _load_configuration(environ)
+        connections = scenario_connections(environ)
     except (SettingsError, ScenarioConfigError, OSError, KeyError, ValueError) as error:
         out(f"Erro de configuração: {error}")
         return 2
 
-    clients = ResendingClients(clients_factory(settings), sleep)
+    clients = ResendingClients(_make_clients(clients_factory, settings, connections), sleep)
     try:
         passed = await _run_single(
             scenario,
@@ -537,6 +555,9 @@ MIXED_CANCEL_RATE = 0.2
 MIXED_OFFER_LAPSE_RATE = 0.2
 # Errors that mean an accepted offer had already expired (see promote()).
 LATE_OFFER_CODES = frozenset({"OFFER_EXPIRED", "INVALID_STATE"})
+# Waiting entries polled per promotion pass: scanning the whole list after every
+# cancellation made the generator itself quadratic with the participant count.
+PROMOTE_SCAN = 5
 MIXED_CHECK_IN_RATES = (0.4, 0.9)
 MIXED_CERTIFICATE_RATES = (0.5, 1.0)
 # Staggered timeline, as fractions of the run: activity k of event e starts at
@@ -1011,7 +1032,9 @@ async def _run_mixed_load(
         nonlocal promoted, confirmed, lapsed, late_offers
         for _ in range(3):
             await sleep(1)
-            for entry in list(waiting.get(activity_index, ())):
+            # Registration offers the seat to the oldest waiting entry, so only the head
+            # of the list (kept roughly in arrival order) can hold the new offer.
+            for entry in list(waiting.get(activity_index, ()))[:PROMOTE_SCAN]:
                 registration_id, identity, participant, waiting_action = entry
                 try:
                     current = await clients.get_registration(
@@ -1152,7 +1175,7 @@ async def run_all(
     *,
     environ: Mapping[str, str],
     out: Callable[[str], None] = print,
-    clients_factory: Callable[[Settings], DemoClients] = scenario_clients,
+    clients_factory: Callable[[Settings], DemoClients] | None = None,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
     rng: random.Random | None = None,
@@ -1162,6 +1185,7 @@ async def run_all(
         settings, organizer, identities, participants, _ = _load_configuration(environ)
         duration = mixed_duration(environ)
         rates = mixed_rates(environ)
+        connections = scenario_connections(environ)
     except (SettingsError, ScenarioConfigError, OSError, KeyError, ValueError) as error:
         out(f"Erro de configuração: {error}")
         return 2
@@ -1174,7 +1198,7 @@ async def run_all(
     out(f"Todos os cenários em paralelo, durante cerca de {duration} s")
     out("Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.")
     out("")
-    base_clients = clients_factory(settings)
+    base_clients = _make_clients(clients_factory, settings, connections)
     metrics = None
     if environ.get(METRICS_ENV, "").strip().lower() in {"1", "true"}:
         metrics = RequestMetrics()

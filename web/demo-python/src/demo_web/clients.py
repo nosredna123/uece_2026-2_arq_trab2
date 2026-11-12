@@ -45,6 +45,7 @@ class DemoClients:
         *,
         transport: httpx.AsyncBaseTransport | None = None,
         wait_for_connection: bool = False,
+        max_connections: int = MAX_CONNECTIONS,
     ):
         self._settings = settings
         self._base_urls = {
@@ -62,7 +63,8 @@ class DemoClients:
                 pool=None if wait_for_connection else settings.http_timeout_seconds,
             ),
             limits=httpx.Limits(
-                max_connections=MAX_CONNECTIONS, max_keepalive_connections=10
+                max_connections=max_connections,
+                max_keepalive_connections=min(max_connections, max(10, max_connections // 2)),
             ),
             follow_redirects=False,
         )
@@ -70,7 +72,7 @@ class DemoClients:
         # turns thousands of queued scenario requests into a CPU-bound loop. Queue
         # them here instead, so the pool never holds more than it can serve.
         self._admission = (
-            asyncio.Semaphore(MAX_CONNECTIONS) if wait_for_connection else None
+            asyncio.Semaphore(max_connections) if wait_for_connection else None
         )
         self._history: OrderedDict[str | None, deque[RequestHistoryEntry]] = OrderedDict()
         # Optional callback for every finished request (used by the load benchmark).

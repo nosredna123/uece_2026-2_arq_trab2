@@ -39,6 +39,7 @@ CONFIG_KEYS = (
     "SCENARIO_CERTIFICATE_MAX_PERCENT",
     "SCENARIO_CANCEL_PERCENT",
     "SCENARIO_OFFER_LAPSE_PERCENT",
+    "SCENARIO_MAX_CONNECTIONS",
     "REGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS",
     "BILLING_MOCK_APPROVAL_DELAY_SECONDS",
     "BILLING_MOCK_PAYMENT_REFUSAL_PERCENT",
@@ -1073,6 +1074,9 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     )
     parser.add_argument("--repeat", type=int, default=1, help="runs per participant count (default 1)")
     parser.add_argument("--duration", type=int, help="SCENARIO_MIXED_DURATION_SECONDS for every run (default: infra/.env)")
+    parser.add_argument(
+        "--connections", type=int, help="SCENARIO_MAX_CONNECTIONS for every run, 1-200 (default: infra/.env)"
+    )
     parser.add_argument("--no-reset", action="store_true", help="keep the data between runs (faster, less comparable)")
     parser.add_argument(
         "--stop-at",
@@ -1100,6 +1104,8 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         parser.error("--repeat must be at least 1")
     if args.duration is not None and not 10 <= args.duration <= 300:
         parser.error("--duration must be between 10 and 300")
+    if args.connections is not None and not 1 <= args.connections <= 200:
+        parser.error("--connections must be between 1 and 200")
     if args.baseline < 0:
         parser.error("--baseline must be 0 or more")
     if args.keep_going:
@@ -1138,6 +1144,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     config = {key: stack.env_value(key) for key in CONFIG_KEYS}
     if args.duration is not None:
         config["SCENARIO_MIXED_DURATION_SECONDS"] = str(args.duration)
+    if args.connections is not None:
+        config["SCENARIO_MAX_CONNECTIONS"] = str(args.connections)
     command = "bash scripts/benchmark.sh " + " ".join(argv if argv is not None else sys.argv[1:])
     plan = [(value, repeat) for value in args.participants for repeat in range(1, args.repeat + 1)]
     print(f"Benchmark: {len(plan)} run(s) -> {out_dir.relative_to(ROOT) if out_dir.is_relative_to(ROOT) else out_dir}")
@@ -1170,6 +1178,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         env = {"SCENARIO_PEAK_PARTICIPANTS": str(participants), "SCENARIO_METRICS": "1"}
         if args.duration is not None:
             env["SCENARIO_MIXED_DURATION_SECONDS"] = str(args.duration)
+        if args.connections is not None:
+            env["SCENARIO_MAX_CONNECTIONS"] = str(args.connections)
         if args.baseline:
             print(f"  sampling the idle host for {args.baseline} s...")
             sampler.begin("baseline")

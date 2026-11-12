@@ -200,6 +200,9 @@ The peak scenario reads two optional settings, from the shell or `infra/.env`
   participant meant to accept may expire first. The mixed load reports those as
   "Ofertas que expiraram antes do aceite"; they are an expected outcome, not an
   error, and do not change the verdict.
+- `SCENARIO_MAX_CONNECTIONS`: 1–200, default 20. Requests the load generator
+  keeps in flight at once; the rest wait in its queue. Raise it to push the
+  services harder (see the load benchmark below).
 
 The **Waiting list** card shows the demand beyond the seats (waiting ÷
 capacity) in small type beside the count, and **Certificates** shows the share of
@@ -258,7 +261,8 @@ signs out every browser session. Each reset adds a few minutes. Use
 database and are less comparable).
 
 Options: `--repeat N` (runs per count), `--duration S`
-(`SCENARIO_MIXED_DURATION_SECONDS`, 10–300), `--stop-at` (see below),
+(`SCENARIO_MIXED_DURATION_SECONDS`, 10–300), `--connections N`
+(`SCENARIO_MAX_CONNECTIONS`, 1–200), `--stop-at` (see below),
 `--keep-going` (same as `--stop-at never`), `--baseline S` (idle host sampling
 before each run, default 10, 0 to skip), `--catch-up-timeout S` (default 300)
 and `--output DIR` (default `docs/validation/benchmarks`).
