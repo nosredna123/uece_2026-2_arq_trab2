@@ -73,6 +73,11 @@ RUN_COLUMNS = (
     "certificates",
     "cancellations",
     "refused_payments",
+    "late_offers",
+    "baseline_free_cores",
+    "baseline_background_cores",
+    "baseline_mem_available_mib",
+    "baseline_cpu_mhz",
     "containers_cpu_avg_cores",
     "containers_cpu_peak_cores",
     "containers_mem_peak_mib",
@@ -80,13 +85,47 @@ RUN_COLUMNS = (
     "host_cpu_peak_percent",
     "host_load1_peak",
     "host_mem_used_peak_mib",
+    "host_mem_available_min_mib",
+    "host_cpu_busy_share_percent",
+    "background_cpu_avg_cores",
+    "background_cpu_peak_cores",
+    "cpu_stall_avg_percent",
+    "cpu_stall_peak_percent",
+    "mem_stall_peak_percent",
+    "io_stall_peak_percent",
+    "cpu_mhz_avg",
+    "cpu_mhz_min",
+    "limit",
     "top_cpu_container",
     "top_cpu_container_peak_cores",
     "top_mem_container",
     "top_mem_container_peak_mib",
 )
 RESOURCE_COLUMNS = ("run", "participants", "elapsed_seconds", "phase", "container", "cpu_cores", "mem_mib")
+# Extra columns of the "host" rows of resources.csv (cpu_cores holds the host CPU %
+# and mem_mib the used memory on those rows).
+HOST_COLUMNS = (
+    "load1",
+    "mem_available_mib",
+    "background_cores",
+    "cpu_stall_percent",
+    "mem_stall_percent",
+    "io_stall_percent",
+    "cpu_mhz",
+)
 HOST = "host"
+# Run classification (see classify_limit).
+BUSY_CPU_PERCENT = 90
+SATURATED_BUSY_SHARE_PERCENT = 25
+SATURATED_CPU_STALL_PERCENT = 25
+SATURATED_MEM_STALL_PERCENT = 10
+SATURATED_MEM_AVAILABLE_SHARE = 0.05
+NOISY_BACKGROUND_SHARE = 0.15
+LIMITS = {
+    "architecture": "architecture (host had spare capacity)",
+    "host": "host (machine saturated)",
+    "noisy": "noisy (other programs competed for the CPU)",
+}
 
 
 # ---------------------------------------------------------------- parsing
@@ -119,6 +158,7 @@ def parse_scenario_log(text: str) -> dict[str, object]:
         ("certificates", r"^Certificados emitidos: (\d+)"),
         ("cancellations", r"^Desistências: (\d+)"),
         ("refused_payments", r"^Pagamentos recusados: (\d+)"),
+        ("late_offers", r"^Ofertas que expiraram antes do aceite[^:]*: (\d+)"),
     ):
         match = re.search(pattern, mixed, re.MULTILINE)
         result[column] = int(match.group(1)) if match else 0
@@ -185,21 +225,64 @@ def read_proc_stat(text: str) -> tuple[int, int]:
 
 
 def read_meminfo_used_mib(text: str) -> float:
-    fields = {line.split(":")[0]: int(line.split()[1]) for line in text.splitlines() if ":" in line}
+    fields = _meminfo(text)
     return round((fields.get("MemTotal", 0) - fields.get("MemAvailable", 0)) / 1024, 1)
+
+
+def read_meminfo_available_mib(text: str) -> float:
+    return round(_meminfo(text).get("MemAvailable", 0) / 1024, 1)
+
+
+def _meminfo(text: str) -> dict[str, int]:
+    return {line.split(":")[0]: int(line.split()[1]) for line in text.splitlines() if ":" in line}
+
+
+def read_pressure_total(text: str) -> int:
+    """/proc/pressure/<resource> -> total microseconds some task was stalled."""
+    match = re.search(r"^some .*\btotal=(\d+)", text, re.MULTILINE)
+    return int(match.group(1)) if match else 0
+
+
+def read_cpu_mhz(cpu_dir: Path, cpuinfo: str = "") -> float | None:
+    """Average current clock of all CPUs (cpufreq, else /proc/cpuinfo), in MHz."""
+    values = []
+    for path in cpu_dir.glob("cpu[0-9]*/cpufreq/scaling_cur_freq"):
+        try:
+            values.append(int(path.read_text()) / 1000)
+        except (OSError, ValueError):
+            continue
+    if not values:
+        values = [float(value) for value in re.findall(r"^cpu MHz\s*:\s*([\d.]+)", cpuinfo, re.MULTILINE)]
+    return round(sum(values) / len(values)) if values else None
 
 
 # ---------------------------------------------------------------- resources
 
 
+@dataclass(frozen=True)
+class HostSample:
+    cpu_percent: float
+    load1: float
+    mem_used_mib: float
+    mem_available_mib: float
+    cpu_stall_percent: float | None = None
+    mem_stall_percent: float | None = None
+    io_stall_percent: float | None = None
+    cpu_mhz: float | None = None
+
+
 @dataclass
 class ResourceSampler:
-    """Samples docker stats plus host CPU, load and memory until stopped."""
+    """Samples docker stats plus host CPU, memory, stalls and clock until stopped.
+
+    The phase is "baseline" (idle host before the scenario), "scenario" or "catch-up".
+    """
 
     run: int
     participants: int
     stats: Callable[[], dict[str, tuple[float, float]]]
-    host: Callable[[], tuple[float, float, float]]
+    host: Callable[[], HostSample]
+    cpus: int = 1
     rows: list[dict[str, object]] = field(default_factory=list)
     phase: str = "scenario"
     _stop: threading.Event = field(default_factory=threading.Event)
@@ -211,6 +294,11 @@ class ResourceSampler:
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
 
+    def begin(self, phase: str, *, restart_clock: bool = False) -> None:
+        if restart_clock:
+            self._started = time.monotonic()
+        self.phase = phase
+
     def stop(self) -> None:
         self._stop.set()
         if self._thread:
@@ -220,38 +308,106 @@ class ResourceSampler:
         while not self._stop.is_set():
             try:
                 containers = self.stats()
-                cpu_percent, load1, mem_used = self.host()
+                host = self.host()
             except (OSError, ValueError, subprocess.SubprocessError):
                 self._stop.wait(1)
                 continue
-            elapsed = round(time.monotonic() - self._started, 1)
-            base = {"run": self.run, "participants": self.participants, "elapsed_seconds": elapsed, "phase": self.phase}
-            for name, (cores, mem) in sorted(containers.items()):
-                self.rows.append({**base, "container": name, "cpu_cores": cores, "mem_mib": mem})
-            self.rows.append(
-                {**base, "container": HOST, "cpu_cores": cpu_percent, "mem_mib": mem_used, "load1": load1}
-            )
+            self.rows.extend(self.to_rows(containers, host))
             self._stop.wait(0.5)
+
+    def to_rows(self, containers: Mapping[str, tuple[float, float]], host: HostSample) -> list[dict[str, object]]:
+        elapsed = round(time.monotonic() - self._started, 1)
+        base = {"run": self.run, "participants": self.participants, "elapsed_seconds": elapsed, "phase": self.phase}
+        rows: list[dict[str, object]] = [
+            {**base, "container": name, "cpu_cores": cores, "mem_mib": mem}
+            for name, (cores, mem) in sorted(containers.items())
+        ]
+        # Host CPU not used by the EventHub containers: other programs, plus Docker
+        # and this sampler. Both readings are approximate, so clamp at zero.
+        used = host.cpu_percent / 100 * self.cpus
+        background = max(0.0, used - sum(cores for cores, _ in containers.values()))
+        rows.append(
+            {
+                **base,
+                "container": HOST,
+                "cpu_cores": host.cpu_percent,
+                "mem_mib": host.mem_used_mib,
+                "load1": host.load1,
+                "mem_available_mib": host.mem_available_mib,
+                "background_cores": _round(background),
+                "cpu_stall_percent": _blank(host.cpu_stall_percent),
+                "mem_stall_percent": _blank(host.mem_stall_percent),
+                "io_stall_percent": _blank(host.io_stall_percent),
+                "cpu_mhz": _blank(host.cpu_mhz),
+            }
+        )
+        return rows
 
 
 class HostProbe:
-    """Host CPU % (all CPUs, between calls), 1-minute load average and used memory."""
+    """Host CPU %, load, memory, stall time (/proc/pressure, % of wall time) and clock.
 
-    def __init__(self, proc: Path = Path("/proc")):
+    CPU % and stall time cover the interval since the previous call.
+    """
+
+    def __init__(self, proc: Path = Path("/proc"), cpu_dir: Path = Path("/sys/devices/system/cpu"),
+                 clock: Callable[[], float] = time.monotonic):
         self._proc = proc
+        self._cpu_dir = cpu_dir
+        self._clock = clock
         self._last = read_proc_stat((proc / "stat").read_text())
+        self._last_time = clock()
+        self._last_stalls = self._stalls()
 
-    def __call__(self) -> tuple[float, float, float]:
+    def _stalls(self) -> dict[str, int | None]:
+        stalls: dict[str, int | None] = {}
+        for resource in ("cpu", "memory", "io"):
+            try:
+                stalls[resource] = read_pressure_total((self._proc / "pressure" / resource).read_text())
+            except OSError:
+                stalls[resource] = None
+        return stalls
+
+    def __call__(self) -> HostSample:
         busy, total = read_proc_stat((self._proc / "stat").read_text())
         last_busy, last_total = self._last
         self._last = (busy, total)
-        percent = round(100 * (busy - last_busy) / max(1, total - last_total), 1)
-        load1 = float((self._proc / "loadavg").read_text().split()[0])
-        return percent, load1, read_meminfo_used_mib((self._proc / "meminfo").read_text())
+        now = self._clock()
+        wall_us = max(1.0, (now - self._last_time) * 1_000_000)
+        self._last_time = now
+        stalls = self._stalls()
+        percents = {
+            resource: None if value is None or self._last_stalls.get(resource) is None
+            else round(min(100.0, 100 * (value - self._last_stalls[resource]) / wall_us), 1)  # type: ignore[operator]
+            for resource, value in stalls.items()
+        }
+        self._last_stalls = stalls
+        meminfo = (self._proc / "meminfo").read_text()
+        cpuinfo_path = self._proc / "cpuinfo"
+        return HostSample(
+            cpu_percent=round(100 * (busy - last_busy) / max(1, total - last_total), 1),
+            load1=float((self._proc / "loadavg").read_text().split()[0]),
+            mem_used_mib=read_meminfo_used_mib(meminfo),
+            mem_available_mib=read_meminfo_available_mib(meminfo),
+            cpu_stall_percent=percents["cpu"],
+            mem_stall_percent=percents["memory"],
+            io_stall_percent=percents["io"],
+            cpu_mhz=read_cpu_mhz(self._cpu_dir, cpuinfo_path.read_text() if cpuinfo_path.exists() else ""),
+        )
 
 
-def summarize_resources(rows: Sequence[Mapping[str, object]]) -> dict[str, object]:
-    """Aggregate the samples of one run (scenario phase only) into runs.csv columns."""
+def summarize_resources(rows: Sequence[Mapping[str, object]], *, cpus: int = 0) -> dict[str, object]:
+    """Aggregate the samples of one run into runs.csv columns.
+
+    Baseline columns come from the "baseline" phase, the rest from the "scenario" phase.
+    """
+    baseline_host = [row for row in rows if row["phase"] == "baseline" and row["container"] == HOST]
+    baseline: dict[str, object] = {
+        "baseline_free_cores": _avg([cpus * (1 - float(row["cpu_cores"]) / 100) for row in baseline_host]) if cpus else "",
+        "baseline_background_cores": _avg(_values(baseline_host, "background_cores")),
+        "baseline_mem_available_mib": _avg(_values(baseline_host, "mem_available_mib")),
+        "baseline_cpu_mhz": _avg(_values(baseline_host, "cpu_mhz"), digits=0),
+    }
     scenario = [row for row in rows if row["phase"] == "scenario"]
     containers = [row for row in scenario if row["container"] != HOST]
     host = [row for row in scenario if row["container"] == HOST]
@@ -269,7 +425,9 @@ def summarize_resources(rows: Sequence[Mapping[str, object]]) -> dict[str, objec
     top_cpu = max(peak_cpu, key=peak_cpu.get, default="")
     top_mem = max(peak_mem, key=peak_mem.get, default="")
     host_cpu = [float(row["cpu_cores"]) for row in host]
+    cpu_mhz = _values(host, "cpu_mhz")
     return {
+        **baseline,
         "containers_cpu_avg_cores": _round(sum(totals_cpu) / len(totals_cpu)) if totals_cpu else "",
         "containers_cpu_peak_cores": _round(max(totals_cpu, default=0)) if totals_cpu else "",
         "containers_mem_peak_mib": _round(max(totals_mem, default=0)) if totals_mem else "",
@@ -277,6 +435,18 @@ def summarize_resources(rows: Sequence[Mapping[str, object]]) -> dict[str, objec
         "host_cpu_peak_percent": _round(max(host_cpu)) if host_cpu else "",
         "host_load1_peak": _round(max(float(row.get("load1", 0)) for row in host)) if host else "",
         "host_mem_used_peak_mib": _round(max(float(row["mem_mib"]) for row in host)) if host else "",
+        "host_mem_available_min_mib": _min(_values(host, "mem_available_mib")),
+        "host_cpu_busy_share_percent": (
+            _round(100 * sum(value >= BUSY_CPU_PERCENT for value in host_cpu) / len(host_cpu)) if host_cpu else ""
+        ),
+        "background_cpu_avg_cores": _avg(_values(host, "background_cores")),
+        "background_cpu_peak_cores": _max(_values(host, "background_cores")),
+        "cpu_stall_avg_percent": _avg(_values(host, "cpu_stall_percent")),
+        "cpu_stall_peak_percent": _max(_values(host, "cpu_stall_percent")),
+        "mem_stall_peak_percent": _max(_values(host, "mem_stall_percent")),
+        "io_stall_peak_percent": _max(_values(host, "io_stall_percent")),
+        "cpu_mhz_avg": _avg(cpu_mhz, digits=0),
+        "cpu_mhz_min": _min(cpu_mhz),
         "top_cpu_container": top_cpu,
         "top_cpu_container_peak_cores": _round(peak_cpu[top_cpu]) if top_cpu else "",
         "top_mem_container": top_mem,
@@ -304,6 +474,44 @@ def _round(value: float) -> float:
     return round(value, 2)
 
 
+def _values(rows: Sequence[Mapping[str, object]], key: str) -> list[float]:
+    """Numeric values of a column, skipping blanks (e.g. no /proc/pressure)."""
+    return [value for value in (_number(row.get(key)) for row in rows) if value is not None]
+
+
+def _avg(values: Sequence[float], digits: int = 2) -> object:
+    return round(sum(values) / len(values), digits) if values else ""
+
+
+def _max(values: Sequence[float]) -> object:
+    return _round(max(values)) if values else ""
+
+
+def _min(values: Sequence[float]) -> object:
+    return _round(min(values)) if values else ""
+
+
+def classify_limit(run: Mapping[str, object], cpus: int, memory_mib: float) -> str:
+    """What limited a run: "host" (machine saturated), "noisy" (other programs
+    competed for the CPU) or "architecture" (spare capacity: the stack's design)."""
+    if _number(run.get("host_cpu_avg_percent")) is None:
+        return ""
+    # Only the idle baseline: during the run, background CPU also includes the Docker
+    # engine and kernel networking driven by the load itself.
+    background = _number(run.get("baseline_background_cores")) or 0.0
+    if background >= max(1.0, NOISY_BACKGROUND_SHARE * cpus):
+        return "noisy"
+    available = _number(run.get("host_mem_available_min_mib"))
+    if (
+        (_number(run.get("host_cpu_busy_share_percent")) or 0) >= SATURATED_BUSY_SHARE_PERCENT
+        or (_number(run.get("cpu_stall_avg_percent")) or 0) >= SATURATED_CPU_STALL_PERCENT
+        or (_number(run.get("mem_stall_peak_percent")) or 0) >= SATURATED_MEM_STALL_PERCENT
+        or (available is not None and memory_mib and available < SATURATED_MEM_AVAILABLE_SHARE * memory_mib)
+    ):
+        return "host"
+    return "architecture"
+
+
 # ---------------------------------------------------------------- report
 
 
@@ -317,6 +525,7 @@ class HostInfo:
     os: str
     docker_version: str
     git_commit: str
+    cpu_max_mhz: float = 0.0
 
 
 def findings(runs: Sequence[Mapping[str, object]], host: HostInfo, peaks: Mapping[str, tuple[float, float, float]]) -> list[str]:
@@ -383,7 +592,75 @@ def findings(runs: Sequence[Mapping[str, object]], host: HostInfo, peaks: Mappin
     resent = sum(int(run["resent"] or 0) for run in runs if str(run.get("resent", "")).isdigit())
     if resent:
         notes.append(f"Requests resent after a timeout (same Idempotency-Key): {resent} in total.")
+    late = sum(int(run.get("late_offers") or 0) for run in runs)
+    if late:
+        notes.append(
+            f"Waiting-list offers that expired before the participant accepted them: {late} in total "
+            "(long runs outlast WAITLIST_OFFER_EXPIRY_MINUTES; an expected outcome, not an error)."
+        )
+    notes += host_findings(runs, host)
     return notes
+
+
+def host_findings(runs: Sequence[Mapping[str, object]], host: HostInfo) -> list[str]:
+    """Observations crossing each run with the host resources available at that moment."""
+    notes = []
+    labelled = [run for run in runs if run.get("limit")]
+    if labelled:
+        notes.append(
+            "What limited each run: "
+            + "; ".join(f"{run['participants']} → {run['limit']}" for run in labelled)
+            + "."
+        )
+    saturated = [run for run in labelled if run["limit"] == "host"]
+    if saturated:
+        first = saturated[0]
+        notes.append(
+            f"The machine saturated at {first['participants']} participants: CPU at or above "
+            f"{BUSY_CPU_PERCENT}% in {first.get('host_cpu_busy_share_percent')}% of the samples, tasks "
+            f"waiting for a CPU {first.get('cpu_stall_avg_percent')}% of the time on average, "
+            f"{_mib_text(first.get('host_mem_available_min_mib'))} of memory left at the lowest point."
+        )
+    elif labelled:
+        notes.append(
+            "The machine never saturated: the limits observed come from the stack's design "
+            "(one instance per service), not from this host."
+        )
+    noisy = [run for run in labelled if run["limit"] == "noisy"]
+    if noisy:
+        notes.append(
+            "Other programs were using the CPU before "
+            + ", ".join(f"{run['participants']} ({run.get('baseline_background_cores')} cores)" for run in noisy)
+            + " participants; compare those runs with care or rerun them with the host idle."
+        )
+    clocked = [run for run in runs if _number(run.get("cpu_mhz_avg")) is not None]
+    if clocked:
+        largest = max(clocked, key=lambda run: int(run["participants"]))
+        start = _number(largest.get("baseline_cpu_mhz"))
+        low = _number(largest.get("cpu_mhz_min")) or 0
+        note = (
+            f"CPU clock at {largest['participants']} participants: {largest['cpu_mhz_avg']} MHz on average, "
+            f"{largest['cpu_mhz_min']} MHz at the lowest"
+            + (f" (idle before the run: {start:.0f} MHz" if start else " (")
+            + (f"; maximum {host.cpu_max_mhz:.0f} MHz)." if host.cpu_max_mhz else ").")
+        )
+        if start and low < 0.75 * start:
+            note += (
+                " The clock dropped by more than a quarter: with every core busy a laptop lowers it "
+                "to stay within its power and temperature limits, so per-request work gets slower."
+            )
+        notes.append(note)
+    return notes
+
+
+def _mib_text(value: object) -> str:
+    number = _number(value)
+    return "unknown" if number is None else f"{number / 1024:.1f} GiB"
+
+
+def _gib(value: object) -> str:
+    number = _number(value)
+    return "" if number is None else f"{number / 1024:.1f}"
 
 
 def _number(value: object) -> float | None:
@@ -446,6 +723,40 @@ def render_report(
         "excluded). Catch-up is the time, after the scenario ended, until Reporting's counts match",
         "Registration and Attendance. CPU is in cores (1.0 = one full CPU).",
         "",
+        "## Host resources during each run",
+        "",
+        "| Participants | Free at start (cores / GiB) | Other programs at start (cores) | Host CPU avg / peak (%) "
+        "| Time at ≥90% CPU (%) | Background during run avg / peak (cores) | Waiting for CPU avg / peak (%) "
+        "| Memory / disk stall peak (%) | Memory left (GiB) | Clock avg / min (MHz) | Limit |",
+        "|---:|---|---:|---|---:|---|---|---|---:|---|---|",
+    ]
+    for run in runs:
+        lines.append(
+            f"| {run['participants']} | {run.get('baseline_free_cores', '')} / {_gib(run.get('baseline_mem_available_mib'))} "
+            f"| {run.get('baseline_background_cores', '')} "
+            f"| {run.get('host_cpu_avg_percent', '')} / {run.get('host_cpu_peak_percent', '')} "
+            f"| {run.get('host_cpu_busy_share_percent', '')} "
+            f"| {run.get('background_cpu_avg_cores', '')} / {run.get('background_cpu_peak_cores', '')} "
+            f"| {run.get('cpu_stall_avg_percent', '')} / {run.get('cpu_stall_peak_percent', '')} "
+            f"| {run.get('mem_stall_peak_percent', '')} / {run.get('io_stall_peak_percent', '')} "
+            f"| {_gib(run.get('host_mem_available_min_mib'))} "
+            f"| {run.get('cpu_mhz_avg', '')} / {run.get('cpu_mhz_min', '')} | {run.get('limit', '')} |"
+        )
+    lines += [
+        "",
+        "*Free at start* and *other programs* come from an idle sample of the host taken just before",
+        "the scenario (the stack running, no load). *Background during run* is host CPU not used by",
+        "the EventHub containers: other programs plus the Docker engine and kernel networking.",
+        "*Waiting for CPU* and the *stall* columns come from the kernel (`/proc/pressure`): the share",
+        "of time at least one task was ready but waiting for a CPU, memory or the disk.",
+        "",
+        "Limit: *host* when the CPU stayed at or above "
+        f"{BUSY_CPU_PERCENT}% in at least {SATURATED_BUSY_SHARE_PERCENT}% of the samples, tasks waited for a CPU "
+        f"{SATURATED_CPU_STALL_PERCENT}% of the time or more on average, memory stalls reached "
+        f"{SATURATED_MEM_STALL_PERCENT}%, or less than {SATURATED_MEM_AVAILABLE_SHARE:.0%} of the memory was left; "
+        f"*noisy* when other programs used {NOISY_BACKGROUND_SHARE:.0%} of the CPUs or more before the run; "
+        "otherwise *architecture* (the host had spare capacity, so the stack's design set the limit).",
+        "",
         "## Findings",
         "",
         *(f"- {note}" for note in findings(runs, host, peaks_by_run.get(int(runs[-1]["run"]), {}) if runs else {})),
@@ -473,7 +784,9 @@ def render_report(
         "## Files",
         "",
         "- `runs.csv`: one row per run (all columns of the table above and more).",
-        "- `resources.csv`: every resource sample (containers and host) during each run.",
+        "- `resources.csv`: every resource sample (containers and host) during each run; on the",
+        "  `host` rows `cpu_cores` is the host CPU % and `mem_mib` the used memory. Phases:",
+        "  `baseline` (idle, before the scenario), `scenario` and `catch-up`.",
         "- `logs/`: the full output of each scenario and reset.",
         "",
     ]
@@ -484,6 +797,7 @@ def draw_charts(
     out_dir: Path,
     runs: Sequence[Mapping[str, object]],
     resources: Sequence[Mapping[str, object]],
+    cpus: int = 0,
 ) -> list[str]:
     """PNG charts; skipped when matplotlib is not installed."""
     try:
@@ -543,6 +857,23 @@ def draw_charts(
         ax.legend()
         ax.grid(alpha=0.3)
         save(fig, "cpu.png")
+
+    split = [
+        run for run in with_cpu
+        if _number(run.get("background_cpu_avg_cores")) is not None and cpus
+    ]
+    if split:
+        fig, ax = plt.subplots(figsize=(7, 4))
+        labels = [str(run["participants"]) for run in split]
+        eventhub = [float(run["containers_cpu_avg_cores"]) for run in split]
+        background = [float(run["background_cpu_avg_cores"]) for run in split]
+        free = [max(0.0, cpus - a - b) for a, b in zip(eventhub, background)]
+        ax.bar(labels, eventhub, label="EventHub containers")
+        ax.bar(labels, background, bottom=eventhub, label="other programs / Docker / kernel")
+        ax.bar(labels, free, bottom=[a + b for a, b in zip(eventhub, background)], label="free", color="#d9d9d9")
+        ax.set(xlabel="Participants", ylabel="CPU (cores, average during the scenario)", title=f"Host CPU use ({cpus} CPUs)")
+        ax.legend(fontsize="small")
+        save(fig, "host-cpu.png")
 
     if runs:
         last = runs[-1]
@@ -678,7 +1009,15 @@ class Stack:
             os=f"{platform.system()} {platform.release()}",
             docker_version=docker[2] if len(docker) > 2 else "unknown",
             git_commit=commit + ("+changes" if dirty else ""),
+            cpu_max_mhz=_max_mhz(),
         )
+
+
+def _max_mhz(cpu_dir: Path = Path("/sys/devices/system/cpu")) -> float:
+    try:
+        return round(int((cpu_dir / "cpu0/cpufreq/cpuinfo_max_freq").read_text()) / 1000)
+    except (OSError, ValueError):
+        return 0.0
 
 
 def _pairs(text: str) -> dict[str, int]:
@@ -735,7 +1074,17 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     parser.add_argument("--repeat", type=int, default=1, help="runs per participant count (default 1)")
     parser.add_argument("--duration", type=int, help="SCENARIO_MIXED_DURATION_SECONDS for every run (default: infra/.env)")
     parser.add_argument("--no-reset", action="store_true", help="keep the data between runs (faster, less comparable)")
-    parser.add_argument("--keep-going", action="store_true", help="continue after a run that needs checking")
+    parser.add_argument(
+        "--stop-at",
+        choices=("saturation", "verificar", "never"),
+        default="saturation",
+        help="saturation (default): stop after a run that saturated the host (or failed to run); "
+        "verificar: also stop after a run that needs checking; never: run every count",
+    )
+    parser.add_argument("--keep-going", action="store_true", help="same as --stop-at never")
+    parser.add_argument(
+        "--baseline", type=int, default=10, help="seconds of idle host sampling before each run (default 10, 0 to skip)"
+    )
     parser.add_argument("--catch-up-timeout", type=int, default=300, help="seconds to wait for Reporting (default 300)")
     parser.add_argument(
         "--output",
@@ -751,7 +1100,24 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         parser.error("--repeat must be at least 1")
     if args.duration is not None and not 10 <= args.duration <= 300:
         parser.error("--duration must be between 10 and 300")
+    if args.baseline < 0:
+        parser.error("--baseline must be 0 or more")
+    if args.keep_going:
+        args.stop_at = "never"
     return args
+
+
+def stop_reason(run: Mapping[str, object], stop_at: str) -> str:
+    """Why the sweep should stop after this run, or "" to continue."""
+    if run["verdict"] == "ERRO":
+        return "the scenarios did not run (see the log)"
+    if stop_at == "never":
+        return ""
+    if run.get("limit") == "host":
+        return "the host saturated"
+    if stop_at == "verificar" and run["verdict"] != "OK":
+        return "this run needs checking"
+    return ""
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -785,7 +1151,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     with runs_csv.open("w", newline="") as handle:
         csv.DictWriter(handle, RUN_COLUMNS).writeheader()
     with resources_csv.open("w", newline="") as handle:
-        csv.DictWriter(handle, (*RESOURCE_COLUMNS, "load1"), extrasaction="ignore").writeheader()
+        csv.DictWriter(handle, (*RESOURCE_COLUMNS, *HOST_COLUMNS), extrasaction="ignore").writeheader()
 
     for number, (participants, repeat) in enumerate(plan, start=1):
         tag = f"{number:02}-{participants}p-r{repeat}"
@@ -800,17 +1166,24 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"  ERROR: reset failed (exit {code}); see logs/{tag}-reset.log", file=sys.stderr)
                 break
 
-        sampler = ResourceSampler(number, participants, stack.docker_stats, HostProbe())
+        sampler = ResourceSampler(number, participants, stack.docker_stats, HostProbe(), cpus=host.logical_cpus)
         env = {"SCENARIO_PEAK_PARTICIPANTS": str(participants), "SCENARIO_METRICS": "1"}
         if args.duration is not None:
             env["SCENARIO_MIXED_DURATION_SECONDS"] = str(args.duration)
+        if args.baseline:
+            print(f"  sampling the idle host for {args.baseline} s...")
+            sampler.begin("baseline")
+            sampler.start()
+            time.sleep(args.baseline)
         run_started = datetime.now(timezone.utc).isoformat(timespec="seconds")
         print("  running the scenarios...")
-        sampler.start()
+        sampler.begin("scenario", restart_clock=True)
+        if not args.baseline:
+            sampler.start()
         began = time.monotonic()
         stack.run_logged(["bash", "scripts/cenario.sh"], out_dir / "logs" / f"{tag}-scenario.log", env)
         scenario_seconds = round(time.monotonic() - began, 1)
-        sampler.phase = "catch-up"
+        sampler.begin("catch-up")
         print("  waiting for Reports to catch up...")
         lag = wait_for_catch_up(stack.counts, args.catch_up_timeout)
         sampler.stop()
@@ -825,25 +1198,28 @@ def main(argv: Sequence[str] | None = None) -> int:
             "scenario_seconds": scenario_seconds,
             **parsed,
             "catch_up_seconds": "timeout" if lag is None else lag,
-            **summarize_resources(sampler.rows),
+            **summarize_resources(sampler.rows, cpus=host.logical_cpus),
         }
+        row["limit"] = classify_limit(row, host.logical_cpus, host.memory_mib)
         runs.append(row)
         resources.extend(sampler.rows)
         peaks_by_run[number] = container_peaks(sampler.rows)
         with runs_csv.open("a", newline="") as handle:
             csv.DictWriter(handle, RUN_COLUMNS, extrasaction="ignore").writerow(row)
         with resources_csv.open("a", newline="") as handle:
-            csv.DictWriter(handle, (*RESOURCE_COLUMNS, "load1"), extrasaction="ignore").writerows(sampler.rows)
+            csv.DictWriter(handle, (*RESOURCE_COLUMNS, *HOST_COLUMNS), extrasaction="ignore").writerows(sampler.rows)
         print(
             f"  {row['verdict']} · {scenario_seconds} s · {row['requests_per_second']} req/s · "
             f"p95 {row['latency_p95_ms']} ms · catch-up {row['catch_up_seconds']} s · "
-            f"peak CPU {row['containers_cpu_peak_cores']} cores"
+            f"peak CPU {row['containers_cpu_peak_cores']} cores · host CPU avg {row['host_cpu_avg_percent']}% · "
+            f"waiting for CPU {row['cpu_stall_avg_percent']}% · limit {row['limit'] or '?'}"
         )
-        if row["verdict"] != "OK" and not args.keep_going:
-            print("  stopping: this run needs checking (use --keep-going to continue).")
+        reason = stop_reason(row, args.stop_at)
+        if reason:
+            print(f"  stopping: {reason} (see --stop-at).")
             break
 
-    charts = draw_charts(out_dir, runs, resources)
+    charts = draw_charts(out_dir, runs, resources, host.logical_cpus)
     report = render_report(
         started_at=started.strftime("%Y-%m-%d %H:%M UTC"),
         command=command.strip(),

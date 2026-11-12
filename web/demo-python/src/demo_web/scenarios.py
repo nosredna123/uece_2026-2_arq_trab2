@@ -535,6 +535,8 @@ MIXED_CANCEL_RATE = 0.2
 # Share of waiting-list offers the participant ignores; Registration expires them
 # after WAITLIST_OFFER_EXPIRY_MINUTES.
 MIXED_OFFER_LAPSE_RATE = 0.2
+# Errors that mean an accepted offer had already expired (see promote()).
+LATE_OFFER_CODES = frozenset({"OFFER_EXPIRED", "INVALID_STATE"})
 MIXED_CHECK_IN_RATES = (0.4, 0.9)
 MIXED_CERTIFICATE_RATES = (0.5, 1.0)
 # Staggered timeline, as fractions of the run: activity k of event e starts at
@@ -863,6 +865,7 @@ async def _run_mixed_load(
     cancelled = 0
     promoted = 0
     lapsed = 0
+    late_offers = 0
     refused = 0
     checked_in = 0
     certificates = 0
@@ -1005,7 +1008,7 @@ async def _run_mixed_load(
     Attendee = tuple[UUID, Mapping[str, str], str, MixedAction]
 
     async def promote(activity_index: int) -> Attendee | None:
-        nonlocal promoted, confirmed, lapsed
+        nonlocal promoted, confirmed, lapsed, late_offers
         for _ in range(3):
             await sleep(1)
             for entry in list(waiting.get(activity_index, ())):
@@ -1028,8 +1031,16 @@ async def _run_mixed_load(
                         idempotency_key=f"scenario-{run_id}-accept-{registration_id}",
                     )
                 except SERVICE_ERRORS as error:
-                    errors[_error_code(error)] += 1
-                    log(participant, activity_index, f"erro {_error_code(error)}")
+                    code = _error_code(error)
+                    # Under heavy load the acceptance may arrive after the offer deadline;
+                    # Registration then expires it (INVALID_STATE if its worker got there
+                    # first), which is the expected business outcome.
+                    if code in LATE_OFFER_CODES:
+                        late_offers += 1
+                        log(participant, activity_index, "oferta expirou antes do aceite")
+                        return None
+                    errors[code] += 1
+                    log(participant, activity_index, f"erro {code}")
                     return None
                 promoted += 1
                 log(participant, activity_index, f"saiu da lista de espera → {accepted.status}")
@@ -1117,6 +1128,8 @@ async def _run_mixed_load(
     )
     out(f"Desistências: {cancelled} · vagas repassadas da lista de espera: {promoted}")
     out(f"Ofertas da lista de espera ignoradas (expiram depois): {lapsed}")
+    if late_offers:
+        out(f"Ofertas que expiraram antes do aceite (carga alta): {late_offers}")
     out(f"Pagamentos recusados: {refused}")
     out(f"Check-ins: {checked_in} de {confirmed} inscrições confirmadas")
     out(f"Certificados emitidos: {certificates} de {checked_in} check-ins")

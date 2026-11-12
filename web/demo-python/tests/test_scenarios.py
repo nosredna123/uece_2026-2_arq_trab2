@@ -734,6 +734,47 @@ def test_unexpected_check_in_error_fails_the_mixed_verdict(web_environment):
     assert any("erro no check-in FORBIDDEN" in line for line in lines)
 
 
+class LateOffers(FakeEventHub):
+    """Every acceptance arrives after the offer deadline (alternating error codes)."""
+
+    def __init__(self, codes=("OFFER_EXPIRED", "INVALID_STATE")):
+        super().__init__()
+        self.codes = codes
+        self.attempts = 0
+
+    async def accept_offer(self, registration_id, *, token, idempotency_key):
+        await asyncio.sleep(0)
+        code = self.codes[self.attempts % len(self.codes)]
+        self.attempts += 1
+        self._store(self.registrations[registration_id], "EXPIRED")
+        raise ServiceError(
+            service="registration",
+            method="POST",
+            status_code=409,
+            code=code,
+            message=code,
+            correlation_id=uuid4(),
+        )
+
+
+def test_offers_expired_before_acceptance_are_an_expected_outcome(web_environment):
+    fake = LateOffers()
+    code, lines = _run_all(web_environment, fake, SCENARIO_OFFER_LAPSE_PERCENT="0")
+
+    assert fake.attempts >= 2
+    mixed = [line for line in lines if line.startswith("[carga-mista")]
+    assert sum("oferta expirou antes do aceite" in line for line in mixed) == fake.attempts
+    assert f"[carga-mista     ] Ofertas que expiraram antes do aceite (carga alta): {fake.attempts}" in lines
+    assert not any("Erros:" in line for line in mixed)
+    assert code == 0 and lines[-1] == "Veredito geral: OK"
+
+
+def test_other_offer_errors_still_fail_the_mixed_verdict(web_environment):
+    code, lines = _run_all(web_environment, LateOffers(codes=("FORBIDDEN",)), SCENARIO_OFFER_LAPSE_PERCENT="0")
+    assert code == 1
+    assert any("Erros:" in line and "FORBIDDEN" in line for line in lines)
+
+
 def test_run_all_scales_with_many_participants(web_environment):
     fake = FakeEventHub()
     code, lines = _run_all(

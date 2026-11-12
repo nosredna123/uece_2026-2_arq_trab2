@@ -196,6 +196,10 @@ The peak scenario reads two optional settings, from the shell or `infra/.env`
 - `SCENARIO_OFFER_LAPSE_PERCENT`: 0–100, default 20. Share of waiting-list
   offers the participant ignores. Set `WAITLIST_OFFER_EXPIRY_MINUTES=1` in
   `infra/.env` to see them expire during a run (the default is 30 minutes).
+  With very large loads the run can outlast that expiry, so an offer the
+  participant meant to accept may expire first. The mixed load reports those as
+  "Ofertas que expiraram antes do aceite"; they are an expected outcome, not an
+  error, and do not change the verdict.
 
 The **Waiting list** card shows the demand beyond the seats (waiting ÷
 capacity) in small type beside the count, and **Certificates** shows the share of
@@ -254,9 +258,20 @@ signs out every browser session. Each reset adds a few minutes. Use
 database and are less comparable).
 
 Options: `--repeat N` (runs per count), `--duration S`
-(`SCENARIO_MIXED_DURATION_SECONDS`, 10–300), `--keep-going` (by default the
-sweep stops at the first run whose verdict is not OK), `--catch-up-timeout S`
-(default 300) and `--output DIR` (default `docs/validation/benchmarks`).
+(`SCENARIO_MIXED_DURATION_SECONDS`, 10–300), `--stop-at` (see below),
+`--keep-going` (same as `--stop-at never`), `--baseline S` (idle host sampling
+before each run, default 10, 0 to skip), `--catch-up-timeout S` (default 300)
+and `--output DIR` (default `docs/validation/benchmarks`).
+
+`--stop-at` decides when the sweep ends early:
+
+- `saturation` (default): after a run that saturated the host, so a long list of
+  counts climbs until the machine's limit. A run whose verdict is VERIFICAR
+  does not stop it.
+- `verificar`: also after the first run whose verdict is not OK.
+- `never`: runs every count.
+
+A run whose scenarios did not start always stops the sweep.
 
 While each scenario runs, the script samples `docker stats` and the host
 (`/proc`) about every 2 s. When it ends, it waits until Reporting's counts
@@ -266,19 +281,45 @@ which the benchmark sets; it prints one `METRICS {...}` line at the end. The
 latency excludes queueing inside the client, which sends at most 20 requests at
 a time.
 
+Each run is also compared with the host resources available at that moment:
+
+- **Baseline:** before the scenario starts, it samples the idle host (stack
+  running, no load) to record the free cores and memory, the CPU used by other
+  programs and the CPU clock.
+- **During the run:**
+  - the CPU not used by the EventHub containers (other programs, the Docker
+    engine and kernel networking);
+  - the kernel's stall time from `/proc/pressure`: the share of time tasks were
+    ready but waiting for a CPU, memory or the disk;
+  - the memory left;
+  - the CPU clock, which a laptop lowers under sustained load.
+- **Classification:** each run is labelled by what limited it:
+  - *host*: the machine saturated (CPU ≥90% in at least a quarter of the
+    samples, tasks waiting for a CPU ≥25% of the time, memory stalls ≥10%, or
+    under 5% of the memory left);
+  - *noisy*: other programs used at least 15% of the CPUs before the run, so
+    compare it with care;
+  - *architecture*: the host had spare capacity and the stack's design (one
+    instance per service) set the limit.
+
 The results go to `docs/validation/benchmarks/<UTC timestamp>/`:
 
 - `runs.csv`: one row per run. It includes the verdicts, requests/s, failures,
   resends, p50/p95/p99/max latency (overall and per service), catch-up seconds,
-  the mixed-load counts, and container and host CPU/memory averages and peaks.
-  The top container by CPU and by memory are also listed.
-- `resources.csv`: every resource sample (`container` is `host` for the host
-  row, whose `cpu_cores` holds the host CPU %).
-- `report.md`: host description, configuration, results table, plain-language
-  findings, per-container peaks and charts.
-- `charts/*.png`: latency, throughput, catch-up, CPU and the per-container CPU
-  timeline of the largest run. The charts need `matplotlib` (in
-  `requirements-validation.txt`); without it they are skipped.
+  the mixed-load counts (including waiting-list offers that expired before
+  acceptance), and container and host CPU/memory averages and peaks. It also
+  has the baseline and stall/clock columns, the `limit` label and the top
+  container by CPU and by memory.
+- `resources.csv`: every resource sample, with a `phase` of `baseline`,
+  `scenario` or `catch-up`. On the `host` rows `cpu_cores` holds the host CPU %
+  and `mem_mib` the used memory; extra columns hold the available memory,
+  background cores, stall percentages and clock.
+- `report.md`: host description, configuration, results table, host resources
+  during each run, plain-language findings, per-container peaks and charts.
+- `charts/*.png`: latency, throughput, catch-up, CPU, the host CPU split
+  (EventHub / other / free) per run and the per-container CPU timeline of the
+  largest run. The charts need `matplotlib` (in `requirements-validation.txt`);
+  without it they are skipped.
 - `host.json` and `logs/` (each scenario and reset output).
 
 `tests/load` is a separate, isolated API load test. The benchmark instead
