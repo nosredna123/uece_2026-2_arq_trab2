@@ -491,7 +491,9 @@ MIXED_PROMOTION_SECONDS = 4.0
 MIXED_PREPARATION_SECONDS = 5.0
 # Until opened, activities sit this far in the future so registrations are never late.
 MIXED_PARKED_SECONDS = 3600
-RETRY_ATTEMPTS = 30
+# One attempt per second; under peak load Registration events can reach
+# Attendance tens of seconds late, so give propagation about a minute and a half.
+RETRY_ATTEMPTS = 90
 PAYMENT_CONFIRMATION_ATTEMPTS = 20
 # Attendance learns about registrations and activities asynchronously, and the
 # service clocks can differ slightly from the script; these clear on retry.

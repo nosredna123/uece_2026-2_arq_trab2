@@ -365,6 +365,34 @@ class RegistrationContractTest {
   }
 
   @Test
+  void nackedMessageInABatchDoesNotHoldBackConfirmedOnes() {
+    when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
+        .thenReturn(admission(ACTIVITY_ID, 1, 2500));
+    create(ACTIVITY_ID, "partially-confirmed-outbox", "participant-token");
+    doAnswer(
+            invocation -> {
+              String routingKey = invocation.getArgument(1);
+              CorrelationData correlationData = invocation.getArgument(3);
+              boolean ack = !"billing.requested".equals(routingKey);
+              correlationData
+                  .getFuture()
+                  .complete(new CorrelationData.Confirm(ack, ack ? null : "nack"));
+              return null;
+            })
+        .when(rabbitTemplate)
+        .send(eq("eventhub.v1"), anyString(), any(Message.class), any(CorrelationData.class));
+
+    assertThat(outboxPublisher.publishPending()).isEqualTo(1);
+    assertThat(outboxCount()).isEqualTo(1);
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT COUNT(*) FROM billing_outbox WHERE routing_key = 'billing.requested' "
+                    + "AND published_at IS NULL AND available_at > CURRENT_TIMESTAMP",
+                Integer.class))
+        .isEqualTo(1);
+  }
+
+  @Test
   void approvalConfirmsPaymentAndDuplicateResultsDoNotChangeCapacity() throws Exception {
     when(eventManagementClient.activateOrValidateAdmission(eq(ACTIVITY_ID), anyString()))
         .thenReturn(admission(ACTIVITY_ID, 1, 2500));

@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ class BillingOutboxPublisher {
   private static final Logger LOGGER = LoggerFactory.getLogger(BillingOutboxPublisher.class);
   private static final String EXCHANGE = "eventhub.v1";
   private static final long MINIMUM_CLAIM_LEASE_SECONDS = 30;
+  static final int BATCH_SIZE = 100;
 
   private final JdbcTemplate jdbc;
   private final RabbitTemplate rabbitTemplate;
@@ -66,48 +68,89 @@ class BillingOutboxPublisher {
   int publishPending() {
     int published = 0;
     while (true) {
-      OutboxRecord record = claimNext();
-      if (record == null) {
+      List<OutboxRecord> batch = claimBatch();
+      if (batch.isEmpty()) {
         return published;
       }
-      Map<String, String> previousContext = MDC.getCopyOfContextMap();
-      MDC.put("correlationId", record.correlationId().toString());
-      MDC.put("registrationId", record.registrationId().toString());
-      MDC.put("eventId", record.eventId().toString());
-      MDC.put("eventType", record.routingKey());
-      try {
-        publish(record);
-        markPublished(record);
-        published++;
-        LOGGER.info("message.published");
-      } catch (PublishNotConfirmedException
-          | AmqpException
-          | ExecutionException
-          | TimeoutException exception) {
-        deferForRetry(record, exception);
-        LOGGER.error(
-            "Billing outbox publish failed event_id={} attempt={} error_type={}",
-            record.eventId(),
-            record.attempts(),
-            exception.getClass().getSimpleName(),
-            exception);
+      // Send the whole batch before waiting, so broker confirmations overlap.
+      List<CorrelationData> confirmations = new ArrayList<>(batch.size());
+      for (OutboxRecord record : batch) {
+        confirmations.add(send(record));
+      }
+      long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(settings.httpTimeoutSeconds());
+      boolean failed = false;
+      for (int index = 0; index < batch.size(); index++) {
+        if (settle(batch.get(index), confirmations.get(index), deadline)) {
+          published++;
+        } else {
+          failed = true;
+        }
+      }
+      if (failed || Thread.currentThread().isInterrupted()) {
         return published;
-      } catch (InterruptedException exception) {
-        Thread.currentThread().interrupt();
-        deferForRetry(record, exception);
-        LOGGER.error(
-            "billing.outbox.publish_interrupted event_id={} attempt={}",
-            record.eventId(),
-            record.attempts(),
-            exception);
-        return published;
-      } finally {
-        restoreContext(previousContext);
       }
     }
   }
 
-  private OutboxRecord claimNext() {
+  private CorrelationData send(OutboxRecord record) {
+    MessageProperties properties = new MessageProperties();
+    properties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
+    properties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+    properties.setMessageId(record.eventId().toString());
+    properties.setCorrelationId(record.correlationId().toString());
+    CorrelationData correlationData = new CorrelationData(record.eventId().toString());
+    try {
+      rabbitTemplate.send(
+          EXCHANGE,
+          record.routingKey(),
+          new Message(record.body().getBytes(StandardCharsets.UTF_8), properties),
+          correlationData);
+    } catch (AmqpException exception) {
+      correlationData.getFuture().completeExceptionally(exception);
+    }
+    return correlationData;
+  }
+
+  private boolean settle(OutboxRecord record, CorrelationData correlationData, long deadline) {
+    Map<String, String> previousContext = MDC.getCopyOfContextMap();
+    MDC.put("correlationId", record.correlationId().toString());
+    MDC.put("registrationId", record.registrationId().toString());
+    MDC.put("eventId", record.eventId().toString());
+    MDC.put("eventType", record.routingKey());
+    try {
+      awaitConfirmation(correlationData, deadline);
+      markPublished(record);
+      LOGGER.info("message.published");
+      return true;
+    } catch (PublishNotConfirmedException | TimeoutException exception) {
+      fail(record, exception);
+    } catch (ExecutionException exception) {
+      fail(record, exception.getCause() instanceof Exception cause ? cause : exception);
+    } catch (InterruptedException exception) {
+      Thread.currentThread().interrupt();
+      deferForRetry(record, exception);
+      LOGGER.error(
+          "billing.outbox.publish_interrupted event_id={} attempt={}",
+          record.eventId(),
+          record.attempts(),
+          exception);
+    } finally {
+      restoreContext(previousContext);
+    }
+    return false;
+  }
+
+  private void fail(OutboxRecord record, Exception exception) {
+    deferForRetry(record, exception);
+    LOGGER.error(
+        "Billing outbox publish failed event_id={} attempt={} error_type={}",
+        record.eventId(),
+        record.attempts(),
+        exception.getClass().getSimpleName(),
+        exception);
+  }
+
+  private List<OutboxRecord> claimBatch() {
     return transaction.execute(
         status -> {
           OffsetDateTime now = databaseNow();
@@ -118,7 +161,8 @@ class BillingOutboxPublisher {
                       + "FROM billing_outbox WHERE published_at IS NULL AND suppressed_at IS NULL "
                       + "AND available_at <= ? "
                       + "AND (claim_expires_at IS NULL OR claim_expires_at <= ?) "
-                      + "ORDER BY created_at, event_id LIMIT 1"
+                      + "ORDER BY created_at, event_id LIMIT "
+                      + BATCH_SIZE
                       + lock,
                   (row, rowNumber) ->
                       new OutboxRecord(
@@ -131,42 +175,33 @@ class BillingOutboxPublisher {
                           null),
                   now,
                   now);
-          if (candidates.isEmpty()) {
-            return null;
-          }
-
-          OutboxRecord candidate = candidates.getFirst();
           UUID claimToken = UUID.randomUUID();
-          int changed =
-              jdbc.update(
-                  "UPDATE billing_outbox SET claim_token = ?, claim_expires_at = ?, "
-                      + "attempts = attempts + 1 WHERE event_id = ? AND published_at IS NULL",
-                  claimToken,
-                  now.plusSeconds(claimLeaseSeconds()),
-                  candidate.eventId());
-          if (changed != 1) {
-            throw new ApiException(
-                503, "OUTBOX_INTEGRITY_ERROR", "Billing outbox claim changed unexpectedly.");
+          OffsetDateTime claimExpiresAt = now.plusSeconds(claimLeaseSeconds());
+          List<OutboxRecord> claimed = new ArrayList<>(candidates.size());
+          for (OutboxRecord candidate : candidates) {
+            int changed =
+                jdbc.update(
+                    "UPDATE billing_outbox SET claim_token = ?, claim_expires_at = ?, "
+                        + "attempts = attempts + 1 WHERE event_id = ? AND published_at IS NULL",
+                    claimToken,
+                    claimExpiresAt,
+                    candidate.eventId());
+            if (changed != 1) {
+              throw new ApiException(
+                  503, "OUTBOX_INTEGRITY_ERROR", "Billing outbox claim changed unexpectedly.");
+            }
+            claimed.add(candidate.withClaim(claimToken));
           }
-          return candidate.withClaim(claimToken);
+          return claimed;
         });
   }
 
-  private void publish(OutboxRecord record)
+  private void awaitConfirmation(CorrelationData correlationData, long deadline)
       throws InterruptedException, ExecutionException, TimeoutException {
-    MessageProperties properties = new MessageProperties();
-    properties.setContentType(MessageProperties.CONTENT_TYPE_JSON);
-    properties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-    properties.setMessageId(record.eventId().toString());
-    properties.setCorrelationId(record.correlationId().toString());
-    CorrelationData correlationData = new CorrelationData(record.eventId().toString());
-    rabbitTemplate.send(
-        EXCHANGE,
-        record.routingKey(),
-        new Message(record.body().getBytes(StandardCharsets.UTF_8), properties),
-        correlationData);
     Confirm confirm =
-        correlationData.getFuture().get(settings.httpTimeoutSeconds(), TimeUnit.SECONDS);
+        correlationData
+            .getFuture()
+            .get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
     if (!confirm.isAck()) {
       throw new PublishNotConfirmedException("RabbitMQ did not confirm Billing request.");
     }
