@@ -547,6 +547,15 @@ class MixedPlan:
     actions: tuple[MixedAction, ...]
 
 
+@dataclass(frozen=True)
+class MixedRates:
+    """Each activity draws its check-in rate (share of confirmed registrations) and its
+    certificate rate (share of check-ins) uniformly from these ranges."""
+
+    check_in: tuple[float, float] = MIXED_CHECK_IN_RATES
+    certificate: tuple[float, float] = MIXED_CERTIFICATE_RATES
+
+
 def mixed_duration(environ: Mapping[str, str]) -> int:
     duration = _bounded_integer(
         environ,
@@ -562,15 +571,49 @@ def mixed_duration(environ: Mapping[str, str]) -> int:
     return duration
 
 
-def plan_mixed_load(participants: int, duration_seconds: int, rng: random.Random) -> MixedPlan:
+def _percent_range(
+    environ: Mapping[str, str], prefix: str, default: tuple[float, float]
+) -> tuple[float, float]:
+    bounds = []
+    for suffix, fallback in zip(("MIN", "MAX"), default):
+        key = f"{prefix}_{suffix}_PERCENT"
+        raw = environ.get(key, "").strip()
+        if not raw:
+            bounds.append(fallback)
+            continue
+        if not raw.isdigit() or int(raw) > 100:
+            raise ScenarioConfigError(f"{key} must be an integer between 0 and 100.")
+        bounds.append(int(raw) / 100)
+    if bounds[0] > bounds[1]:
+        raise ScenarioConfigError(
+            f"{prefix}_MIN_PERCENT must not be greater than {prefix}_MAX_PERCENT."
+        )
+    return bounds[0], bounds[1]
+
+
+def mixed_rates(environ: Mapping[str, str]) -> MixedRates:
+    """Per-activity check-in and certificate rate ranges, from percentages."""
+    return MixedRates(
+        _percent_range(environ, "SCENARIO_CHECK_IN", MIXED_CHECK_IN_RATES),
+        _percent_range(environ, "SCENARIO_CERTIFICATE", MIXED_CERTIFICATE_RATES),
+    )
+
+
+def plan_mixed_load(
+    participants: int,
+    duration_seconds: int,
+    rng: random.Random,
+    rates: MixedRates | None = None,
+) -> MixedPlan:
     """Random registrations, cancellations, check-ins and certificates over 3 x 3 activities.
 
     Seats (2-5 per activity for 20 participants) scale with the participant count.
     Activities start and end at staggered moments within the run. Registrations
     and cancellations happen before an activity starts, check-ins while it runs
-    (40-90% of the seats kept, drawn per activity) and certificates after it ends
-    (50-100% of the check-ins, drawn per activity).
+    (by default 40-90% of the seats kept, drawn per activity) and certificates
+    after it ends (by default 50-100% of the check-ins, drawn per activity).
     """
+    rates = rates or MixedRates()
     scale = participants / MIXED_BASE_PARTICIPANTS
     activities = []
     for event_index, (_, titles) in enumerate(MIXED_EVENTS):
@@ -587,8 +630,8 @@ def plan_mixed_load(participants: int, duration_seconds: int, rng: random.Random
                     price_minor=rng.choice(MIXED_PRICES_MINOR) if index == paid_index else 0,
                     starts_at_seconds=round(starts_at, 1),
                     ends_at_seconds=round(starts_at + duration_seconds * MIXED_ACTIVITY_LENGTH, 1),
-                    check_in_rate=round(rng.uniform(*MIXED_CHECK_IN_RATES), 2),
-                    certificate_rate=round(rng.uniform(*MIXED_CERTIFICATE_RATES), 2),
+                    check_in_rate=round(rng.uniform(*rates.check_in), 2),
+                    certificate_rate=round(rng.uniform(*rates.certificate), 2),
                 )
             )
     popularity = [rng.randint(1, 5) for _ in activities]
@@ -683,6 +726,11 @@ async def _prepare_mixed_events(
     return created
 
 
+def _percent_text(bounds: tuple[float, float]) -> str:
+    low, high = (round(bound * 100) for bound in bounds)
+    return f"{low}%" if low == high else f"{low}–{high}%"
+
+
 async def _run_mixed_load(
     clients,
     organizer: Mapping[str, str],
@@ -694,10 +742,12 @@ async def _run_mixed_load(
     sleep: Callable[[float], Awaitable[None]],
     now: Callable[[], datetime],
     rng: random.Random,
+    rates: MixedRates | None = None,
     clock: Callable[[], float] = monotonic,
 ) -> bool:
     identities = identities[:participants]
-    plan = plan_mixed_load(len(identities), duration, rng)
+    rates = rates or MixedRates()
+    plan = plan_mixed_load(len(identities), duration, rng, rates)
     run_id = uuid4()
     paid = sum(spec.price_minor > 0 for spec in plan.activities)
     out("Cenário: Carga mista")
@@ -708,6 +758,10 @@ async def _run_mixed_load(
     out(
         "Cada atividade começa e termina durante o cenário: o organizador a abre depois das "
         "inscrições e desistências; check-ins durante, certificados depois."
+    )
+    out(
+        f"Check-in por atividade: {_percent_text(rates.check_in)} das inscrições confirmadas · "
+        f"certificado: {_percent_text(rates.certificate)} dos check-ins"
     )
     preparing = clock()
     try:
@@ -1004,6 +1058,7 @@ async def run_all(
     try:
         settings, organizer, identities, participants, _ = _load_configuration(environ)
         duration = mixed_duration(environ)
+        rates = mixed_rates(environ)
     except (SettingsError, ScenarioConfigError, OSError, KeyError, ValueError) as error:
         out(f"Erro de configuração: {error}")
         return 2
@@ -1042,6 +1097,7 @@ async def run_all(
             sleep=sleep,
             now=now,
             rng=rng or random.Random(),
+            rates=rates,
         )
         results = await asyncio.gather(*single, mixed)
     finally:

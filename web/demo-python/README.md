@@ -150,7 +150,8 @@ and the organizer moves each one to "now" only after its registrations,
 cancellations and waiting-list offers finish, so a saturated system starts them
 later instead of rejecting late registrations. While an activity runs, a random
 40–90% of its kept seats (paid ones included, once confirmed) check in. After it
-ends, a random 50–100% of those check-ins get a certificate. The output adds
+ends, a random 50–100% of those check-ins get a certificate. Each activity draws
+its own rates; change the ranges with the settings below. The output adds
 `Check-ins: N de M inscrições confirmadas` and `Certificados emitidos: N de M
 check-ins`, so the Attendance and Certificates cards in Reports move as well.
 Under heavy load a request may time out. The script then resends it with the same
@@ -175,6 +176,15 @@ The peak scenario reads two optional settings, from the shell or `infra/.env`
   the rest go to the waiting list. The mixed load uses the same number.
 - `SCENARIO_PEAK_DURATION_SECONDS`: 1–300, default 30. Use a longer value to
   watch the numbers change in Reports while you refresh it.
+- `SCENARIO_CHECK_IN_MIN_PERCENT` / `SCENARIO_CHECK_IN_MAX_PERCENT`: 0–100,
+  defaults 40 and 90. Range of the per-activity share of confirmed
+  registrations that check in during the mixed load.
+- `SCENARIO_CERTIFICATE_MIN_PERCENT` / `SCENARIO_CERTIFICATE_MAX_PERCENT`:
+  0–100, defaults 50 and 100. Range of the per-activity share of check-ins that
+  receive a certificate. For both pairs, MIN must not exceed MAX; set them equal
+  for a fixed rate (for example `SCENARIO_CHECK_IN_MIN_PERCENT=100
+  SCENARIO_CHECK_IN_MAX_PERCENT=100` checks everyone in). The mixed load prints
+  the ranges it uses.
 
 Reports reads the counts from Reporting, which receives registration changes
 through the Registration outbox relay. The relay runs every 30 s by default.

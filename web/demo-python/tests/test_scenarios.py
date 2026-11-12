@@ -28,6 +28,8 @@ from demo_web.scenarios import (
     peak_capacity,
     peak_settings,
     plan_mixed_load,
+    mixed_rates,
+    MixedRates,
     plan_submissions,
     run_all,
     run_scenario,
@@ -540,6 +542,45 @@ def test_mixed_plan_follows_each_activity_timeline(duration):
         if action.certificate_at_seconds is not None:
             assert action.check_in_at_seconds is not None
             assert spec.ends_at_seconds < action.certificate_at_seconds <= duration
+
+
+def test_mixed_rates_default_and_read_percentages():
+    assert mixed_rates({}) == MixedRates((0.4, 0.9), (0.5, 1.0))
+    assert mixed_rates(
+        {
+            "SCENARIO_CHECK_IN_MIN_PERCENT": "0",
+            "SCENARIO_CHECK_IN_MAX_PERCENT": "100",
+            "SCENARIO_CERTIFICATE_MIN_PERCENT": "70",
+            "SCENARIO_CERTIFICATE_MAX_PERCENT": "70",
+        }
+    ) == MixedRates((0.0, 1.0), (0.7, 0.7))
+    assert mixed_rates({"SCENARIO_CHECK_IN_MAX_PERCENT": "60"}).check_in == (0.4, 0.6)
+
+
+@pytest.mark.parametrize(
+    "environ",
+    [
+        {"SCENARIO_CHECK_IN_MIN_PERCENT": "101"},
+        {"SCENARIO_CERTIFICATE_MAX_PERCENT": "-1"},
+        {"SCENARIO_CHECK_IN_MIN_PERCENT": "abc"},
+        {"SCENARIO_CHECK_IN_MIN_PERCENT": "80", "SCENARIO_CHECK_IN_MAX_PERCENT": "50"},
+        {"SCENARIO_CHECK_IN_MIN_PERCENT": "95"},
+    ],
+)
+def test_mixed_rates_reject_invalid_percentages(environ):
+    with pytest.raises(ScenarioConfigError):
+        mixed_rates(environ)
+
+
+def test_mixed_plan_uses_the_configured_rates():
+    everyone = plan_mixed_load(200, 60, random.Random(3), MixedRates((1.0, 1.0), (1.0, 1.0)))
+    assert all(spec.check_in_rate == spec.certificate_rate == 1.0 for spec in everyone.activities)
+    for action in everyone.actions:
+        if action.cancel_after_seconds is None:
+            assert action.check_in_at_seconds is not None
+            assert action.certificate_at_seconds is not None
+    nobody = plan_mixed_load(200, 60, random.Random(3), MixedRates((0.0, 0.0), (0.5, 1.0)))
+    assert all(action.check_in_at_seconds is None for action in nobody.actions)
 
 
 def test_mixed_plan_scales_seats_with_the_participants():
