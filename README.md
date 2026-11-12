@@ -3,14 +3,14 @@
 | | |
 |---|---|
 | **Instituição** | Universidade Estadual do Ceará (UECE) |
-| **Disciplina** | _[preencher]_ |
-| **Professor(a)** | _[preencher]_ |
-| **Equipe** | _[preencher: nomes e matrículas]_ |
-| **Data** | _[preencher]_ |
+| **Disciplina** | Arquitetura de Software |
+| **Professor(a)** | Paulo Henrique Maia |
+| **Equipe** | Anderson Gomes, Felipe Rodrigues, Tiago Magalhães |
+| **Data** | 13/11/2026 |
 | **Repositório** | `nosredna123/uece_2026-2_arq_trab2` |
 
 > Este documento é o relatório arquitetural do trabalho. As instruções de
-> execução local (em inglês) estão no
+> execução local estão no
 > [guia de execução local](docs/development/running-locally.md).
 
 ## Sumário
