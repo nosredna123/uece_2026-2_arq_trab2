@@ -46,6 +46,9 @@ web_port="${DEMO_WEB_PORT:-$(read_env_value DEMO_WEB_PORT)}"
 port_number=$((10#$web_port))
 ((port_number >= 1024 && port_number <= 65535)) || fail "DEMO_WEB_PORT must be between 1024 and 65535."
 
+outbox_interval="$(read_env_value REGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS)"
+export REGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS="${outbox_interval:-1000}"
+
 COMPOSE=(
   docker compose
   --env-file "$DEFAULT_ENV_FILE"

@@ -42,3 +42,21 @@ def test_invalid_configuration_fails_without_exposing_values(tmp_path, old, new)
     errors = MODULE.validate(path)
     assert errors
     assert all("synthetic-" not in error for error in errors)
+
+
+@pytest.mark.parametrize("value,valid", [
+    ("100", True), ("1000", True), ("30000", True),
+    ("99", False), ("30001", False), ("0", False), ("1s", False),
+])
+def test_registration_outbox_interval_is_bounded(tmp_path, value, valid):
+    path = tmp_path / ".env"
+    example = (ROOT / "infra/.env.example").read_text()
+    path.write_text(f"{example}\nREGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS={value}\n")
+    assert (MODULE.validate(path) == []) is valid
+
+
+def test_registration_receives_outbox_interval_and_launcher_speeds_it_up():
+    compose = (ROOT / "infra/docker-compose.yml").read_text()
+    assert "OUTBOX_PUBLISH_INTERVAL_MS: ${REGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS:-30000}" in compose
+    launcher = (ROOT / "scripts/run-demo-web.sh").read_text()
+    assert 'REGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS="${outbox_interval:-1000}"' in launcher

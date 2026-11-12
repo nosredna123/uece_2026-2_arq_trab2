@@ -220,6 +220,9 @@ GESAD/UECE seminar activities; select one and click **View certificate**.
 
 3. Watch the Reports page refresh: in the new event's table **Confirmed** stops
    at 5 and **Waiting list** grows to 15; the overview panel totals rise with it.
+   Each registration appears about 2 s after the terminal line, because
+   `run-demo-web.sh` runs the Registration outbox relay every 1 s instead of the
+   default 30 s.
 4. The script ends with the verdict, for example:
 
    ```text

@@ -36,6 +36,8 @@ policy:
   waitlist-offer-expiry-minutes: ${WAITLIST_OFFER_EXPIRY_MINUTES}
   cancellation-window-days: ${CANCELLATION_WINDOW_DAYS}
   refund-percentage: ${REFUND_PERCENTAGE}
+outbox:
+  publish-interval-ms: ${OUTBOX_PUBLISH_INTERVAL_MS:30000}
 integration:
   identity-base-url: ${IDENTITY_BASE_URL}
   event-management-base-url: ${EVENT_MANAGEMENT_BASE_URL}

@@ -141,6 +141,13 @@ The peak scenario reads two optional settings, from the shell or `infra/.env`
 - `SCENARIO_PEAK_DURATION_SECONDS`: 1–300, default 30. Use a longer value to
   watch the numbers change in Reports while you refresh it.
 
+Reports reads the counts from Reporting, which receives registration changes
+through the Registration outbox relay. The relay runs every 30 s by default.
+`scripts/run-demo-web.sh` lowers it to 1 s
+(`REGISTRATION_OUTBOX_PUBLISH_INTERVAL_MS=1000`), so the Reports panel follows
+each registration within about 2 s. Set the variable in `infra/.env` (100–30000
+ms) to override this.
+
 For example:
 
 ```sh

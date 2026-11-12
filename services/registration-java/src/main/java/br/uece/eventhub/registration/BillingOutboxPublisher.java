@@ -58,7 +58,7 @@ class BillingOutboxPublisher {
                     connection -> isPostgres(connection)));
   }
 
-  @Scheduled(fixedDelay = 30_000)
+  @Scheduled(fixedDelayString = "${outbox.publish-interval-ms:30000}")
   void publishScheduled() {
     publishPending();
   }
