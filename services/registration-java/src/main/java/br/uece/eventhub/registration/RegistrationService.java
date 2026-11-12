@@ -870,9 +870,11 @@ class RegistrationService {
 
   private void createLedgerIfMissing(UUID activityId, AdmissionSnapshot snapshot) {
     if (postgres) {
+      // No conflict target: concurrent first admissions may collide on snapshot_id
+      // before activity_id, and each snapshot belongs to exactly one activity.
       jdbc.update(
           "INSERT INTO activity_ledger (activity_id, snapshot_id, snapshot_version, frozen_capacity, "
-              + "occupied) VALUES (?, ?, ?, ?, 0) ON CONFLICT (activity_id) DO NOTHING",
+              + "occupied) VALUES (?, ?, ?, ?, 0) ON CONFLICT DO NOTHING",
           activityId,
           snapshot.snapshotId(),
           snapshot.snapshotVersion(),
