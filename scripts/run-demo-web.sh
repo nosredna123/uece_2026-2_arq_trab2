@@ -122,7 +122,7 @@ fi
 printf 'EventHub presentation app is ready at http://localhost:%s\n' "$web_port"
 printf 'Prerequisites: healthy Event Management, Registration, Attendance, Reporting, and Identity services; Billing and Notification mocks are started for domain flows.\n'
 if [[ "$demo_lab_enabled" == true ]]; then
-  printf 'Load scenarios are enabled; run: bash scripts/cenario.sh <pico-inscricoes|ultima-vaga|envios-repetidos>\n'
+  printf 'Load scenarios are enabled; run: bash scripts/cenario.sh [pico-inscricoes|ultima-vaga|envios-repetidos] (no argument: all in parallel)\n'
 else
   printf 'Load scenarios are disabled (set DEMO_LAB_ENABLED=true and IDENTITY_LAB_ENABLED=true to enable them).\n'
 fi

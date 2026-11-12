@@ -1,4 +1,5 @@
 import asyncio
+import random
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -13,8 +14,11 @@ from demo_web.scenarios import (
     ScenarioConfigError,
     evaluate,
     main,
+    mixed_duration,
     peak_settings,
+    plan_mixed_load,
     plan_submissions,
+    run_all,
     run_scenario,
 )
 
@@ -286,3 +290,154 @@ def test_cli_rejects_unknown_scenarios():
     with pytest.raises(SystemExit) as raised:
         main(["nao-existe"])
     assert raised.value.code == 2
+
+
+class FakeEventHub(FakeRegistration):
+    """Several activities, paid seats, cancellation and waiting-list offers."""
+
+    def __init__(self, *, overbook=False):
+        super().__init__(overbook=overbook)
+        self.activities = {}
+        self.registrations = {}
+        self.queues = {}
+
+    async def create_activity(self, event_id, activity_input, *, token, idempotency_key):
+        activity = await super().create_activity(
+            event_id, activity_input, token=token, idempotency_key=idempotency_key
+        )
+        self.activities[activity.id] = activity
+        self.queues[activity.id] = []
+        return activity
+
+    def _occupied(self, activity_id):
+        return sum(
+            registration.status in {"CONFIRMED", "PENDING_PAYMENT", "OFFERED"}
+            for registration in self.registrations.values()
+            if registration.activity_id == activity_id
+        )
+
+    def _store(self, registration, status):
+        updated = registration.model_copy(update={"status": status})
+        self.registrations[registration.id] = updated
+        return updated
+
+    async def request_registration(self, activity_id, *, token, idempotency_key, correlation_id):
+        await asyncio.sleep(0)
+        if idempotency_key in self.by_key:
+            return self.registrations[self.by_key[idempotency_key]]
+        activity = self.activities[activity_id]
+        seat = self.overbook or self._occupied(activity_id) < activity.capacity
+        paid = activity.price.amount_minor > 0
+        status = ("PENDING_PAYMENT" if paid else "CONFIRMED") if seat else "WAITLISTED"
+        registration = Registration(
+            id=uuid4(),
+            activityId=activity_id,
+            participantId=uuid4(),
+            organizationId=ORGANIZATION_ID,
+            status=status,
+            refundStatus="NONE",
+            createdAt=NOW,
+            version=1,
+        )
+        self.registrations[registration.id] = registration
+        self.by_key[idempotency_key] = registration.id
+        if status == "WAITLISTED":
+            self.queues[activity_id].append(registration.id)
+        return registration
+
+    async def cancel_registration(self, registration_id, *, token, idempotency_key):
+        registration = self._store(self.registrations[registration_id], "CANCELLED")
+        queue = self.queues[registration.activity_id]
+        if queue:
+            self._store(self.registrations[queue.pop(0)], "OFFERED")
+        return registration
+
+    async def get_registration(self, registration_id, *, token):
+        return self.registrations[registration_id]
+
+    async def accept_offer(self, registration_id, *, token, idempotency_key):
+        return self._store(self.registrations[registration_id], "CONFIRMED")
+
+    async def get_availability(self, activity_id):
+        capacity = self.activities[activity_id].capacity
+        occupied = self._occupied(activity_id)
+        return Availability(
+            activityId=activity_id,
+            capacity=capacity,
+            occupied=occupied,
+            available=max(0, capacity - occupied),
+            asOf=NOW,
+        )
+
+
+def _run_all(web_environment, fake, seed=7, **overrides):
+    lines = []
+    code = asyncio.run(
+        run_all(
+            environ=_environment(web_environment, **overrides),
+            out=lines.append,
+            clients_factory=lambda settings: fake,
+            sleep=_no_sleep,
+            now=lambda: NOW,
+            rng=random.Random(seed),
+        )
+    )
+    return code, lines
+
+
+def test_mixed_duration_defaults_and_bounds():
+    assert mixed_duration({}) == 60
+    assert mixed_duration({"SCENARIO_MIXED_DURATION_SECONDS": "120"}) == 120
+    for value in ("9", "301", "abc"):
+        with pytest.raises(ScenarioConfigError):
+            mixed_duration({"SCENARIO_MIXED_DURATION_SECONDS": value})
+
+
+def test_mixed_plan_spreads_load_over_nine_activities():
+    plan = plan_mixed_load(20, 60, random.Random(3))
+    assert len(plan.activities) == 9
+    assert sum(spec.price_minor > 0 for spec in plan.activities) == 3
+    assert all(2 <= spec.capacity <= 5 for spec in plan.activities)
+    assert 40 <= len(plan.actions) <= 80
+    assert {action.participant_index for action in plan.actions} == set(range(20))
+    pairs = [(action.participant_index, action.activity_index) for action in plan.actions]
+    assert len(pairs) == len(set(pairs))
+    assert all(0 <= action.delay_seconds <= 42 for action in plan.actions)
+    cancelling = [action for action in plan.actions if action.cancel_after_seconds is not None]
+    assert cancelling
+    assert all(plan.activities[action.activity_index].price_minor == 0 for action in cancelling)
+    assert plan_mixed_load(20, 60, random.Random(3)) == plan
+
+
+def test_run_all_runs_every_scenario_in_parallel(web_environment):
+    fake = FakeEventHub()
+    code, lines = _run_all(web_environment, fake, SCENARIO_MIXED_DURATION_SECONDS="30")
+
+    assert code == 0
+    assert fake.closed
+    assert lines[0] == "Todos os cenários em paralelo, durante cerca de 30 s"
+    for key in ("pico-inscricoes", "ultima-vaga", "envios-repetidos", "carga-mista"):
+        assert any(line.startswith(f"[{key:<16}] Veredito: OK") for line in lines)
+        assert f"  {key:<16} OK" in lines
+    assert len(fake.activities) == 3 + 9
+    mixed = [line for line in lines if line.startswith("[carga-mista")]
+    assert any("PENDING_PAYMENT" in line for line in mixed)
+    assert any("desistiu (CANCELLED)" in line for line in mixed)
+    assert any("saiu da lista de espera → CONFIRMED" in line for line in mixed)
+    assert any("Atividades sem overbooking: 9 de 9." in line for line in mixed)
+    assert lines[-1] == "Veredito geral: OK"
+
+
+def test_run_all_reports_overbooking(web_environment):
+    code, lines = _run_all(web_environment, FakeEventHub(overbook=True))
+    assert code == 1
+    assert f"  {'ultima-vaga':<16} VERIFICAR" in lines
+    assert lines[-1] == "Veredito geral: VERIFICAR"
+
+
+def test_run_all_rejects_invalid_mixed_duration(web_environment):
+    code, lines = _run_all(
+        web_environment, FakeEventHub(), SCENARIO_MIXED_DURATION_SECONDS="5"
+    )
+    assert code == 2
+    assert "SCENARIO_MIXED_DURATION_SECONDS" in lines[0]

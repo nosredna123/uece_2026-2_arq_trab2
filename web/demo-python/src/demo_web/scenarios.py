@@ -1,8 +1,10 @@
 """Pre-defined load scenarios run from the terminal.
 
-Usage (inside the demo-web container): ``python -m demo_web.scenarios <scenario>``.
+Usage (inside the demo-web container): ``python -m demo_web.scenarios [scenario]``.
 Each run creates and publishes a GESAD/UECE event with one free activity, sends
 registrations with the synthetic scenario participants and prints the outcome.
+Without a scenario, all of them run in parallel together with a random mixed
+load (3 events x 3 activities, paid seats, cancellations and waiting-list offers).
 The organizer can follow the run live on the Reports page.
 """
 
@@ -10,6 +12,7 @@ import argparse
 import asyncio
 import json
 import os
+import random
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -308,24 +311,25 @@ def _load_identities(settings: Settings) -> tuple[dict[str, str], list[dict[str,
     return dict(fixtures["organizer"]), identities
 
 
-async def run_scenario(
-    scenario_key: str,
-    *,
-    environ: Mapping[str, str],
-    out: Callable[[str], None] = print,
-    clients_factory: Callable[[Settings], DemoClients] = DemoClients,
-    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
-    now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
-) -> int:
-    scenario = SCENARIOS[scenario_key]
-    try:
-        settings = Settings.from_environment(environ)
-        organizer, identities = _load_identities(settings)
-        participants, duration = peak_settings(environ, len(identities))
-    except (SettingsError, ScenarioConfigError, OSError, KeyError, ValueError) as error:
-        out(f"Erro de configuração: {error}")
-        return 2
+def _load_configuration(environ: Mapping[str, str]):
+    settings = Settings.from_environment(environ)
+    organizer, identities = _load_identities(settings)
+    participants, duration = peak_settings(environ, len(identities))
+    return settings, organizer, identities, participants, duration
 
+
+async def _run_single(
+    scenario: Scenario,
+    clients,
+    organizer: Mapping[str, str],
+    identities: Sequence[Mapping[str, str]],
+    *,
+    participants: int,
+    duration: int,
+    out: Callable[[str], None],
+    sleep: Callable[[float], Awaitable[None]],
+    now: Callable[[], datetime],
+) -> bool:
     run_id = uuid4()
     submissions = plan_submissions(
         scenario,
@@ -339,43 +343,410 @@ async def run_scenario(
     if scenario.key == "pico-inscricoes":
         out(f"{len(submissions)} participantes em {duration} s · {scenario.capacity} vagas")
 
-    clients = clients_factory(settings)
     try:
-        try:
-            event, activity = await prepare_activity(
-                clients,
-                scenario=scenario,
-                organizer_token=organizer["token"],
-                organization_id=organizer["organizationId"],
-                run_id=run_id,
-                now=now(),
-            )
-        except SERVICE_ERRORS as error:
-            out(f"Não foi possível preparar o evento: {_error_code(error)}")
-            return 1
-        out(f"Evento publicado: {event.title}")
-        out("Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.")
-        out("")
-
-        def show(outcome: Outcome) -> None:
-            result = outcome.status or f"erro {outcome.error_code}"
-            out(f"[{outcome.elapsed_seconds:5.1f}s] {outcome.participant} → {result}")
-
-        outcomes = await run_submissions(
-            clients, activity.id, submissions, on_outcome=show, sleep=sleep
+        event, activity = await prepare_activity(
+            clients,
+            scenario=scenario,
+            organizer_token=organizer["token"],
+            organization_id=organizer["organizationId"],
+            run_id=run_id,
+            now=now(),
         )
-        try:
-            availability = await clients.get_availability(activity.id)
-        except SERVICE_ERRORS:
-            availability = None
-    finally:
-        await clients.aclose()
+    except SERVICE_ERRORS as error:
+        out(f"Não foi possível preparar o evento: {_error_code(error)}")
+        return False
+    out(f"Evento publicado: {event.title}")
+    out("Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.")
+    out("")
+
+    def show(outcome: Outcome) -> None:
+        result = outcome.status or f"erro {outcome.error_code}"
+        out(f"[{outcome.elapsed_seconds:5.1f}s] {outcome.participant} → {result}")
+
+    outcomes = await run_submissions(
+        clients, activity.id, submissions, on_outcome=show, sleep=sleep
+    )
+    try:
+        availability = await clients.get_availability(activity.id)
+    except SERVICE_ERRORS:
+        availability = None
 
     verdict = evaluate(scenario, outcomes, availability)
     out("")
     for line in verdict.lines:
         out(line)
-    return 0 if verdict.passed else 1
+    return verdict.passed
+
+
+async def run_scenario(
+    scenario_key: str,
+    *,
+    environ: Mapping[str, str],
+    out: Callable[[str], None] = print,
+    clients_factory: Callable[[Settings], DemoClients] = DemoClients,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+) -> int:
+    scenario = SCENARIOS[scenario_key]
+    try:
+        settings, organizer, identities, participants, duration = _load_configuration(environ)
+    except (SettingsError, ScenarioConfigError, OSError, KeyError, ValueError) as error:
+        out(f"Erro de configuração: {error}")
+        return 2
+
+    clients = clients_factory(settings)
+    try:
+        passed = await _run_single(
+            scenario,
+            clients,
+            organizer,
+            identities,
+            participants=participants,
+            duration=duration,
+            out=out,
+            sleep=sleep,
+            now=now,
+        )
+    finally:
+        await clients.aclose()
+    return 0 if passed else 1
+
+
+MIXED_KEY = "carga-mista"
+DEFAULT_MIXED_DURATION_SECONDS = 60
+MIN_MIXED_DURATION_SECONDS = 10
+MIXED_CANCEL_RATE = 0.2
+MIXED_EVENTS = (
+    (
+        "Semana de Engenharia de Software",
+        ("Palestra: Microsserviços", "Oficina: Testes automatizados", "Mesa-redonda: Carreira em TI"),
+    ),
+    (
+        "Workshop de Arquitetura em Nuvem",
+        ("Minicurso: Docker e Compose", "Oficina: Mensageria com RabbitMQ", "Palestra: Observabilidade"),
+    ),
+    (
+        "Encontro de Pesquisa GESAD",
+        ("Painel: Pesquisa em ES", "Oficina: Escrita científica", "Sessão de pôsteres"),
+    ),
+)
+MIXED_PRICES_MINOR = (2000, 3500, 5000)
+PARALLEL_KEYS = ("pico-inscricoes", "ultima-vaga", "envios-repetidos", MIXED_KEY)
+
+
+@dataclass(frozen=True)
+class MixedActivity:
+    event_index: int
+    title: str
+    capacity: int
+    price_minor: int
+
+
+@dataclass(frozen=True)
+class MixedAction:
+    participant_index: int
+    activity_index: int
+    delay_seconds: float
+    cancel_after_seconds: float | None
+
+
+@dataclass(frozen=True)
+class MixedPlan:
+    activities: tuple[MixedActivity, ...]
+    actions: tuple[MixedAction, ...]
+
+
+def mixed_duration(environ: Mapping[str, str]) -> int:
+    duration = _bounded_integer(
+        environ,
+        "SCENARIO_MIXED_DURATION_SECONDS",
+        DEFAULT_MIXED_DURATION_SECONDS,
+        MAX_PEAK_DURATION_SECONDS,
+    )
+    if duration < MIN_MIXED_DURATION_SECONDS:
+        raise ScenarioConfigError(
+            "SCENARIO_MIXED_DURATION_SECONDS must be an integer between "
+            f"{MIN_MIXED_DURATION_SECONDS} and {MAX_PEAK_DURATION_SECONDS}."
+        )
+    return duration
+
+
+def plan_mixed_load(participants: int, duration_seconds: int, rng: random.Random) -> MixedPlan:
+    """Random registrations over 3 events x 3 activities, with some cancellations."""
+    activities = []
+    for event_index, (_, titles) in enumerate(MIXED_EVENTS):
+        paid_index = rng.randrange(len(titles))
+        for index, title in enumerate(titles):
+            activities.append(
+                MixedActivity(
+                    event_index,
+                    title,
+                    capacity=rng.randint(2, 5),
+                    price_minor=rng.choice(MIXED_PRICES_MINOR) if index == paid_index else 0,
+                )
+            )
+    popularity = [rng.randint(1, 5) for _ in activities]
+    register_window = duration_seconds * 0.7
+    actions = []
+    for participant_index in range(participants):
+        target = rng.randint(2, 4)
+        chosen: list[int] = []
+        while len(chosen) < target:
+            pick = rng.choices(range(len(activities)), weights=popularity)[0]
+            if pick not in chosen:
+                chosen.append(pick)
+        for activity_index in chosen:
+            delay = round(rng.uniform(0, register_window), 1)
+            cancel_after = None
+            if activities[activity_index].price_minor == 0 and rng.random() < MIXED_CANCEL_RATE:
+                cancel_after = round(rng.uniform(2, max(2, duration_seconds - delay - 3)), 1)
+            actions.append(MixedAction(participant_index, activity_index, delay, cancel_after))
+    actions.sort(key=lambda item: item.delay_seconds)
+    return MixedPlan(tuple(activities), tuple(actions))
+
+
+async def _prepare_mixed_events(clients, plan: MixedPlan, organizer, run_id: UUID, now: datetime):
+    stamp = now.strftime("%H:%M:%S")
+    created = []
+    for event_index, (event_title, _) in enumerate(MIXED_EVENTS):
+        starts_at = now + timedelta(minutes=15, hours=4 * event_index)
+        event = await clients.create_event(
+            EventInput(
+                organizationId=UUID(organizer["organizationId"]),
+                title=f"[CENÁRIO] Carga mista · {event_title} · {stamp}",
+                description="Evento fictício do GESAD/UECE gerado pelo script de cenário "
+                "(carga mista: inscrições, desistências e lista de espera).",
+                startsAt=starts_at,
+                endsAt=starts_at + timedelta(hours=3, minutes=5),
+            ),
+            token=organizer["token"],
+            idempotency_key=f"scenario-{run_id}-event-{event_index}",
+        )
+        slot = 0
+        for activity_index, spec in enumerate(plan.activities):
+            if spec.event_index != event_index:
+                continue
+            activity_start = starts_at + timedelta(hours=slot)
+            slot += 1
+            activity = await clients.create_activity(
+                event.id,
+                ActivityInput(
+                    title=f"[CENÁRIO] {spec.title}",
+                    startsAt=activity_start,
+                    endsAt=activity_start + timedelta(minutes=55),
+                    location="Laboratório GESAD/UECE",
+                    responsible="Equipe GESAD/UECE",
+                    capacity=spec.capacity,
+                    price=Money(amountMinor=spec.price_minor, currency="BRL"),
+                ),
+                token=organizer["token"],
+                idempotency_key=f"scenario-{run_id}-activity-{activity_index}",
+            )
+            created.append(activity)
+        await clients.publish_event(
+            event.id,
+            token=organizer["token"],
+            idempotency_key=f"scenario-{run_id}-publish-{event_index}",
+        )
+    return created
+
+
+async def _run_mixed_load(
+    clients,
+    organizer: Mapping[str, str],
+    identities: Sequence[Mapping[str, str]],
+    *,
+    duration: int,
+    out: Callable[[str], None],
+    sleep: Callable[[float], Awaitable[None]],
+    now: Callable[[], datetime],
+    rng: random.Random,
+    clock: Callable[[], float] = monotonic,
+) -> bool:
+    plan = plan_mixed_load(len(identities), duration, rng)
+    run_id = uuid4()
+    paid = sum(spec.price_minor > 0 for spec in plan.activities)
+    out("Cenário: Carga mista")
+    out(
+        f"{len(MIXED_EVENTS)} eventos · {len(plan.activities)} atividades ({paid} pagas) · "
+        f"{len(plan.actions)} inscrições e desistências aleatórias em {duration} s"
+    )
+    try:
+        activities = await _prepare_mixed_events(clients, plan, organizer, run_id, now())
+    except SERVICE_ERRORS as error:
+        out(f"Não foi possível preparar os eventos: {_error_code(error)}")
+        return False
+    out("Eventos publicados: [CENÁRIO] Carga mista · …")
+    out("")
+
+    started = clock()
+    statuses: Counter[str] = Counter()
+    errors: Counter[str] = Counter()
+    cancelled = 0
+    promoted = 0
+    waiting: dict[int, list[tuple[UUID, Mapping[str, str], str]]] = {}
+
+    def log(participant: str, activity_index: int, text: str) -> None:
+        title = plan.activities[activity_index].title
+        out(f"[{clock() - started:5.1f}s] {participant} · {title} → {text}")
+
+    async def promote(activity_index: int) -> None:
+        nonlocal promoted
+        for _ in range(3):
+            await sleep(1)
+            for entry in list(waiting.get(activity_index, ())):
+                registration_id, identity, participant = entry
+                try:
+                    current = await clients.get_registration(
+                        registration_id, token=identity["token"]
+                    )
+                    if current.status != "OFFERED":
+                        continue
+                    accepted = await clients.accept_offer(
+                        registration_id,
+                        token=identity["token"],
+                        idempotency_key=f"scenario-{run_id}-accept-{registration_id}",
+                    )
+                except SERVICE_ERRORS as error:
+                    errors[_error_code(error)] += 1
+                    log(participant, activity_index, f"erro {_error_code(error)}")
+                    return
+                waiting[activity_index].remove(entry)
+                promoted += 1
+                log(participant, activity_index, f"saiu da lista de espera → {accepted.status}")
+                return
+
+    async def act(index: int, action: MixedAction) -> None:
+        nonlocal cancelled
+        await sleep(action.delay_seconds)
+        identity = identities[action.participant_index]
+        participant = participant_label(action.participant_index + 1)
+        activity_id = activities[action.activity_index].id
+        try:
+            registration = await clients.request_registration(
+                activity_id,
+                token=identity["token"],
+                idempotency_key=f"scenario-{run_id}-{index:03}",
+                correlation_id=uuid4(),
+            )
+        except SERVICE_ERRORS as error:
+            errors[_error_code(error)] += 1
+            log(participant, action.activity_index, f"erro {_error_code(error)}")
+            return
+        statuses[registration.status] += 1
+        log(participant, action.activity_index, registration.status)
+        if registration.status == "WAITLISTED":
+            waiting.setdefault(action.activity_index, []).append(
+                (registration.id, identity, participant)
+            )
+        if registration.status != "CONFIRMED" or action.cancel_after_seconds is None:
+            return
+        await sleep(action.cancel_after_seconds)
+        try:
+            await clients.cancel_registration(
+                registration.id,
+                token=identity["token"],
+                idempotency_key=f"scenario-{run_id}-cancel-{index:03}",
+            )
+        except SERVICE_ERRORS as error:
+            errors[_error_code(error)] += 1
+            log(participant, action.activity_index, f"erro {_error_code(error)}")
+            return
+        cancelled += 1
+        log(participant, action.activity_index, "desistiu (CANCELLED) · vaga liberada")
+        await promote(action.activity_index)
+
+    await asyncio.gather(*(act(index, action) for index, action in enumerate(plan.actions)))
+
+    overbooked = 0
+    unreadable = 0
+    for activity in activities:
+        try:
+            availability = await clients.get_availability(activity.id)
+        except SERVICE_ERRORS:
+            unreadable += 1
+            continue
+        overbooked += availability.occupied > availability.capacity
+    out("")
+    out(
+        "Resultado: "
+        + (", ".join(f"{count} {status}" for status, count in sorted(statuses.items())) or "nenhum")
+    )
+    out(f"Desistências: {cancelled} · vagas repassadas da lista de espera: {promoted}")
+    if errors:
+        out("Erros: " + ", ".join(f"{count} {code}" for code, count in errors.items()))
+    if unreadable:
+        out(f"Não foi possível ler a disponibilidade de {unreadable} atividade(s).")
+    out(
+        f"Atividades sem overbooking: {len(activities) - overbooked - unreadable} "
+        f"de {len(activities)}."
+    )
+    passed = not errors and not overbooked and not unreadable
+    out("Veredito: OK" if passed else "Veredito: VERIFICAR")
+    return passed
+
+
+async def run_all(
+    *,
+    environ: Mapping[str, str],
+    out: Callable[[str], None] = print,
+    clients_factory: Callable[[Settings], DemoClients] = DemoClients,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
+    rng: random.Random | None = None,
+) -> int:
+    """Run every scenario in parallel, plus a random mixed load."""
+    try:
+        settings, organizer, identities, participants, _ = _load_configuration(environ)
+        duration = mixed_duration(environ)
+    except (SettingsError, ScenarioConfigError, OSError, KeyError, ValueError) as error:
+        out(f"Erro de configuração: {error}")
+        return 2
+
+    width = max(len(key) for key in PARALLEL_KEYS)
+
+    def prefixed(key: str) -> Callable[[str], None]:
+        return lambda line: line and out(f"[{key:<{width}}] {line}")
+
+    out(f"Todos os cenários em paralelo, durante cerca de {duration} s")
+    out("Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.")
+    out("")
+    clients = clients_factory(settings)
+    try:
+        single = [
+            _run_single(
+                SCENARIOS[key],
+                clients,
+                organizer,
+                identities,
+                participants=participants,
+                duration=duration,
+                out=prefixed(key),
+                sleep=sleep,
+                now=now,
+            )
+            for key in PARALLEL_KEYS[:-1]
+        ]
+        mixed = _run_mixed_load(
+            clients,
+            organizer,
+            identities,
+            duration=duration,
+            out=prefixed(MIXED_KEY),
+            sleep=sleep,
+            now=now,
+            rng=rng or random.Random(),
+        )
+        results = await asyncio.gather(*single, mixed)
+    finally:
+        await clients.aclose()
+
+    out("")
+    out("Resumo")
+    for key, passed in zip(PARALLEL_KEYS, results):
+        out(f"  {key:<{width}} {'OK' if passed else 'VERIFICAR'}")
+    out("Veredito geral: OK" if all(results) else "Veredito geral: VERIFICAR")
+    return 0 if all(results) else 1
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -383,8 +754,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         prog="python -m demo_web.scenarios",
         description="Run a pre-defined EventHub load scenario.",
     )
-    parser.add_argument("scenario", choices=sorted(SCENARIOS))
+    parser.add_argument(
+        "scenario",
+        nargs="?",
+        choices=sorted(SCENARIOS),
+        help="omit to run every scenario in parallel with a random mixed load",
+    )
     args = parser.parse_args(argv)
+    if args.scenario is None:
+        return asyncio.run(run_all(environ=os.environ))
     return asyncio.run(run_scenario(args.scenario, environ=os.environ))
 
 

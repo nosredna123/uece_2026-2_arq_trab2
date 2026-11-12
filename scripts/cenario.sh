@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Runs a pre-defined load scenario against the running presentation stack.
-# Usage: bash scripts/cenario.sh <pico-inscricoes|ultima-vaga|envios-repetidos>
+# Usage: bash scripts/cenario.sh [pico-inscricoes|ultima-vaga|envios-repetidos]
+# Without an argument, all scenarios run in parallel with a random mixed load.
 
 set -Eeuo pipefail
 
@@ -29,11 +30,14 @@ read_env_value() {
   fi
 }
 
-[[ $# -eq 1 ]] || fail "Informe um cenário: $SCENARIOS"
-case "$1" in
-  pico-inscricoes | ultima-vaga | envios-repetidos) scenario="$1" ;;
-  *) fail "Cenário desconhecido '$1'. Opções: $SCENARIOS" ;;
-esac
+[[ $# -le 1 ]] || fail "Informe no máximo um cenário: $SCENARIOS (ou nenhum, para todos)"
+scenario=()
+if [[ $# -eq 1 ]]; then
+  case "$1" in
+    pico-inscricoes | ultima-vaga | envios-repetidos) scenario=("$1") ;;
+    *) fail "Cenário desconhecido '$1'. Opções: $SCENARIOS (ou nenhum, para todos)" ;;
+  esac
+fi
 
 [[ -f "$ENV_FILE" ]] || fail "Arquivo infra/.env não encontrado; rode scripts/run-demo-web.sh primeiro."
 command -v docker >/dev/null 2>&1 || fail "Docker CLI é necessário."
@@ -56,4 +60,5 @@ running_id=$("${COMPOSE[@]}" ps --status running -q demo-web 2>/dev/null || true
 exec "${COMPOSE[@]}" exec -T \
   -e "SCENARIO_PEAK_PARTICIPANTS=$(read_env_value SCENARIO_PEAK_PARTICIPANTS)" \
   -e "SCENARIO_PEAK_DURATION_SECONDS=$(read_env_value SCENARIO_PEAK_DURATION_SECONDS)" \
-  demo-web python -u -m demo_web.scenarios "$scenario"
+  -e "SCENARIO_MIXED_DURATION_SECONDS=$(read_env_value SCENARIO_MIXED_DURATION_SECONDS)" \
+  demo-web python -u -m demo_web.scenarios "${scenario[@]}"

@@ -126,7 +126,22 @@ Pre-defined load scenarios run from the terminal while the organizer watches
 bash scripts/cenario.sh pico-inscricoes   # many participants, 5 seats
 bash scripts/cenario.sh ultima-vaga       # two participants, one seat
 bash scripts/cenario.sh envios-repetidos  # same request 10 times (idempotency)
+bash scripts/cenario.sh                   # all of the above in parallel + mixed load
 ```
+
+Without an argument, the three scenarios run in parallel with a random **mixed
+load** (`carga-mista`). The mixed load publishes 3 more GESAD/UECE events
+(`[CENÁRIO] Carga mista · …`) with 3 activities each, capacities 2–5 and one
+paid activity per event. Over `SCENARIO_MIXED_DURATION_SECONDS` (10–300, default
+60), each of the 20 scenario participants registers in 2–4 random activities.
+About 20% of the confirmed seats in free activities are then cancelled; the
+freed seat is offered to the next person on the waiting list, who accepts it.
+Paid registrations show as `PENDING_PAYMENT` until the Billing mock approves
+them. Paid seats are never cancelled, because that needs the refund workflow.
+In this mode the peak also lasts `SCENARIO_MIXED_DURATION_SECONDS`. Each output
+line is prefixed with its scenario, and the run ends with a summary and
+`Veredito geral: OK` or `Veredito geral: VERIFICAR`. The mixed load is random,
+so every run differs.
 
 Each run publishes a fresh `[CENÁRIO] …` event in the GESAD/UECE organization,
 because the fixed scenario identities belong to it. It submits the
