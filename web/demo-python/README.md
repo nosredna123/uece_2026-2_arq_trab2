@@ -205,7 +205,8 @@ red when they grow: **Cancellations**, with the cancellation rate (cancelled ÷
 (confirmed + cancelled)) beside the count; **No-shows** (confirmed registrations
 without a check-in in activities that already ended), with the no-show rate
 (no-shows ÷ confirmed in ended activities) beside it; and **Expired / refused**
-(expired offers or reservations plus refused payments).
+(expired offers or reservations plus refused payments), with the share of seats
+lost this way ((expired + refused) ÷ (confirmed + expired + refused)) beside it.
 
 Reports reads the counts from Reporting, which receives registration changes
 through the Registration outbox relay. The relay runs every 30 s by default.

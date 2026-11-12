@@ -382,6 +382,7 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
             "cancellation_rate": "0%",
             "certificate_rate": "50%",
             "demand": "23%",
+            "lost_rate": "0%",
         }
         trend_by_key = {key: trend for trend, key in re.findall(r'data-trend="([\w-]+)" data-summary="(\w+)"', html)}
         assert trend_by_key["confirmed"] == "up-good"
@@ -488,5 +489,6 @@ def test_report_summary_shows_cancellations_no_shows_and_expirations(client, bac
     assert summary["cancelled"] == "6"
     assert summary["no_shows"] == "2"
     assert summary["expired_refused"] == "4"
+    assert summary["lost_rate"] == "22%"
     assert summary["cancellation_rate"] == "30%"
     assert summary["no_show_rate"] == "25%"
