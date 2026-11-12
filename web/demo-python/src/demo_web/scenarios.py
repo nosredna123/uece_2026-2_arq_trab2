@@ -27,7 +27,7 @@ from demo_web.models import ActivityInput, Availability, EventInput, Money
 from demo_web.settings import Settings, SettingsError
 
 
-MAX_SCENARIO_PARTICIPANTS = 20
+MIXED_LOAD_PARTICIPANTS = 20
 MAX_PEAK_DURATION_SECONDS = 300
 DEFAULT_PEAK_PARTICIPANTS = 20
 DEFAULT_PEAK_DURATION_SECONDS = 30
@@ -111,7 +111,7 @@ def peak_settings(environ: Mapping[str, str], pool_size: int) -> tuple[int, int]
         environ,
         "SCENARIO_PEAK_PARTICIPANTS",
         min(DEFAULT_PEAK_PARTICIPANTS, pool_size),
-        min(MAX_SCENARIO_PARTICIPANTS, pool_size),
+        pool_size,
     )
     duration = _bounded_integer(
         environ,
@@ -307,7 +307,8 @@ def _load_identities(settings: Settings) -> tuple[dict[str, str], list[dict[str,
             "Scenario scripts need DEMO_LAB_ENABLED=true and IDENTITY_LAB_ENABLED=true."
         )
     pool = json.loads(settings.lab_fixtures_path.read_text(encoding="utf-8"))
-    identities = [dict(pool[name]) for name in sorted(pool)][:MAX_SCENARIO_PARTICIPANTS]
+    names = sorted(pool, key=lambda name: int(name.removeprefix("scenarioParticipant")))
+    identities = [dict(pool[name]) for name in names]
     return dict(fixtures["organizer"]), identities
 
 
@@ -563,6 +564,7 @@ async def _run_mixed_load(
     rng: random.Random,
     clock: Callable[[], float] = monotonic,
 ) -> bool:
+    identities = identities[:MIXED_LOAD_PARTICIPANTS]
     plan = plan_mixed_load(len(identities), duration, rng)
     run_id = uuid4()
     paid = sum(spec.price_minor > 0 for spec in plan.activities)

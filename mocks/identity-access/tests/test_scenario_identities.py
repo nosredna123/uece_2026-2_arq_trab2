@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 import pytest
 
 from identity_access_mock.app import (
+    MAX_SCENARIO_FIXTURE_BYTES,
+    SCENARIO_PARTICIPANT_COUNT,
     create_app,
     load_fixtures,
     load_scenario_fixtures,
@@ -17,7 +19,7 @@ IDENTITY_URL = "/internal/identity/validate"
 FIXTURE_PATH = Path(__file__).resolve().parents[1] / "scenario-participants.json"
 
 
-def _scenario_data(count=20):
+def _scenario_data(count=SCENARIO_PARTICIPANT_COUNT):
     return {
         f"scenarioParticipant{index:02}": {
             "token": f"synthetic-scenario-participant-{index:02}",
@@ -62,7 +64,7 @@ def test_default_behavior_remains_limited_to_the_six_baseline_fixtures(
     assert response.json()["code"] == "INVALID_IDENTITY"
 
 
-def test_enabled_pool_authenticates_exactly_twenty_unique_participants(
+def test_enabled_pool_authenticates_the_full_unique_participant_pool(
     monkeypatch,
 ):
     monkeypatch.setenv("INTERNAL_SERVICE_KEY", SERVICE_KEY)
@@ -70,12 +72,13 @@ def test_enabled_pool_authenticates_exactly_twenty_unique_participants(
     monkeypatch.setenv("IDENTITY_LAB_ENABLED", "true")
     monkeypatch.setenv("IDENTITY_LAB_FIXTURES_PATH", str(FIXTURE_PATH))
     fixtures = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
-    assert len(fixtures) == 20
-    assert len({identity["token"] for identity in fixtures.values()}) == 20
-    assert len({identity["subjectId"] for identity in fixtures.values()}) == 20
+    assert len(fixtures) == SCENARIO_PARTICIPANT_COUNT
+    assert len({identity["token"] for identity in fixtures.values()}) == len(fixtures)
+    assert len({identity["subjectId"] for identity in fixtures.values()}) == len(fixtures)
+    sample = ("01", "20", "21", "999", str(SCENARIO_PARTICIPANT_COUNT))
 
     with TestClient(create_app()) as client:
-        for identity in fixtures.values():
+        for identity in (fixtures[f"scenarioParticipant{suffix}"] for suffix in sample):
             response = client.post(
                 IDENTITY_URL,
                 headers={"X-Service-Key": SERVICE_KEY},
@@ -116,9 +119,9 @@ def test_enabled_pool_preserves_the_baseline_persona_roles(monkeypatch):
     [
         lambda data: data.pop("scenarioParticipant20"),
         lambda data: data.update(
-            scenarioParticipant21={
-                "token": "synthetic-scenario-participant-21",
-                "subjectId": "50000000-0000-4000-8000-000000000021",
+            scenarioParticipant20001={
+                "token": "synthetic-scenario-participant-20001",
+                "subjectId": "50000000-0000-4000-8000-000000020001",
                 "role": "PARTICIPANT",
             }
         ),
@@ -148,7 +151,7 @@ def test_rejects_malformed_oversized_or_privileged_scenario_fixtures(tmp_path, m
 
 def test_rejects_oversized_scenario_fixture_file(tmp_path):
     path = tmp_path / "scenario-participants.json"
-    path.write_text(" " * 40000, encoding="utf-8")
+    path.write_text(" " * (MAX_SCENARIO_FIXTURE_BYTES + 1), encoding="utf-8")
 
     with pytest.raises(ValueError):
         load_scenario_fixtures(path, load_fixtures())

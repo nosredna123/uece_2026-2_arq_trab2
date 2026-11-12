@@ -38,8 +38,8 @@ EXPECTED_ROLES = {
     "globalAdmin": "GLOBAL_ADMIN",
 }
 LOGGER = logging.getLogger(__name__)
-SCENARIO_PARTICIPANT_COUNT = 20
-MAX_SCENARIO_FIXTURE_BYTES = 32_768
+SCENARIO_PARTICIPANT_COUNT = 20_000
+MAX_SCENARIO_FIXTURE_BYTES = 8 * 1024 * 1024
 
 
 def _scenario_names() -> set[str]:
@@ -120,7 +120,7 @@ def load_scenario_fixtures(
         raise ValueError("scenario identity fixture is invalid") from None
 
     if not isinstance(fixture_data, dict) or set(fixture_data) != _scenario_names():
-        raise ValueError("scenario identity fixture must contain twenty actors")
+        raise ValueError("scenario identity fixture must contain the full participant pool")
 
     try:
         fixtures = {

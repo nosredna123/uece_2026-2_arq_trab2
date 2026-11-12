@@ -4,10 +4,15 @@ from fastapi.testclient import TestClient
 import pytest
 
 from demo_web.app import create_app
-from demo_web.settings import Settings, SettingsError
+from demo_web.settings import (
+    MAX_SCENARIO_FIXTURE_BYTES,
+    SCENARIO_PARTICIPANT_COUNT,
+    Settings,
+    SettingsError,
+)
 
 
-def _scenario_data(count=20):
+def _scenario_data(count=SCENARIO_PARTICIPANT_COUNT):
     return {
         f"scenarioParticipant{index:02}": {
             "token": f"private-scenario-token-{index:02}",
@@ -40,7 +45,7 @@ def test_scenario_pool_is_disabled_by_default(web_environment):
     assert settings.lab_fixtures_path is None
 
 
-def test_enabled_pool_requires_and_validates_exactly_twenty_participants(web_environment, tmp_path):
+def test_enabled_pool_requires_and_validates_the_full_participant_pool(web_environment, tmp_path):
     path = tmp_path / "scenario-participants.json"
     path.write_text(json.dumps(_scenario_data()), encoding="utf-8")
     configured = _enabled_lab(web_environment, path)
@@ -69,9 +74,9 @@ def test_enabled_pool_requires_scenario_fixture_path(web_environment):
     [
         lambda data: data.pop("scenarioParticipant20"),
         lambda data: data.update(
-            scenarioParticipant21={
-                "token": "private-scenario-token-21",
-                "subjectId": "50000000-0000-4000-8000-000000000021",
+            scenarioParticipant20001={
+                "token": "private-scenario-token-20001",
+                "subjectId": "50000000-0000-4000-8000-000000020001",
                 "role": "PARTICIPANT",
             }
         ),
@@ -152,7 +157,7 @@ def test_scenario_credentials_are_not_rendered_in_browser_responses(web_environm
 
 def test_rejects_oversized_pool_file(web_environment, tmp_path):
     path = tmp_path / "scenario-participants.json"
-    path.write_text(" " * 40000, encoding="utf-8")
+    path.write_text(" " * (MAX_SCENARIO_FIXTURE_BYTES + 1), encoding="utf-8")
     configured = _enabled_lab(web_environment, path)
 
     with pytest.raises(SettingsError):

@@ -150,6 +150,7 @@ def test_peak_settings_defaults_and_bounds():
     assert peak_settings({"SCENARIO_PEAK_PARTICIPANTS": "8"}, 20) == (8, 30)
     assert peak_settings({"SCENARIO_PEAK_DURATION_SECONDS": "60"}, 20) == (20, 60)
     assert peak_settings({}, 5) == (5, 30)
+    assert peak_settings({"SCENARIO_PEAK_PARTICIPANTS": "20000"}, 20000) == (20000, 30)
     for key, value in (
         ("SCENARIO_PEAK_PARTICIPANTS", "0"),
         ("SCENARIO_PEAK_PARTICIPANTS", "21"),
@@ -280,10 +281,23 @@ def test_invalid_peak_configuration_is_reported(web_environment):
         web_environment,
         "pico-inscricoes",
         FakeRegistration(),
-        SCENARIO_PEAK_PARTICIPANTS="99",
+        SCENARIO_PEAK_PARTICIPANTS="20001",
     )
     assert code == 2
     assert "SCENARIO_PEAK_PARTICIPANTS" in lines[0]
+
+
+def test_peak_accepts_more_than_twenty_participants(web_environment):
+    fake = FakeRegistration()
+    code, lines = _run(
+        web_environment,
+        "pico-inscricoes",
+        fake,
+        SCENARIO_PEAK_PARTICIPANTS="200",
+        SCENARIO_PEAK_DURATION_SECONDS="1",
+    )
+    assert code == 0, lines
+    assert "Resultado: 5 CONFIRMED, 195 WAITLISTED" in lines
 
 
 def test_cli_rejects_unknown_scenarios():

@@ -6,8 +6,8 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 
-SCENARIO_PARTICIPANT_COUNT = 20
-MAX_SCENARIO_FIXTURE_BYTES = 32_768
+SCENARIO_PARTICIPANT_COUNT = 20_000
+MAX_SCENARIO_FIXTURE_BYTES = 8 * 1024 * 1024
 
 
 class SettingsError(ValueError):
@@ -111,7 +111,7 @@ def _validate_scenario_fixtures(path: Path, baseline_path: Path) -> None:
         f"scenarioParticipant{index:02}" for index in range(1, SCENARIO_PARTICIPANT_COUNT + 1)
     }
     if not isinstance(fixtures, dict) or set(fixtures) != expected_names:
-        raise SettingsError("Scenario identity fixture must contain twenty actors.")
+        raise SettingsError("Scenario identity fixture must contain the full participant pool.")
 
     tokens = []
     subjects = []

@@ -153,7 +153,8 @@ fails clearly if the app is not running or the scenarios are disabled.
 
 The peak scenario reads two optional settings, from the shell or `infra/.env`
 (defaults come from `infra/.env.example`):
-- `SCENARIO_PEAK_PARTICIPANTS`: 1–20, default 20.
+- `SCENARIO_PEAK_PARTICIPANTS`: 1–20000, default 20. Each participant is a
+  distinct identity from the scenario pool (20,000 identities).
 - `SCENARIO_PEAK_DURATION_SECONDS`: 1–300, default 30. Use a longer value to
   watch the numbers change in Reports while you refresh it.
 

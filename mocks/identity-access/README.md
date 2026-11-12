@@ -20,8 +20,10 @@ The service requires `INTERNAL_SERVICE_KEY` and
 is missing or malformed. The scenario identity pool is disabled unless
 `IDENTITY_LAB_ENABLED=true`. When enabled, the mock loads the
 fixed `scenario-participants.json` file from
-`IDENTITY_LAB_FIXTURES_PATH` and accepts exactly twenty unique,
-unscoped `PARTICIPANT` identities. The fixture is limited to 32 KiB and is
+`IDENTITY_LAB_FIXTURES_PATH` and accepts exactly 20,000 unique,
+unscoped `PARTICIPANT` identities (regenerate them with
+`python scripts/generate-scenario-participants.py`). The fixture is limited to
+8 MiB and is
 validated against the four baseline fixtures; malformed, oversized, duplicate,
 or privileged entries fail closed. Keep the fixture server-side: this mock
 returns principal claims only and never returns identity tokens.

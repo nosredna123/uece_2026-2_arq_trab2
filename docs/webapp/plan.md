@@ -137,7 +137,7 @@ Use a documented explicit setup step to add missing web settings.
 - ~~`DEMO_WEB_PAID_START_DELAY_SECONDS`, `DEMO_WEB_ACTIVITY_DURATION_SECONDS`,
   `DEMO_WEB_FREE_START_DELAY_SECONDS`~~ — removed with the guided demo (see the
   revision in section 5); organizers now set activity times in the event form.
-- `SCENARIO_PEAK_PARTICIPANTS` (1–20, default 20) and
+- `SCENARIO_PEAK_PARTICIPANTS` (1–20000, default 20) and
   `SCENARIO_PEAK_DURATION_SECONDS` (1–300, default 30), optional settings for
   the terminal peak scenario.
 - `DEMO_WEB_EVENT_BASE_URL`, `DEMO_WEB_REGISTRATION_BASE_URL`,

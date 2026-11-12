@@ -1,8 +1,8 @@
 # ADR-006: Bounded Python demonstration web app
 
 **Status:** Accepted for the presentation prototype  
-**Date:** 2026-11-10  
-**Version:** 1.2.0
+**Date:** 2026-11-10 (revised 2026-11-12)  
+**Version:** 1.3.0
 **Traceability:** REQ-001, REQ-002, REQ-003, REQ-015, REQ-017, REQ-019,
 REQ-021; [webapp plan](../webapp/plan.md), plans 0.1, 1.1, 2.1, 5.3-5.5,
 6.1-6.3
@@ -73,7 +73,8 @@ in-browser Scenario Lab with terminal scripts (`scripts/cenario.sh`, running
 presenter can watch the effects on the organizer's Reports page. They exercise
 existing service APIs and print observations and a verdict; it does not modify domain data outside those
 APIs, expose arbitrary traffic generation, or claim production load evidence.
-Its twenty fixture identities are unique, unscoped participants and are
+Its fixture identities (20,000 since revision 1.3.0, so the peak scenario can
+be sized by `SCENARIO_PEAK_PARTICIPANTS`) are unique, unscoped participants and are
 accepted by the identity mock only when both the mock and web client are
 explicitly configured for the pool. The fixed fixture is size-bounded and
 validated at startup; its tokens remain server-side and are never included in
