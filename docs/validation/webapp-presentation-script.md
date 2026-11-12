@@ -147,6 +147,10 @@ it.
    **Capacity**, **Confirmed**, **Pending payment**, **Waiting list**,
    **Free seats**, **Checked in**, **Certificates**, **Occupancy**
    (confirmed ÷ capacity) and **Attendance** (checked in ÷ confirmed).
+   Red cards count bad news: **Cancellations**, **Cancellation rate**,
+   **No-shows** (confirmed but not checked in after the activity ended),
+   **No-show rate** and **Expired / refused** (expired offers or reservations
+   and refused payments).
    Below it, the page lists each of the organization's
    **Published events** with, per activity: **Capacity**, **Confirmed**,
    **Pending payment**, **Waiting list**, **Checked in** and **Certificates**,
@@ -226,7 +230,8 @@ GESAD/UECE seminar activities; select one and click **View certificate**.
    Each changed card shows an arrow and the difference from the previous update
    (`▲ +1`, `▼ −1 pp`) until that card changes again. Green means good news
    (more confirmed, check-ins, certificates, occupancy, attendance; a shorter
-   waiting list), amber means a warning, and blue marks neutral counts.
+   waiting list), amber means a warning, and blue marks neutral counts. On the
+   red cards the arrow is red when the count grows and green when it falls.
    Each registration appears about 2 s after the terminal line, because
    `run-demo-web.sh` runs the Registration outbox relay every 1 s instead of the
    default 30 s.

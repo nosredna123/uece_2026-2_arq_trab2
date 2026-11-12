@@ -665,6 +665,7 @@ async def _report_sections(
             )
 
     activities_by_event = await asyncio.gather(*(event_activities(event) for event in events))
+    now = datetime.now(timezone.utc)
     sections = []
     for event, activities in zip(events, activities_by_event):
         rows = []
@@ -680,18 +681,17 @@ async def _report_sections(
                     "waiting": (report.waiting + report.offered) if report else 0,
                     "checked_in": report.checked_in if report else 0,
                     "certificates": report.certificates if report else 0,
+                    "cancelled": report.cancelled if report else 0,
+                    "no_shows": report.no_shows if report else 0,
+                    "ended_confirmed": (
+                        report.confirmed if report and activity.ends_at <= now else 0
+                    ),
+                    "expired_refused": (report.expired + report.refused) if report else 0,
                 }
             )
         totals = {
             name: sum(row[name] for row in rows)
-            for name in (
-                "capacity",
-                "confirmed",
-                "pending_payment",
-                "waiting",
-                "checked_in",
-                "certificates",
-            )
+            for name in REPORT_TOTALS
         }
         sections.append(
             {
@@ -704,6 +704,20 @@ async def _report_sections(
     return sections
 
 
+REPORT_TOTALS = (
+    "capacity",
+    "confirmed",
+    "pending_payment",
+    "waiting",
+    "checked_in",
+    "certificates",
+    "cancelled",
+    "no_shows",
+    "ended_confirmed",
+    "expired_refused",
+)
+
+
 def _percent(part: int, whole: int) -> str:
     return f"{round(part * 100 / whole)}%" if whole else "—"
 
@@ -711,14 +725,7 @@ def _percent(part: int, whole: int) -> str:
 def _report_summary(sections: list[dict[str, Any]]) -> dict[str, Any]:
     totals = {
         name: sum(section["totals"][name] for section in sections)
-        for name in (
-            "capacity",
-            "confirmed",
-            "pending_payment",
-            "waiting",
-            "checked_in",
-            "certificates",
-        )
+        for name in REPORT_TOTALS
     }
     return {
         "events": len(sections),
@@ -727,6 +734,10 @@ def _report_summary(sections: list[dict[str, Any]]) -> dict[str, Any]:
         "free_seats": max(0, totals["capacity"] - totals["confirmed"] - totals["pending_payment"]),
         "occupancy": _percent(totals["confirmed"], totals["capacity"]),
         "attendance": _percent(totals["checked_in"], totals["confirmed"]),
+        "cancellation_rate": _percent(
+            totals["cancelled"], totals["confirmed"] + totals["cancelled"]
+        ),
+        "no_show_rate": _percent(totals["no_shows"], totals["ended_confirmed"]),
     }
 
 

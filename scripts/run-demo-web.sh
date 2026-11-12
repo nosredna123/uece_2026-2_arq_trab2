@@ -53,6 +53,11 @@ if [[ -z "$approval_delay" && "$demo_lab_enabled" == true ]]; then
   approval_delay="2-8"
 fi
 export BILLING_MOCK_APPROVAL_DELAY_SECONDS="${approval_delay:-0}"
+refusal_percent="$(read_env_value BILLING_MOCK_PAYMENT_REFUSAL_PERCENT)"
+if [[ -z "$refusal_percent" && "$demo_lab_enabled" == true ]]; then
+  refusal_percent=10
+fi
+export BILLING_MOCK_PAYMENT_REFUSAL_PERCENT="${refusal_percent:-0}"
 
 COMPOSE=(
   docker compose

@@ -41,15 +41,23 @@ class FakeBackend:
         }
         return event_id
 
-    def add_activity(self, event_id, *, title="Palestra", capacity=10):
+    def add_activity(
+        self,
+        event_id,
+        *,
+        title="Palestra",
+        capacity=10,
+        starts_at="2027-03-02T10:30:00Z",
+        ends_at="2027-03-02T11:30:00Z",
+    ):
         activity_id = str(uuid.uuid4())
         self.activities[activity_id] = {
             "id": activity_id,
             "eventId": event_id,
             "organizationId": self.events[event_id]["organizationId"],
             "title": title,
-            "startsAt": "2027-03-02T10:30:00Z",
-            "endsAt": "2027-03-02T11:30:00Z",
+            "startsAt": starts_at,
+            "endsAt": ends_at,
             "location": "Auditório",
             "responsible": "Profa. Ana",
             "capacity": capacity,
@@ -368,12 +376,19 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
             "certificates": "1",
             "occupancy": "23%",
             "attendance": "67%",
+            "cancelled": "0",
+            "cancellation_rate": "0%",
+            "no_shows": "0",
+            "no_show_rate": "—",
+            "expired_refused": "0",
         }
         trend_by_key = {key: trend for trend, key in re.findall(r'data-trend="([\w-]+)" data-summary="(\w+)"', html)}
         assert trend_by_key["confirmed"] == "up-good"
         assert trend_by_key["waiting"] == "down-good"
         assert trend_by_key["free_seats"] == "neutral"
-        assert html.count("data-summary-delta") == 11
+        assert trend_by_key["no_shows"] == "up-bad"
+        assert html.count("data-summary-delta") == 16
+        assert html.count('class="summary-card is-negative"') == 5
     assert "<html" not in fragment.text
 
 
@@ -432,3 +447,46 @@ def test_report_summary_without_published_events_shows_zeros(client, backend):
     assert summary["free_seats"] == "0"
     assert summary["occupancy"] == "—"
     assert summary["attendance"] == "—"
+
+
+def test_report_summary_shows_cancellations_no_shows_and_expirations(client, backend):
+    event_id = backend.add_event(title="Semana GESAD", status="PUBLISHED")
+    ended = backend.add_activity(
+        event_id, starts_at="2020-01-01T10:00:00Z", ends_at="2020-01-01T11:00:00Z"
+    )
+    upcoming = backend.add_activity(event_id)
+
+    def report(activity_id, *, confirmed, cancelled, no_shows, expired, refused):
+        return {
+            "organizationId": GESAD,
+            "activityId": activity_id,
+            "confirmed": confirmed,
+            "pendingPayment": 0,
+            "offered": 0,
+            "waiting": 0,
+            "occupied": confirmed,
+            "checkedIn": confirmed - no_shows,
+            "certificates": 0,
+            "cancelled": cancelled,
+            "expired": expired,
+            "refused": refused,
+            "noShows": no_shows,
+            "paymentsApproved": 0,
+            "paymentsRefused": refused,
+            "refundsApproved": 0,
+            "projectedAt": "2027-03-02T10:15:00Z",
+        }
+
+    backend.reports = [
+        report(ended, confirmed=8, cancelled=2, no_shows=2, expired=1, refused=1),
+        report(upcoming, confirmed=6, cancelled=4, no_shows=0, expired=0, refused=2),
+    ]
+    _sign_in(client)
+
+    summary = _summary(client.get("/reports/table").text)
+
+    assert summary["cancelled"] == "6"
+    assert summary["cancellation_rate"] == "30%"
+    assert summary["no_shows"] == "2"
+    assert summary["no_show_rate"] == "25%"
+    assert summary["expired_refused"] == "4"

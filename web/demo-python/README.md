@@ -137,12 +137,18 @@ event. Over `SCENARIO_MIXED_DURATION_SECONDS` (10–300, default 60), each of th
 `SCENARIO_PEAK_PARTICIPANTS` participants registers in 2–4 random activities.
 Capacities scale with that number: 2–5 seats per activity for 20 participants,
 20–50 for 200.
-About 20% of the confirmed seats in free activities are then cancelled; the
-freed seat is offered to the next person on the waiting list, who accepts it.
+About 20% of the confirmed seats in free activities are then cancelled
+(`SCENARIO_CANCEL_PERCENT`); the freed seat is offered to the next person on the
+waiting list. About 20% of those people ignore the offer
+(`SCENARIO_OFFER_LAPSE_PERCENT`), so Registration marks it `EXPIRED` after
+`WAITLIST_OFFER_EXPIRY_MINUTES` and offers the seat to the next person; the
+others accept it.
 Paid registrations show as `PENDING_PAYMENT` until the Billing mock approves
 them. With the load scenarios enabled, `scripts/run-demo-web.sh` makes the mock
 wait a random 2–8 s before each approval (`BILLING_MOCK_APPROVAL_DELAY_SECONDS`),
-so the Pending payment card in Reports rises and falls during a run. Paid confirmed seats are never cancelled: the refund workflow is a known
+so the Pending payment card in Reports rises and falls during a run. It also
+refuses 10% of the payments at random (`BILLING_MOCK_PAYMENT_REFUSAL_PERCENT`),
+and the output adds `Pagamentos recusados: N`. Paid confirmed seats are never cancelled: the refund workflow is a known
 limitation (ADR-005 1.1.0), and Registration answers `409 REFUND_WORKFLOW_REQUIRED`.
 Every activity also starts and ends during the run, at staggered moments (from
 about 40% of the duration on). The activities are created far in the future,
@@ -185,6 +191,18 @@ The peak scenario reads two optional settings, from the shell or `infra/.env`
   for a fixed rate (for example `SCENARIO_CHECK_IN_MIN_PERCENT=100
   SCENARIO_CHECK_IN_MAX_PERCENT=100` checks everyone in). The mixed load prints
   the ranges it uses.
+- `SCENARIO_CANCEL_PERCENT`: 0–100, default 20. Share of registrations in free
+  activities that are cancelled before the activity starts.
+- `SCENARIO_OFFER_LAPSE_PERCENT`: 0–100, default 20. Share of waiting-list
+  offers the participant ignores. Set `WAITLIST_OFFER_EXPIRY_MINUTES=1` in
+  `infra/.env` to see them expire during a run (the default is 30 minutes).
+
+The Reports overview also shows negative counts, tinted red, whose arrows turn
+red when they grow: **Cancellations**, **Cancellation rate** (cancelled ÷
+(confirmed + cancelled)), **No-shows** (confirmed registrations without a
+check-in in activities that already ended), **No-show rate** (no-shows ÷
+confirmed in ended activities) and **Expired / refused** (expired offers or
+reservations plus refused payments).
 
 Reports reads the counts from Reporting, which receives registration changes
 through the Registration outbox relay. The relay runs every 30 s by default.

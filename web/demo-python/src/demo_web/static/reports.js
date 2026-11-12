@@ -18,6 +18,7 @@
   const tone = (trend, delta) => {
     if (trend === "up-good") return delta > 0 ? "good" : "warn";
     if (trend === "down-good") return delta < 0 ? "good" : "warn";
+    if (trend === "up-bad") return delta > 0 ? "bad" : "good";
     return "neutral";
   };
 

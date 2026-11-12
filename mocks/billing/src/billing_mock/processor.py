@@ -181,6 +181,13 @@ class BillingProcessor:
                     )
                     return None
                 status = scenario
+                if (
+                    status == "APPROVED"
+                    and request.data.kind == "PAYMENT"
+                    and self.settings.payment_refusal_percent
+                    and self._rng.random() * 100 < self.settings.payment_refusal_percent
+                ):
+                    status = "REFUSED"
 
             if request.data.kind == "REFUND":
                 amount_minor = (

@@ -8,7 +8,7 @@ components:
     Report:
       type: object
       additionalProperties: false
-      required: [organizationId, activityId, confirmed, pendingPayment, offered, waiting, occupied, checkedIn, certificates, paymentsApproved, paymentsRefused, refundsApproved, projectedAt]
+      required: [organizationId, activityId, confirmed, pendingPayment, offered, waiting, occupied, checkedIn, certificates, cancelled, expired, refused, noShows, paymentsApproved, paymentsRefused, refundsApproved, projectedAt]
       properties:
         organizationId: {type: string, format: uuid}
         activityId: {type: string, format: uuid}
@@ -19,6 +19,10 @@ components:
         occupied: {type: integer, minimum: 0}
         checkedIn: {type: integer, minimum: 0}
         certificates: {type: integer, minimum: 0}
+        cancelled: {type: integer, minimum: 0, description: Registrations cancelled by the participant.}
+        expired: {type: integer, minimum: 0, description: Waiting-list offers or payments not completed in time.}
+        refused: {type: integer, minimum: 0, description: Registrations whose payment was refused.}
+        noShows: {type: integer, minimum: 0, description: Confirmed registrations without a check-in once the activity has ended.}
         paymentsApproved: {type: integer, minimum: 0}
         paymentsRefused: {type: integer, minimum: 0}
         refundsApproved: {type: integer, minimum: 0}

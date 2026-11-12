@@ -473,6 +473,9 @@ MIXED_KEY = "carga-mista"
 DEFAULT_MIXED_DURATION_SECONDS = 60
 MIN_MIXED_DURATION_SECONDS = 10
 MIXED_CANCEL_RATE = 0.2
+# Share of waiting-list offers the participant ignores; Registration expires them
+# after WAITLIST_OFFER_EXPIRY_MINUTES.
+MIXED_OFFER_LAPSE_RATE = 0.2
 MIXED_CHECK_IN_RATES = (0.4, 0.9)
 MIXED_CERTIFICATE_RATES = (0.5, 1.0)
 # Staggered timeline, as fractions of the run: activity k of event e starts at
@@ -539,6 +542,7 @@ class MixedAction:
     cancel_after_seconds: float | None
     check_in_at_seconds: float | None = None
     certificate_at_seconds: float | None = None
+    ignores_offer: bool = False
 
 
 @dataclass(frozen=True)
@@ -554,6 +558,8 @@ class MixedRates:
 
     check_in: tuple[float, float] = MIXED_CHECK_IN_RATES
     certificate: tuple[float, float] = MIXED_CERTIFICATE_RATES
+    cancel: float = MIXED_CANCEL_RATE
+    offer_lapse: float = MIXED_OFFER_LAPSE_RATE
 
 
 def mixed_duration(environ: Mapping[str, str]) -> int:
@@ -591,11 +597,22 @@ def _percent_range(
     return bounds[0], bounds[1]
 
 
+def _percent(environ: Mapping[str, str], key: str, default: float) -> float:
+    raw = environ.get(key, "").strip()
+    if not raw:
+        return default
+    if not raw.isdigit() or int(raw) > 100:
+        raise ScenarioConfigError(f"{key} must be an integer between 0 and 100.")
+    return int(raw) / 100
+
+
 def mixed_rates(environ: Mapping[str, str]) -> MixedRates:
-    """Per-activity check-in and certificate rate ranges, from percentages."""
+    """Mixed-load behaviour rates, from percentages."""
     return MixedRates(
         _percent_range(environ, "SCENARIO_CHECK_IN", MIXED_CHECK_IN_RATES),
         _percent_range(environ, "SCENARIO_CERTIFICATE", MIXED_CERTIFICATE_RATES),
+        _percent(environ, "SCENARIO_CANCEL_PERCENT", MIXED_CANCEL_RATE),
+        _percent(environ, "SCENARIO_OFFER_LAPSE_PERCENT", MIXED_OFFER_LAPSE_RATE),
     )
 
 
@@ -650,7 +667,7 @@ def plan_mixed_load(
             delay = round(rng.uniform(0, closes), 1)
             cancel_after = None
             cancel_room = closes - delay - MIXED_PROMOTION_SECONDS
-            if spec.price_minor == 0 and cancel_room >= 1 and rng.random() < MIXED_CANCEL_RATE:
+            if spec.price_minor == 0 and cancel_room >= 1 and rng.random() < rates.cancel:
                 cancel_after = round(rng.uniform(1, cancel_room), 1)
             check_in_at = certificate_at = None
             if cancel_after is None and rng.random() < spec.check_in_rate:
@@ -671,6 +688,7 @@ def plan_mixed_load(
                     cancel_after,
                     check_in_at,
                     certificate_at,
+                    ignores_offer=rng.random() < rates.offer_lapse,
                 )
             )
     actions.sort(key=lambda item: item.delay_seconds)
@@ -763,6 +781,10 @@ async def _run_mixed_load(
         f"Check-in por atividade: {_percent_text(rates.check_in)} das inscrições confirmadas · "
         f"certificado: {_percent_text(rates.certificate)} dos check-ins"
     )
+    out(
+        f"Desistência: {_percent_text((rates.cancel, rates.cancel))} das inscrições gratuitas · "
+        f"ofertas ignoradas: {_percent_text((rates.offer_lapse, rates.offer_lapse))}"
+    )
     preparing = clock()
     try:
         prepared = await _prepare_mixed_events(
@@ -781,6 +803,8 @@ async def _run_mixed_load(
     errors: Counter[str] = Counter()
     cancelled = 0
     promoted = 0
+    lapsed = 0
+    refused = 0
     checked_in = 0
     certificates = 0
     confirmed = 0
@@ -899,7 +923,7 @@ async def _run_mixed_load(
     async def await_payment(
         registration_id: UUID, identity: Mapping[str, str], participant: str, action: MixedAction
     ) -> bool:
-        nonlocal confirmed, payments_pending
+        nonlocal confirmed, payments_pending, refused
         for _ in range(PAYMENT_CONFIRMATION_ATTEMPTS):
             await sleep(1)
             try:
@@ -913,6 +937,7 @@ async def _run_mixed_load(
                 log(participant, action.activity_index, "pagamento aprovado → CONFIRMED")
                 return True
             if current.status != "PENDING_PAYMENT":
+                refused += current.status == "REFUSED"
                 log(participant, action.activity_index, current.status)
                 return False
         payments_pending += 1
@@ -921,7 +946,7 @@ async def _run_mixed_load(
     Attendee = tuple[UUID, Mapping[str, str], str, MixedAction]
 
     async def promote(activity_index: int) -> Attendee | None:
-        nonlocal promoted, confirmed
+        nonlocal promoted, confirmed, lapsed
         for _ in range(3):
             await sleep(1)
             for entry in list(waiting.get(activity_index, ())):
@@ -934,6 +959,10 @@ async def _run_mixed_load(
                         continue
                     # Claim the offer so a concurrent promotion skips it.
                     waiting[activity_index].remove(entry)
+                    if waiting_action.ignores_offer:
+                        lapsed += 1
+                        log(participant, activity_index, "ignorou a oferta (vai expirar)")
+                        return None
                     accepted = await clients.accept_offer(
                         registration_id,
                         token=identity["token"],
@@ -1028,6 +1057,8 @@ async def _run_mixed_load(
         + (", ".join(f"{count} {status}" for status, count in sorted(statuses.items())) or "nenhum")
     )
     out(f"Desistências: {cancelled} · vagas repassadas da lista de espera: {promoted}")
+    out(f"Ofertas da lista de espera ignoradas (expiram depois): {lapsed}")
+    out(f"Pagamentos recusados: {refused}")
     out(f"Check-ins: {checked_in} de {confirmed} inscrições confirmadas")
     out(f"Certificados emitidos: {certificates} de {checked_in} check-ins")
     if payments_pending:

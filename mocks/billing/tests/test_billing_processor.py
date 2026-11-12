@@ -514,3 +514,68 @@ def test_worker_settings_read_the_payment_delay(monkeypatch, tmp_path):
     monkeypatch.setenv("BILLING_MOCK_APPROVAL_DELAY_SECONDS", "9-3")
     with pytest.raises(RuntimeError, match="BILLING_MOCK_APPROVAL_DELAY_SECONDS"):
         WorkerSettings.from_environment()
+
+
+@pytest.mark.parametrize(("percent", "expected"), [(0, "APPROVED"), (100, "REFUSED")])
+def test_refusal_percent_refuses_payments_at_random(tmp_path, percent, expected):
+    worker = BillingProcessor(
+        BillingSettings("APPROVED", "APPROVED", 90, payment_refusal_percent=percent),
+        BillingStore(tmp_path / "billing.sqlite3"),
+        rng=random.Random(1),
+    )
+
+    assert process(worker, payment_request())["data"]["status"] == expected
+    if expected == "APPROVED":
+        assert process(worker, refund_request())["data"]["status"] == "APPROVED"
+
+
+def test_refusal_percent_mixes_outcomes(tmp_path):
+    worker = BillingProcessor(
+        BillingSettings("APPROVED", "APPROVED", 90, payment_refusal_percent=50),
+        BillingStore(tmp_path / "billing.sqlite3"),
+        rng=random.Random(3),
+    )
+    statuses = {
+        process(
+            worker,
+            payment_request(
+                operation_id=f"80000000-0000-4000-8000-{index:012d}",
+                attempt_id=f"90000000-0000-4000-8000-{index:012d}",
+                event_id=f"a0000000-0000-4000-8000-{index:012d}",
+            ),
+        )["data"]["status"]
+        for index in range(10, 30)
+    }
+
+    assert statuses == {"APPROVED", "REFUSED"}
+
+
+@pytest.mark.parametrize("percent", [-1, 101])
+def test_refusal_percent_must_be_a_percentage(percent):
+    with pytest.raises(ValueError, match="refusal"):
+        BillingSettings("APPROVED", "APPROVED", 90, payment_refusal_percent=percent)
+
+
+def test_worker_settings_read_the_refusal_percent(monkeypatch, tmp_path):
+    for key, value in {
+        "RABBITMQ_HOST": "rabbitmq",
+        "RABBITMQ_PORT": "5672",
+        "RABBITMQ_USER": "eventhub_billing",
+        "RABBITMQ_PASSWORD": "synthetic-broker-secret",
+        "BILLING_MOCK_SCENARIO": "APPROVED",
+        "BILLING_MOCK_REFUND_SCENARIO": "APPROVED",
+        "REFUND_PERCENTAGE": "90",
+        "BILLING_STORE_PATH": str(tmp_path / "billing.sqlite3"),
+        "MESSAGE_RETRY_INITIAL_SECONDS": "1",
+        "MESSAGE_RETRY_MAX_SECONDS": "60",
+    }.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.delenv("BILLING_MOCK_PAYMENT_REFUSAL_PERCENT", raising=False)
+    assert WorkerSettings.from_environment().billing.payment_refusal_percent == 0
+
+    monkeypatch.setenv("BILLING_MOCK_PAYMENT_REFUSAL_PERCENT", "10")
+    assert WorkerSettings.from_environment().billing.payment_refusal_percent == 10
+
+    monkeypatch.setenv("BILLING_MOCK_PAYMENT_REFUSAL_PERCENT", "101")
+    with pytest.raises(RuntimeError, match="BILLING_MOCK_PAYMENT_REFUSAL_PERCENT"):
+        WorkerSettings.from_environment()

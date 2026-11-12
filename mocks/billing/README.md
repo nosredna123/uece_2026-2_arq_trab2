@@ -25,6 +25,12 @@ publishes them when they are due. The delay is stored with the result, so it
 survives a restart. `scripts/run-demo-web.sh` uses `2-8` when the load scenarios
 are enabled and the setting is unset.
 
+Optional `BILLING_MOCK_PAYMENT_REFUSAL_PERCENT` (0–100, default `0`) refuses that
+share of payments at random while `BILLING_MOCK_SCENARIO=APPROVED`. Refunds are
+never refused by it. The outcome is stored with the attempt, so a replay returns
+the same result. `scripts/run-demo-web.sh` uses `10` when the load scenarios are
+enabled and the setting is unset.
+
 Startup requires the RabbitMQ credentials, both mock scenarios,
 `REFUND_PERCENTAGE`, `BILLING_STORE_PATH`, and retry limits from the validated
 environment template. The store directory must be mounted durably at

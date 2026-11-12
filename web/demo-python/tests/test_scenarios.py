@@ -583,6 +583,25 @@ def test_mixed_plan_uses_the_configured_rates():
     assert all(action.check_in_at_seconds is None for action in nobody.actions)
 
 
+def test_mixed_rates_read_cancellation_and_ignored_offer_percentages():
+    defaults = mixed_rates({})
+    assert (defaults.cancel, defaults.offer_lapse) == (0.2, 0.2)
+    custom = mixed_rates({"SCENARIO_CANCEL_PERCENT": "0", "SCENARIO_OFFER_LAPSE_PERCENT": "100"})
+    assert (custom.cancel, custom.offer_lapse) == (0.0, 1.0)
+    for environ in ({"SCENARIO_CANCEL_PERCENT": "101"}, {"SCENARIO_OFFER_LAPSE_PERCENT": "x"}):
+        with pytest.raises(ScenarioConfigError):
+            mixed_rates(environ)
+
+
+def test_mixed_plan_uses_the_cancellation_and_ignored_offer_rates():
+    never = plan_mixed_load(200, 60, random.Random(3), MixedRates(cancel=0.0, offer_lapse=0.0))
+    assert all(action.cancel_after_seconds is None for action in never.actions)
+    assert not any(action.ignores_offer for action in never.actions)
+    always = plan_mixed_load(200, 60, random.Random(3), MixedRates(cancel=1.0, offer_lapse=1.0))
+    assert all(action.ignores_offer for action in always.actions)
+    assert any(action.cancel_after_seconds is not None for action in always.actions)
+
+
 def test_mixed_plan_scales_seats_with_the_participants():
     plan = plan_mixed_load(200, 60, random.Random(3))
     assert all(20 <= spec.capacity <= 50 for spec in plan.activities)

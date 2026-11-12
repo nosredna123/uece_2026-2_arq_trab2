@@ -65,4 +65,6 @@ exec "${COMPOSE[@]}" exec -T \
   -e "SCENARIO_CHECK_IN_MAX_PERCENT=$(read_env_value SCENARIO_CHECK_IN_MAX_PERCENT)" \
   -e "SCENARIO_CERTIFICATE_MIN_PERCENT=$(read_env_value SCENARIO_CERTIFICATE_MIN_PERCENT)" \
   -e "SCENARIO_CERTIFICATE_MAX_PERCENT=$(read_env_value SCENARIO_CERTIFICATE_MAX_PERCENT)" \
+  -e "SCENARIO_CANCEL_PERCENT=$(read_env_value SCENARIO_CANCEL_PERCENT)" \
+  -e "SCENARIO_OFFER_LAPSE_PERCENT=$(read_env_value SCENARIO_OFFER_LAPSE_PERCENT)" \
   demo-web python -u -m demo_web.scenarios "${scenario[@]}"

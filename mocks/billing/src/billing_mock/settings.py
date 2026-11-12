@@ -27,6 +27,8 @@ class BillingSettings:
     refund_scenario: Scenario
     refund_percentage: int
     payment_delay_seconds: tuple[int, int] = (0, 0)
+    # Share of payments refused at random while BILLING_MOCK_SCENARIO=APPROVED.
+    payment_refusal_percent: int = 0
 
     def __post_init__(self) -> None:
         if self.payment_scenario not in {"APPROVED", "REFUSED", "TIMEOUT"}:
@@ -38,6 +40,8 @@ class BillingSettings:
         low, high = self.payment_delay_seconds
         if not 0 <= low <= high <= MAX_PAYMENT_DELAY_SECONDS:
             raise ValueError("invalid payment delay range")
+        if not 0 <= self.payment_refusal_percent <= 100:
+            raise ValueError("payment refusal percent must be from 0 through 100")
 
 
 @dataclass(frozen=True)
@@ -97,11 +101,20 @@ class WorkerSettings:
         except ValueError as error:
             raise RuntimeError(f"BILLING_MOCK_APPROVAL_DELAY_SECONDS: {error}") from None
 
+        refusal = (
+            os.environ.get("BILLING_MOCK_PAYMENT_REFUSAL_PERCENT", "0").strip() or "0"
+        )
+        if not refusal.isdigit() or int(refusal) > 100:
+            raise RuntimeError(
+                "BILLING_MOCK_PAYMENT_REFUSAL_PERCENT must be from 0 through 100"
+            )
+
         billing_settings = BillingSettings(
             payment_scenario=scenario("BILLING_MOCK_SCENARIO"),
             refund_scenario=scenario("BILLING_MOCK_REFUND_SCENARIO"),
             refund_percentage=percentage,
             payment_delay_seconds=payment_delay,
+            payment_refusal_percent=int(refusal),
         )
         return cls(
             billing=billing_settings,

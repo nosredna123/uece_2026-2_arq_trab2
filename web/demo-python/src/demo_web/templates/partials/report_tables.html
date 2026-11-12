@@ -13,8 +13,13 @@
       ("certificates", "Certificates", "up-good"),
       ("occupancy", "Occupancy", "up-good"),
       ("attendance", "Attendance", "up-good"),
+      ("cancelled", "Cancellations", "up-bad"),
+      ("cancellation_rate", "Cancellation rate", "up-bad"),
+      ("no_shows", "No-shows", "up-bad"),
+      ("no_show_rate", "No-show rate", "up-bad"),
+      ("expired_refused", "Expired / refused", "up-bad"),
     ] %}
-    <div class="summary-card" data-trend="{{ trend }}" data-summary="{{ key }}">
+    <div class="summary-card{% if trend == 'up-bad' %} is-negative{% endif %}" data-trend="{{ trend }}" data-summary="{{ key }}">
       <dt>{{ label }}</dt>
       <dd>{{ summary[key] }}</dd>
       <dd class="summary-delta" data-summary-delta></dd>
@@ -22,6 +27,7 @@
     {% endfor %}
   </dl>
   <p class="summary-note">Occupancy = confirmed ÷ capacity · Attendance = checked in ÷ confirmed</p>
+  <p class="summary-note">Cancellation rate = cancelled ÷ (confirmed + cancelled) · No-shows = confirmed without check-in once the activity has ended · No-show rate = no-shows ÷ confirmed in ended activities · Expired / refused = offers or payments not completed in time, plus refused payments</p>
 </section>
 {% for section in sections %}
 <article class="report-event" data-report-event="{{ section.event.id }}">

@@ -215,6 +215,27 @@ def test_eventual_projection_counts_and_deduplicates_events_and_operations(repor
     assert report["projectedAt"]
 
 
+def test_projection_counts_negative_outcomes_and_no_shows(reporting):
+    absent = UUID("50000000-0000-0000-0000-000000000009")
+    apply(
+        reporting,
+        activity_event(),
+        registration_event(REGISTRATION_ID, "CONFIRMED"),
+        registration_event(absent, "CONFIRMED"),
+        registration_event(UUID("50000000-0000-0000-0000-000000000005"), "CANCELLED"),
+        registration_event(UUID("50000000-0000-0000-0000-000000000006"), "EXPIRED"),
+        registration_event(UUID("50000000-0000-0000-0000-000000000007"), "REFUSED"),
+        attendance_event(),
+    )
+
+    report = reports(reporting).json()[0]
+
+    assert report["cancelled"] == 1
+    assert report["expired"] == 1
+    assert report["refused"] == 1
+    assert report["noShows"] == 1
+
+
 def test_reports_are_empty_until_events_are_projected(reporting):
     response = reports(reporting)
     assert response.status_code == 200
