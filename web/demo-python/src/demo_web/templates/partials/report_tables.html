@@ -8,10 +8,10 @@
       ("capacity", "Capacity", "neutral", None),
       ("confirmed", "Confirmed", "up-good", None),
       ("pending_payment", "Pending payment", "neutral", None),
-      ("waiting", "Waiting list", "down-good", None),
+      ("waiting", "Waiting list", "down-good", "demand"),
       ("free_seats", "Free seats", "neutral", None),
       ("checked_in", "Checked in", "up-good", None),
-      ("certificates", "Certificates", "up-good", None),
+      ("certificates", "Certificates", "up-good", "certificate_rate"),
       ("occupancy", "Occupancy", "up-good", None),
       ("attendance", "Attendance", "up-good", None),
       ("cancelled", "Cancellations", "up-bad", "cancellation_rate"),
@@ -25,7 +25,7 @@
     </div>
     {% endfor %}
   </dl>
-  <p class="summary-note">Occupancy = confirmed ÷ capacity · Attendance = checked in ÷ confirmed</p>
+  <p class="summary-note">Occupancy = confirmed ÷ capacity · Attendance = checked in ÷ confirmed · Waiting list: share of capacity · Certificates: share of check-ins</p>
   <p class="summary-note">Cancellations: count and share of confirmed + cancelled · No-shows: confirmed without check-in once the activity has ended, and share of confirmed in ended activities · Expired / refused = offers or payments not completed in time, plus refused payments</p>
 </section>
 {% for section in sections %}

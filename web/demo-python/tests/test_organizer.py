@@ -380,6 +380,8 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
             "no_shows": "0",
             "expired_refused": "0",
             "cancellation_rate": "0%",
+            "certificate_rate": "50%",
+            "demand": "23%",
         }
         trend_by_key = {key: trend for trend, key in re.findall(r'data-trend="([\w-]+)" data-summary="(\w+)"', html)}
         assert trend_by_key["confirmed"] == "up-good"

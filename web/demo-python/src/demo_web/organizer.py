@@ -738,6 +738,8 @@ def _report_summary(sections: list[dict[str, Any]]) -> dict[str, Any]:
             totals["cancelled"], totals["confirmed"] + totals["cancelled"]
         ),
         "no_show_rate": _percent(totals["no_shows"], totals["ended_confirmed"]),
+        "certificate_rate": _percent(totals["certificates"], totals["checked_in"]),
+        "demand": _percent(totals["waiting"], totals["capacity"]),
     }
 
 

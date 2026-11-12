@@ -147,6 +147,8 @@ it.
    **Capacity**, **Confirmed**, **Pending payment**, **Waiting list**,
    **Free seats**, **Checked in**, **Certificates**, **Occupancy**
    (confirmed ÷ capacity) and **Attendance** (checked in ÷ confirmed).
+   **Waiting list** shows, in small type, its size as a share of capacity, and
+   **Certificates** the share of check-ins that received one.
    Red cards count bad news: **Cancellations**, **No-shows** (confirmed but not
    checked in after the activity ended) and **Expired / refused** (expired
    offers or reservations and refused payments). The first two show their rate

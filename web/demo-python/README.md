@@ -197,6 +197,9 @@ The peak scenario reads two optional settings, from the shell or `infra/.env`
   offers the participant ignores. Set `WAITLIST_OFFER_EXPIRY_MINUTES=1` in
   `infra/.env` to see them expire during a run (the default is 30 minutes).
 
+The **Waiting list** card shows the demand beyond the seats (waiting ÷
+capacity) in small type beside the count, and **Certificates** shows the share of
+check-ins that received one (certificates ÷ checked in).
 The Reports overview also shows negative counts, tinted red, whose arrows turn
 red when they grow: **Cancellations**, with the cancellation rate (cancelled ÷
 (confirmed + cancelled)) beside the count; **No-shows** (confirmed registrations
