@@ -4,7 +4,7 @@ from uuid import UUID
 
 import httpx
 
-from demo_web.clients import DemoClients
+from demo_web.clients import MAX_CONNECTIONS, DemoClients
 from demo_web.models import (
     ActivityInput,
     Certificate,
@@ -386,6 +386,31 @@ def test_rejects_invalid_identifiers_and_query_bounds_before_network(web_environ
                 raise AssertionError("invalid session identifier was accepted")
 
     asyncio.run(exercise_clients())
+
+
+def test_scenario_clients_queue_requests_outside_the_connection_pool(web_environment):
+    in_flight = 0
+    peak = 0
+
+    async def respond(request):
+        nonlocal in_flight, peak
+        in_flight += 1
+        peak = max(peak, in_flight)
+        await asyncio.sleep(0.001)
+        in_flight -= 1
+        return httpx.Response(200, json=[])
+
+    async def exercise_clients():
+        async with DemoClients(
+            _settings(web_environment),
+            transport=httpx.MockTransport(respond),
+            wait_for_connection=True,
+        ) as clients:
+            await asyncio.gather(*(clients.list_events() for _ in range(200)))
+
+    asyncio.run(exercise_clients())
+
+    assert peak == MAX_CONNECTIONS
 
 
 def _settings(environment):

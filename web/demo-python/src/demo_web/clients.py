@@ -1,3 +1,4 @@
+import asyncio
 import json
 from collections import OrderedDict, deque
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ from demo_web.settings import Settings
 
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
+MAX_CONNECTIONS = 20
 
 
 @dataclass(frozen=True)
@@ -59,8 +61,16 @@ class DemoClients:
                 settings.http_timeout_seconds,
                 pool=None if wait_for_connection else settings.http_timeout_seconds,
             ),
-            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+            limits=httpx.Limits(
+                max_connections=MAX_CONNECTIONS, max_keepalive_connections=10
+            ),
             follow_redirects=False,
+        )
+        # httpx re-scans every queued request whenever a connection frees up, which
+        # turns thousands of queued scenario requests into a CPU-bound loop. Queue
+        # them here instead, so the pool never holds more than it can serve.
+        self._admission = (
+            asyncio.Semaphore(MAX_CONNECTIONS) if wait_for_connection else None
         )
         self._history: OrderedDict[str | None, deque[RequestHistoryEntry]] = OrderedDict()
 
@@ -535,6 +545,23 @@ class DemoClients:
             many=True,
         )
 
+    async def _send(
+        self,
+        method: str,
+        service: str,
+        path: str,
+        params: dict[str, str | int] | None,
+        json_body: dict[str, object] | None,
+        headers: dict[str, str],
+    ) -> httpx.Response:
+        return await self._client.request(
+            method,
+            f"{self._base_urls[service]}{path}",
+            params=params,
+            json=json_body,
+            headers=headers,
+        )
+
     async def _request(
         self,
         service: str,
@@ -561,13 +588,14 @@ class DemoClients:
 
         started = perf_counter()
         try:
-            response = await self._client.request(
-                method,
-                f"{self._base_urls[service]}{path}",
-                params=params,
-                json=json_body,
-                headers=headers,
-            )
+            if self._admission is None:
+                response = await self._send(method, service, path, params, json_body, headers)
+            else:
+                async with self._admission:
+                    started = perf_counter()
+                    response = await self._send(
+                        method, service, path, params, json_body, headers
+                    )
         except httpx.TimeoutException:
             self._record(service, method, None, started, correlation, history_key)
             raise TransportError(
