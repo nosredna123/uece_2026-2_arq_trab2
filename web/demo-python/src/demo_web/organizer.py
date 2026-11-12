@@ -1,5 +1,6 @@
 """Organizer pages: manage the organization's events and follow simple reports."""
 
+import asyncio
 import secrets
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
@@ -141,13 +142,26 @@ def _activity_input(fields: dict[str, str]) -> ActivityInput:
     )
 
 
+PAGE_SIZE = 100
+REPORT_FETCH_CONCURRENCY = 10
+
+
+async def _all_pages(fetch: Callable[..., Awaitable[list[Any]]], *args: Any, **kwargs: Any) -> list[Any]:
+    items: list[Any] = []
+    while True:
+        page = await fetch(*args, limit=PAGE_SIZE, offset=len(items), **kwargs)
+        items.extend(page)
+        if len(page) < PAGE_SIZE:
+            return items
+
+
 async def _organization_events(
     request: Request, session: BrowserSession, identity: dict[str, str]
 ) -> list[Event]:
-    return await request.app.state.clients.list_organization_events(
+    return await _all_pages(
+        request.app.state.clients.list_organization_events,
         identity["organizationId"],
         token=identity["token"],
-        limit=100,
         session_id=session.id,
     )
 
@@ -162,11 +176,11 @@ async def _event_and_activities(
     event = next((item for item in events if item.id == event_id), None)
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found for this organization.")
-    activities = await request.app.state.clients.list_organization_activities(
+    activities = await _all_pages(
+        request.app.state.clients.list_organization_activities,
         identity["organizationId"],
         event_id,
         token=identity["token"],
-        limit=100,
         session_id=session.id,
     )
     return event, activities
@@ -631,19 +645,28 @@ async def _report_sections(
         for event in await _organization_events(request, session, identity)
         if event.status in REPORT_EVENT_STATUSES
     ]
-    reports = await clients.get_reports(
-        identity["organizationId"], token=identity["token"], limit=100, session_id=session.id
+    reports = await _all_pages(
+        clients.get_reports,
+        identity["organizationId"],
+        token=identity["token"],
+        session_id=session.id,
     )
     by_activity = {report.activity_id: report for report in reports}
+    limiter = asyncio.Semaphore(REPORT_FETCH_CONCURRENCY)
+
+    async def event_activities(event: Event) -> list[Activity]:
+        async with limiter:
+            return await _all_pages(
+                clients.list_organization_activities,
+                identity["organizationId"],
+                event.id,
+                token=identity["token"],
+                session_id=session.id,
+            )
+
+    activities_by_event = await asyncio.gather(*(event_activities(event) for event in events))
     sections = []
-    for event in events:
-        activities = await clients.list_organization_activities(
-            identity["organizationId"],
-            event.id,
-            token=identity["token"],
-            limit=100,
-            session_id=session.id,
-        )
+    for event, activities in zip(events, activities_by_event):
         rows = []
         for activity in activities:
             report = by_activity.get(activity.id)

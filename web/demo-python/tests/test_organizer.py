@@ -59,6 +59,13 @@ class FakeBackend:
         }
         return activity_id
 
+    @staticmethod
+    def page(request, items):
+        limit = int(request.url.params.get("limit", 20))
+        offset = int(request.url.params.get("offset", 0))
+        assert 1 <= limit <= 100
+        return httpx.Response(200, json=items[offset : offset + limit])
+
     def __call__(self, request):
         self.requests.append(request)
         path, method = request.url.path, request.method
@@ -70,15 +77,15 @@ class FakeBackend:
                 json={"code": code, "message": "Rejected by fixture.", "correlationId": CORRELATION_ID},
             )
         if match := re.fullmatch(r"/organizations/([^/]+)/events", path):
-            return httpx.Response(
-                200, json=[e for e in self.events.values() if e["organizationId"] == match[1]]
+            return self.page(
+                request, [e for e in self.events.values() if e["organizationId"] == match[1]]
             )
         if match := re.fullmatch(r"/organizations/([^/]+)/events/([^/]+)/activities", path):
-            return httpx.Response(
-                200, json=[a for a in self.activities.values() if a["eventId"] == match[2]]
+            return self.page(
+                request, [a for a in self.activities.values() if a["eventId"] == match[2]]
             )
         if match := re.fullmatch(r"/organizations/([^/]+)/reports", path):
-            return httpx.Response(200, json=self.reports)
+            return self.page(request, self.reports)
         if path == "/events" and method == "POST":
             event_id = self.add_event(body["organizationId"], title=body["title"])
             self.events[event_id].update(body)
@@ -377,6 +384,41 @@ def _summary(html: str) -> dict[str, str]:
             html,
         )
     )
+
+
+def test_report_summary_reads_every_page_of_events_and_reports(client, backend):
+    activity_ids = [
+        backend.add_activity(
+            backend.add_event(title=f"Evento {number}", status="PUBLISHED"), capacity=2
+        )
+        for number in range(130)
+    ]
+    backend.reports = [
+        {
+            "organizationId": GESAD,
+            "activityId": activity_id,
+            "confirmed": 1,
+            "pendingPayment": 1,
+            "offered": 0,
+            "waiting": 0,
+            "occupied": 2,
+            "checkedIn": 0,
+            "certificates": 0,
+            "paymentsApproved": 0,
+            "paymentsRefused": 0,
+            "refundsApproved": 0,
+            "projectedAt": "2027-03-02T10:15:00Z",
+        }
+        for activity_id in activity_ids
+    ]
+    _sign_in(client)
+
+    summary = _summary(client.get("/reports/table").text)
+
+    assert summary["events"] == "130"
+    assert summary["capacity"] == "260"
+    assert summary["confirmed"] == "130"
+    assert summary["pending_payment"] == "130"
 
 
 def test_report_summary_without_published_events_shows_zeros(client, backend):
