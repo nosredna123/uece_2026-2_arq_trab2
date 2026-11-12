@@ -349,4 +349,39 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
         assert cells[:6] == ["5", "3", "1", "3", "2", "1"]
         assert cells[6:12] == ["8", "0", "0", "0", "0", "0"]
         assert cells[12:] == ["13", "3", "1", "3", "2", "1"]
+        assert _summary(html) == {
+            "events": "1",
+            "activities": "2",
+            "capacity": "13",
+            "confirmed": "3",
+            "pending_payment": "1",
+            "waiting": "3",
+            "free_seats": "9",
+            "checked_in": "2",
+            "certificates": "1",
+            "occupancy": "23%",
+            "attendance": "67%",
+        }
     assert "<html" not in fragment.text
+
+
+def _summary(html: str) -> dict[str, str]:
+    return dict(
+        re.findall(
+            r'data-summary="(\w+)">\s*<dt>[^<]*</dt>\s*<dd>([^<]*)</dd>',
+            html,
+        )
+    )
+
+
+def test_report_summary_without_published_events_shows_zeros(client, backend):
+    backend.add_activity(backend.add_event(title="Rascunho"), title="Oculta", capacity=9)
+    _sign_in(client)
+
+    summary = _summary(client.get("/reports").text)
+
+    assert summary["events"] == "0"
+    assert summary["capacity"] == "0"
+    assert summary["free_seats"] == "0"
+    assert summary["occupancy"] == "—"
+    assert summary["attendance"] == "—"

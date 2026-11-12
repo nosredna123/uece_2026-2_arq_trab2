@@ -681,6 +681,32 @@ async def _report_sections(
     return sections
 
 
+def _percent(part: int, whole: int) -> str:
+    return f"{round(part * 100 / whole)}%" if whole else "—"
+
+
+def _report_summary(sections: list[dict[str, Any]]) -> dict[str, Any]:
+    totals = {
+        name: sum(section["totals"][name] for section in sections)
+        for name in (
+            "capacity",
+            "confirmed",
+            "pending_payment",
+            "waiting",
+            "checked_in",
+            "certificates",
+        )
+    }
+    return {
+        "events": len(sections),
+        "activities": sum(len(section["rows"]) for section in sections),
+        **totals,
+        "free_seats": max(0, totals["capacity"] - totals["confirmed"] - totals["pending_payment"]),
+        "occupancy": _percent(totals["confirmed"], totals["capacity"]),
+        "attendance": _percent(totals["checked_in"], totals["confirmed"]),
+    }
+
+
 async def _reports(request: Request, template: str) -> HTMLResponse:
     session, identity = _organizer(request)
     try:
@@ -694,6 +720,7 @@ async def _reports(request: Request, template: str) -> HTMLResponse:
         {
             "organization_label": ORGANIZER_PERSONAS[session.persona],
             "sections": sections,
+            "summary": _report_summary(sections),
             "updated_at": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
             "refresh_ms": request.app.state.settings.poll_interval_seconds * 1000,
         },

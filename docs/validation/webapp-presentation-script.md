@@ -140,7 +140,12 @@ it.
 
 ### Demonstration 2 — Organizer reports (4:00–5:30)
 
-1. Click **Reports** in the header. The page lists the organization's
+1. Click **Reports** in the header. The overview panel at the top sums all
+   published events of the organization: **Events**, **Activities**,
+   **Capacity**, **Confirmed**, **Pending payment**, **Waiting list**,
+   **Free seats**, **Checked in**, **Certificates**, **Occupancy**
+   (confirmed ÷ capacity) and **Attendance** (checked in ÷ confirmed).
+   Below it, the page lists each of the organization's
    **Published events** with, per activity: **Capacity**, **Confirmed**,
    **Pending payment**, **Waiting list**, **Checked in** and **Certificates**,
    plus a **Total** row.
@@ -213,8 +218,8 @@ GESAD/UECE seminar activities; select one and click **View certificate**.
    [  2.5s] Participante de cenário 06 → WAITLISTED
    ```
 
-3. Watch the Reports page refresh: **Confirmed** stops at 5 and **Waiting list**
-   grows to 15.
+3. Watch the Reports page refresh: in the new event's table **Confirmed** stops
+   at 5 and **Waiting list** grows to 15; the overview panel totals rise with it.
 4. The script ends with the verdict, for example:
 
    ```text
