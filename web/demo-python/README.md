@@ -72,11 +72,12 @@ ignored.
 
 Editing the file after the first seed adds the new or changed items as extra
 records; it does not update the existing ones. To apply edits cleanly, reset
-the local data (this deletes all local volumes) and launch again:
+the local data (this deletes all local volumes and asks for confirmation;
+add `--yes` to skip the prompt). The script relaunches the demo, which seeds
+the initial data again:
 
 ```sh
-docker compose -p eventhub --env-file infra/.env -f infra/docker-compose.yml down -v
-bash scripts/run-demo-web.sh
+bash scripts/reset-demo.sh
 ```
 
 Set `DEMO_WEB_SEED_DATA_PATH` to an empty value to disable seeding. The

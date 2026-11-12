@@ -96,7 +96,9 @@ times.
   payment state, capacity and the waiting list. Attendance owns check-ins and
   certificates. Reporting owns an asynchronous, event-fed projection.
 - Every page action calls the existing service APIs. The app never deletes or
-  resets domain records. Stop the app without deleting volumes.
+  resets domain records. Stop the app without deleting volumes. To start a
+  rehearsal from the first-deploy data, run `bash scripts/reset-demo.sh`
+  beforehand (it deletes every local volume and reseeds).
 - The sign-in is simulated: each organizer sees only their own organization's
   events and reports, and each participant sees only their own registrations.
 
