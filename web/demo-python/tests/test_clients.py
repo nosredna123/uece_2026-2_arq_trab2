@@ -333,6 +333,27 @@ def test_request_history_is_bounded_and_contains_no_request_secrets(web_environm
     )
 
 
+def test_observer_sees_every_finished_request(web_environment):
+    def respond(request):
+        return httpx.Response(200, json=[])
+
+    seen = []
+
+    async def exercise_clients():
+        async with DemoClients(
+            _settings(web_environment), transport=httpx.MockTransport(respond)
+        ) as clients:
+            clients.observer = seen.append
+            await clients.list_events()
+            await clients.list_events()
+
+    asyncio.run(exercise_clients())
+
+    assert [(entry.service, entry.method, entry.status) for entry in seen] == [
+        ("event-management", "GET", 200)
+    ] * 2
+
+
 def test_request_history_isolated_per_session_and_session_count_is_bounded(web_environment):
     def respond(request):
         return httpx.Response(200, json=[])

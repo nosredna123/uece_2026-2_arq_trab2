@@ -6,3 +6,4 @@ jsonschema==4.23.0
 mutmut==3.8.1
 ruff==0.11.2
 import-linter==2.16
+matplotlib==3.9.2

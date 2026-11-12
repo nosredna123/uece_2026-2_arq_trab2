@@ -3,7 +3,7 @@ import json
 from collections import OrderedDict, deque
 from dataclasses import dataclass
 from time import perf_counter
-from typing import TypeVar
+from typing import Callable, TypeVar
 from uuid import UUID, uuid4
 
 import httpx
@@ -73,6 +73,8 @@ class DemoClients:
             asyncio.Semaphore(MAX_CONNECTIONS) if wait_for_connection else None
         )
         self._history: OrderedDict[str | None, deque[RequestHistoryEntry]] = OrderedDict()
+        # Optional callback for every finished request (used by the load benchmark).
+        self.observer: Callable[[RequestHistoryEntry], None] | None = None
 
     @property
     def history(self) -> tuple[RequestHistoryEntry, ...]:
@@ -665,9 +667,10 @@ class DemoClients:
                 self._history.popitem(last=False)
             self._history[history_key] = deque(maxlen=self._settings.history_limit)
         self._history.move_to_end(history_key)
-        self._history[history_key].append(
-            RequestHistoryEntry(service, method, status, elapsed_ms, correlation)
-        )
+        entry = RequestHistoryEntry(service, method, status, elapsed_ms, correlation)
+        self._history[history_key].append(entry)
+        if self.observer is not None:
+            self.observer(entry)
 
 
 def _service_error(

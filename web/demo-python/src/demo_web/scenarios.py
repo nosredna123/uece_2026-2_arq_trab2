@@ -135,6 +135,65 @@ class ResendingClients:
         return call
 
 
+METRICS_ENV = "SCENARIO_METRICS"
+
+
+class RequestMetrics:
+    """Collects the service time of every scenario request for scripts/benchmark.sh.
+
+    Times start when the request leaves the local connection queue, so they measure
+    the services, not the scenario's own backlog. Timeouts, lost connections and
+    5xx answers count as failures; 4xx answers are business outcomes.
+    """
+
+    def __init__(self, clock: Callable[[], float] = monotonic):
+        self._clock = clock
+        self._started = clock()
+        self._latencies: dict[str, list[int]] = {}
+        self._failures: Counter[str] = Counter()
+
+    def record(self, entry) -> None:
+        self._latencies.setdefault(entry.service, []).append(entry.elapsed_ms)
+        if entry.status is None or entry.status >= 500:
+            self._failures[entry.service] += 1
+
+    def summary(self, resent: int) -> dict[str, object]:
+        elapsed = max(self._clock() - self._started, 1e-6)
+        every = [value for values in self._latencies.values() for value in values]
+        return {
+            "durationSeconds": round(elapsed, 1),
+            "requests": len(every),
+            "requestsPerSecond": round(len(every) / elapsed, 1),
+            "failures": sum(self._failures.values()),
+            "resent": resent,
+            "latencyMs": _latency_percentiles(every),
+            "services": {
+                service: {
+                    "requests": len(values),
+                    "failures": self._failures[service],
+                    "latencyMs": _latency_percentiles(values),
+                }
+                for service, values in sorted(self._latencies.items())
+            },
+        }
+
+
+def _latency_percentiles(values: Sequence[int]) -> dict[str, int | None]:
+    if not values:
+        return {"p50": None, "p95": None, "p99": None, "max": None}
+    ordered = sorted(values)
+
+    def nearest_rank(share: float) -> int:
+        return ordered[max(0, math.ceil(share * len(ordered)) - 1)]
+
+    return {
+        "p50": nearest_rank(0.5),
+        "p95": nearest_rank(0.95),
+        "p99": nearest_rank(0.99),
+        "max": ordered[-1],
+    }
+
+
 def _report_resends(clients: ResendingClients, out: Callable[[str], None]) -> None:
     if clients.resent:
         out(f"Reenvios após timeout (mesma Idempotency-Key): {clients.resent}")
@@ -1102,7 +1161,12 @@ async def run_all(
     out(f"Todos os cenários em paralelo, durante cerca de {duration} s")
     out("Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.")
     out("")
-    clients = ResendingClients(clients_factory(settings), sleep)
+    base_clients = clients_factory(settings)
+    metrics = None
+    if environ.get(METRICS_ENV, "").strip().lower() in {"1", "true"}:
+        metrics = RequestMetrics()
+        base_clients.observer = metrics.record
+    clients = ResendingClients(base_clients, sleep)
     try:
         single = [
             _run_single(
@@ -1140,6 +1204,8 @@ async def run_all(
     for key, passed in zip(PARALLEL_KEYS, results):
         out(f"  {key:<{width}} {'OK' if passed else 'VERIFICAR'}")
     out("Veredito geral: OK" if all(results) else "Veredito geral: VERIFICAR")
+    if metrics is not None:
+        out("METRICS " + json.dumps(metrics.summary(clients.resent), separators=(",", ":")))
     return 0 if all(results) else 1
 
 

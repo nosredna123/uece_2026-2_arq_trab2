@@ -1,4 +1,5 @@
 import asyncio
+import json
 import random
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -36,7 +37,7 @@ from demo_web.scenarios import (
     scenario_clients,
 )
 from demo_web import scenarios
-from demo_web.clients import DemoClients
+from demo_web.clients import DemoClients, RequestHistoryEntry
 from demo_web.settings import Settings
 
 
@@ -632,6 +633,61 @@ def test_run_all_runs_every_scenario_in_parallel(web_environment):
     f"{len(fake.check_ins)} check-ins" in lines
     assert sum("check-in registrado" in line for line in mixed) == len(fake.check_ins)
     assert lines[-1] == "Veredito geral: OK"
+
+
+def test_run_all_prints_request_metrics_only_when_asked(web_environment):
+    quiet = FakeEventHub()
+    _, lines = _run_all(web_environment, quiet)
+    assert not any(line.startswith("METRICS ") for line in lines)
+    assert getattr(quiet, "observer", None) is None
+
+    fake = FakeEventHub()
+    code, lines = _run_all(web_environment, fake, SCENARIO_METRICS="1")
+
+    assert code == 0
+    assert lines[-2] == "Veredito geral: OK"
+    metrics = json.loads(lines[-1].removeprefix("METRICS "))
+    assert set(metrics) == {
+        "durationSeconds",
+        "requests",
+        "requestsPerSecond",
+        "failures",
+        "resent",
+        "latencyMs",
+        "services",
+    }
+    assert callable(fake.observer)
+
+
+def test_request_metrics_summarize_latency_and_failures():
+    ticks = iter([100.0, 110.0])
+    metrics = scenarios.RequestMetrics(clock=lambda: next(ticks))
+    correlation = uuid4()
+    for elapsed in range(1, 101):
+        metrics.record(RequestHistoryEntry("registration", "POST", 201, elapsed, correlation))
+    metrics.record(RequestHistoryEntry("registration", "POST", None, 5000, correlation))
+    metrics.record(RequestHistoryEntry("attendance", "POST", 503, 7, correlation))
+    metrics.record(RequestHistoryEntry("attendance", "POST", 409, 3, correlation))
+
+    summary = metrics.summary(resent=2)
+
+    assert summary["durationSeconds"] == 10.0
+    assert summary["requests"] == 103
+    assert summary["requestsPerSecond"] == 10.3
+    assert summary["failures"] == 2
+    assert summary["resent"] == 2
+    assert summary["services"]["registration"]["latencyMs"] == {
+        "p50": 51,
+        "p95": 96,
+        "p99": 100,
+        "max": 5000,
+    }
+    assert summary["services"]["attendance"] == {
+        "requests": 2,
+        "failures": 1,
+        "latencyMs": {"p50": 3, "p95": 7, "p99": 7, "max": 7},
+    }
+    assert scenarios.RequestMetrics().summary(0)["latencyMs"]["p50"] is None
 
 
 def test_mixed_load_opens_each_activity_after_its_registrations(web_environment):

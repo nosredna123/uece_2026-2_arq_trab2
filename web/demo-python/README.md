@@ -235,3 +235,51 @@ flags and run `bash scripts/run-demo-web.sh` again. Compose detects the changed
 Identity configuration and recreates the affected service; unchanged
 containers are left running, and persistent volumes are preserved. The web
 app does not change mock state or service configuration.
+
+## Load benchmark (terminal)
+
+`scripts/benchmark.sh` runs all the scenarios in parallel (`bash
+scripts/cenario.sh`) once per participant count and records how the stack
+behaved:
+
+```sh
+bash scripts/benchmark.sh                     # 100 500 1000 2000 3000 participants
+bash scripts/benchmark.sh 500 1000 2000 --duration 60 --repeat 2
+```
+
+**Warning:** before each run it restores the initial data with
+`scripts/reset-demo.sh --yes`, which deletes every local registration and
+signs out every browser session. Each reset adds a few minutes. Use
+`--no-reset` to keep the data (faster, but later runs start from a fuller
+database and are less comparable).
+
+Options: `--repeat N` (runs per count), `--duration S`
+(`SCENARIO_MIXED_DURATION_SECONDS`, 10–300), `--keep-going` (by default the
+sweep stops at the first run whose verdict is not OK), `--catch-up-timeout S`
+(default 300) and `--output DIR` (default `docs/validation/benchmarks`).
+
+While each scenario runs, the script samples `docker stats` and the host
+(`/proc`) about every 2 s. When it ends, it waits until Reporting's counts
+match Registration and Attendance (the Reports catch-up time). The scenario
+client measures each request's latency per service when `SCENARIO_METRICS=1`,
+which the benchmark sets; it prints one `METRICS {...}` line at the end. The
+latency excludes queueing inside the client, which sends at most 20 requests at
+a time.
+
+The results go to `docs/validation/benchmarks/<UTC timestamp>/`:
+
+- `runs.csv`: one row per run. It includes the verdicts, requests/s, failures,
+  resends, p50/p95/p99/max latency (overall and per service), catch-up seconds,
+  the mixed-load counts, and container and host CPU/memory averages and peaks.
+  The top container by CPU and by memory are also listed.
+- `resources.csv`: every resource sample (`container` is `host` for the host
+  row, whose `cpu_cores` holds the host CPU %).
+- `report.md`: host description, configuration, results table, plain-language
+  findings, per-container peaks and charts.
+- `charts/*.png`: latency, throughput, catch-up, CPU and the per-container CPU
+  timeline of the largest run. The charts need `matplotlib` (in
+  `requirements-validation.txt`); without it they are skipped.
+- `host.json` and `logs/` (each scenario and reset output).
+
+`tests/load` is a separate, isolated API load test. The benchmark instead
+measures the whole presentation stack as the audience sees it.
