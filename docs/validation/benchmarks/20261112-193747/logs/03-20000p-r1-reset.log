@@ -1,0 +1,977 @@
+Parando os contêineres e apagando os volumes de dados...
+ Container eventhub-demo-web-1  Stopping
+ Container eventhub-demo-web-1  Stopped
+ Container eventhub-demo-web-1  Removing
+ Container eventhub-demo-web-1  Removed
+ Container eventhub-billing-mock-1  Stopping
+ Container eventhub-attendance-1  Stopping
+ Container eventhub-reporting-1  Stopping
+ Container eventhub-registration-1  Stopping
+ Container eventhub-notification-mock-1  Stopping
+ Container eventhub-reporting-1  Stopped
+ Container eventhub-reporting-1  Removing
+ Container eventhub-reporting-1  Removed
+ Container eventhub-attendance-1  Stopped
+ Container eventhub-attendance-1  Removing
+ Container eventhub-attendance-1  Removed
+ Container eventhub-registration-1  Stopped
+ Container eventhub-registration-1  Removing
+ Container eventhub-registration-1  Removed
+ Container eventhub-event-management-1  Stopping
+ Container eventhub-event-management-1  Stopped
+ Container eventhub-event-management-1  Removing
+ Container eventhub-event-management-1  Removed
+ Container eventhub-postgres-1  Stopping
+ Container eventhub-identity-mock-1  Stopping
+ Container eventhub-identity-mock-1  Stopped
+ Container eventhub-identity-mock-1  Removing
+ Container eventhub-identity-mock-1  Removed
+ Container eventhub-postgres-1  Stopped
+ Container eventhub-postgres-1  Removing
+ Container eventhub-postgres-1  Removed
+ Container eventhub-billing-mock-1  Stopped
+ Container eventhub-billing-mock-1  Removing
+ Container eventhub-billing-mock-1  Removed
+ Container eventhub-notification-mock-1  Stopped
+ Container eventhub-notification-mock-1  Removing
+ Container eventhub-notification-mock-1  Removed
+ Container eventhub-rabbitmq-1  Stopping
+ Container eventhub-rabbitmq-1  Stopped
+ Container eventhub-rabbitmq-1  Removing
+ Container eventhub-rabbitmq-1  Removed
+ Volume eventhub_notification-data  Removing
+ Volume eventhub_rabbitmq-data  Removing
+ Volume eventhub_postgres-data  Removing
+ Volume eventhub_billing-data  Removing
+ Network eventhub_default  Removing
+ Volume eventhub_notification-data  Removed
+ Volume eventhub_rabbitmq-data  Removed
+ Volume eventhub_postgres-data  Removed
+ Volume eventhub_billing-data  Removed
+ Network eventhub_default  Removed
+Subindo o ambiente novamente com os dados iniciais...
+Building and starting the EventHub services; Compose will recreate only services whose configuration changed. Existing volumes are preserved.
+time="2026-11-12T16:46:16-03:00" level=warning msg="Docker Compose is configured to build using Bake, but buildx isn't installed"
+#0 building with "default" instance using docker driver
+
+#1 [billing-mock internal] load build definition from Dockerfile
+#1 transferring dockerfile: 906B done
+#1 DONE 0.0s
+
+#2 [notification-mock internal] load build definition from Dockerfile
+#2 transferring dockerfile: 926B done
+#2 DONE 0.0s
+
+#3 [identity-mock internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.03kB done
+#3 DONE 0.0s
+
+#4 [billing-mock internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [identity-mock internal] load metadata for docker.io/library/python:3.12.9-slim-bookworm
+#5 DONE 0.0s
+
+#6 [identity-mock dependencies 1/5] FROM docker.io/library/python:3.12.9-slim-bookworm
+#6 DONE 0.0s
+
+#7 [notification-mock internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [identity-mock internal] load .dockerignore
+#8 transferring context: 2B done
+#8 DONE 0.0s
+
+#9 [billing-mock internal] load build context
+#9 transferring context: 1.83kB done
+#9 DONE 0.0s
+
+#10 [notification-mock internal] load build context
+#10 transferring context: 2.12kB done
+#10 DONE 0.0s
+
+#11 [billing-mock dependencies 5/5] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#11 CACHED
+
+#12 [billing-mock dependencies 4/5] COPY src src
+#12 CACHED
+
+#13 [billing-mock dependencies 3/5] COPY pyproject.toml constraints.txt ./
+#13 CACHED
+
+#14 [billing-mock runtime 3/5] COPY --from=dependencies /wheels /wheels
+#14 CACHED
+
+#15 [billing-mock runtime 4/5] RUN pip install --no-cache-dir --no-index --find-links=/wheels eventhub-billing-mock==0.1.0 && rm -r /wheels
+#15 CACHED
+
+#16 [identity-mock internal] load build context
+#16 transferring context: 1.61kB done
+#16 DONE 0.0s
+
+#17 [billing-mock runtime 5/5] RUN mkdir -p /data && chown 10001:10001 /data
+#17 CACHED
+
+#18 [notification-mock dependencies 3/5] COPY pyproject.toml constraints.txt ./
+#18 CACHED
+
+#19 [notification-mock dependencies 5/5] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#19 CACHED
+
+#20 [notification-mock dependencies 4/5] COPY src src
+#20 CACHED
+
+#21 [notification-mock runtime 4/5] RUN pip install --no-cache-dir --no-index --find-links=/wheels eventhub-notification-mock==0.1.0 && rm -r /wheels
+#21 CACHED
+
+#22 [notification-mock runtime 3/5] COPY --from=dependencies /wheels /wheels
+#22 CACHED
+
+#23 [notification-mock runtime 5/5] RUN mkdir -p /data && chown 10001:10001 /data
+#23 CACHED
+
+#24 [identity-mock runtime 3/5] COPY --from=dependencies /workspace/scenario-participants.json /app/scenario-participants.json
+#24 CACHED
+
+#25 [identity-mock dependencies 6/6] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#25 CACHED
+
+#26 [identity-mock dependencies 5/6] COPY scenario-participants.json scenario-participants.json
+#26 CACHED
+
+#27 [identity-mock dependencies 4/6] COPY src src
+#27 CACHED
+
+#28 [identity-mock dependencies 2/5] WORKDIR /workspace
+#28 CACHED
+
+#29 [identity-mock dependencies 3/6] COPY pyproject.toml constraints.txt ./
+#29 CACHED
+
+#30 [identity-mock runtime 4/5] COPY --from=dependencies /wheels /wheels
+#30 CACHED
+
+#31 [identity-mock runtime 2/5] WORKDIR /app
+#31 CACHED
+
+#32 [identity-mock runtime 5/5] RUN pip install --no-cache-dir --no-index --find-links=/wheels eventhub-identity-access-mock==0.1.0 && rm -r /wheels
+#32 CACHED
+
+#33 [notification-mock] exporting to image
+#33 exporting layers done
+#33 writing image sha256:821d2b0bafde0b16713c7c4c4d477136e52aee15aa34731379d9dc4967908a0c done
+#33 naming to docker.io/library/eventhub-notification-mock 0.0s done
+#33 DONE 0.0s
+
+#34 [billing-mock] exporting to image
+#34 exporting layers done
+#34 writing image sha256:b505145d3ab31d56482745420155fcb8bdc6440f2520f867677fb9cdc64ac5da 0.0s done
+#34 naming to docker.io/library/eventhub-billing-mock done
+#34 DONE 0.0s
+
+#35 [identity-mock] exporting to image
+#35 exporting layers done
+#35 writing image sha256:33b90e010381b79c1b754a063d02eaa650bedd3a2082be651d04fa54a1c36042 0.0s done
+#35 naming to docker.io/library/eventhub-identity-mock done
+#35 DONE 0.0s
+
+#36 [notification-mock] resolving provenance for metadata file
+#36 DONE 0.0s
+
+#37 [billing-mock] resolving provenance for metadata file
+#37 DONE 0.0s
+
+#38 [identity-mock] resolving provenance for metadata file
+#38 DONE 0.0s
+
+#39 [reporting internal] load build definition from Dockerfile
+#39 transferring dockerfile: 856B done
+#39 DONE 0.0s
+
+#40 [attendance internal] load build definition from Dockerfile
+#40 transferring dockerfile: 857B done
+#40 DONE 0.0s
+
+#41 [event-management internal] load build definition from Dockerfile
+#41 transferring dockerfile: 457B done
+#41 DONE 0.0s
+
+#5 [attendance internal] load metadata for docker.io/library/python:3.12.9-slim-bookworm
+#5 DONE 0.0s
+
+#42 [event-management internal] load metadata for docker.io/library/eclipse-temurin:21.0.6_7-jre-jammy
+#42 DONE 0.0s
+
+#43 [event-management internal] load metadata for docker.io/library/maven:3.9.9-eclipse-temurin-21
+#43 DONE 0.0s
+
+#44 [reporting internal] load .dockerignore
+#44 transferring context: 100B done
+#44 DONE 0.0s
+
+#45 [attendance internal] load .dockerignore
+#45 transferring context: 100B done
+#45 DONE 0.0s
+
+#46 [event-management internal] load .dockerignore
+#46 transferring context: 52B done
+#46 DONE 0.0s
+
+#6 [attendance dependencies 1/6] FROM docker.io/library/python:3.12.9-slim-bookworm
+#6 DONE 0.0s
+
+#47 [event-management runtime 1/3] FROM docker.io/library/eclipse-temurin:21.0.6_7-jre-jammy
+#47 DONE 0.0s
+
+#48 [event-management test 1/5] FROM docker.io/library/maven:3.9.9-eclipse-temurin-21
+#48 DONE 0.0s
+
+#49 [reporting internal] load build context
+#49 transferring context: 3.06kB done
+#49 DONE 0.0s
+
+#50 [attendance internal] load build context
+#50 transferring context: 3.26kB done
+#50 DONE 0.0s
+
+#51 [event-management internal] load build context
+#51 transferring context: 2.73kB done
+#51 DONE 0.0s
+
+#52 [attendance runtime 3/6] COPY --from=dependencies /wheels /wheels
+#52 CACHED
+
+#53 [attendance dependencies 4/6] COPY constraints.txt .
+#53 CACHED
+
+#54 [attendance dependencies 3/6] COPY pyproject.toml .
+#54 CACHED
+
+#55 [attendance runtime 5/6] COPY migrations migrations
+#55 CACHED
+
+#56 [attendance dependencies 5/6] COPY src src
+#56 CACHED
+
+#57 [attendance runtime 4/6] RUN pip install --no-cache-dir /wheels/* && rm -r /wheels
+#57 CACHED
+
+#58 [attendance dependencies 6/6] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#58 CACHED
+
+#59 [attendance runtime 6/6] COPY alembic.ini .
+#59 CACHED
+
+#60 [reporting dependencies 3/6] COPY pyproject.toml .
+#60 CACHED
+
+#61 [reporting dependencies 5/6] COPY src src
+#61 CACHED
+
+#62 [reporting runtime 4/6] RUN pip install --no-cache-dir /wheels/* && rm -r /wheels
+#62 CACHED
+
+#63 [reporting dependencies 4/6] COPY constraints.txt .
+#63 CACHED
+
+#64 [reporting runtime 5/6] COPY migrations migrations
+#64 CACHED
+
+#65 [reporting runtime 3/6] COPY --from=dependencies /wheels /wheels
+#65 CACHED
+
+#66 [reporting dependencies 6/6] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#66 CACHED
+
+#28 [reporting dependencies 2/6] WORKDIR /workspace
+#28 CACHED
+
+#31 [reporting runtime 2/6] WORKDIR /app
+#31 CACHED
+
+#67 [reporting runtime 6/6] COPY alembic.ini .
+#67 CACHED
+
+#68 [event-management test 4/5] COPY src src
+#68 CACHED
+
+#69 [event-management build 1/1] RUN mvn -B -ff -DskipTests package
+#69 CACHED
+
+#70 [event-management test 5/5] RUN mvn -B -ff spotless:check test
+#70 CACHED
+
+#71 [event-management test 3/5] COPY pom.xml .
+#71 CACHED
+
+#72 [event-management runtime 2/3] WORKDIR /app
+#72 CACHED
+
+#73 [event-management test 2/5] WORKDIR /workspace
+#73 CACHED
+
+#74 [event-management runtime 3/3] COPY --from=build /workspace/target/event-management-0.1.0.jar app.jar
+#74 CACHED
+
+#75 [attendance] exporting to image
+#75 exporting layers done
+#75 writing image sha256:0a425d76865773efaa5126c271e3157e5abe6e89f0cba0207ea31ec9ef5da3b4 done
+#75 naming to docker.io/library/eventhub-attendance done
+#75 DONE 0.0s
+
+#76 [event-management] exporting to image
+#76 exporting layers done
+#76 writing image sha256:898077bc46f3396db6dd0062f2bdb57028aabd20c618d592d802a39da46fdb94 done
+#76 naming to docker.io/library/eventhub-event-management done
+#76 DONE 0.0s
+
+#77 [reporting] exporting to image
+#77 exporting layers done
+#77 writing image sha256:d3f4204aa6502aa4efcef21a6ec0a2558bdfd9fefe1dbc54b5c8f60fdfac7172 done
+#77 naming to docker.io/library/eventhub-reporting done
+#77 DONE 0.0s
+
+#78 [attendance] resolving provenance for metadata file
+#78 DONE 0.0s
+
+#79 [event-management] resolving provenance for metadata file
+#79 DONE 0.0s
+
+#80 [reporting] resolving provenance for metadata file
+#80 DONE 0.0s
+
+#81 [registration internal] load build definition from Dockerfile
+#81 transferring dockerfile: 453B done
+#81 DONE 0.0s
+
+#42 [registration internal] load metadata for docker.io/library/eclipse-temurin:21.0.6_7-jre-jammy
+#42 DONE 0.0s
+
+#43 [registration internal] load metadata for docker.io/library/maven:3.9.9-eclipse-temurin-21
+#43 DONE 0.0s
+
+#82 [registration internal] load .dockerignore
+#82 transferring context: 52B done
+#82 DONE 0.0s
+
+#47 [registration runtime 1/3] FROM docker.io/library/eclipse-temurin:21.0.6_7-jre-jammy
+#47 DONE 0.0s
+
+#48 [registration test 1/5] FROM docker.io/library/maven:3.9.9-eclipse-temurin-21
+#48 DONE 0.0s
+
+#83 [registration internal] load build context
+#83 transferring context: 3.57kB done
+#83 DONE 0.0s
+
+#72 [registration runtime 2/3] WORKDIR /app
+#72 CACHED
+
+#84 [registration build 1/1] RUN mvn -B -ff -DskipTests package
+#84 CACHED
+
+#85 [registration test 3/5] COPY pom.xml .
+#85 CACHED
+
+#86 [registration test 4/5] COPY src src
+#86 CACHED
+
+#87 [registration test 5/5] RUN mvn -B -ff spotless:check test
+#87 CACHED
+
+#73 [registration test 2/5] WORKDIR /workspace
+#73 CACHED
+
+#88 [registration runtime 3/3] COPY --from=build /workspace/target/registration-0.1.0.jar app.jar
+#88 CACHED
+
+#89 [registration] exporting to image
+#89 exporting layers done
+#89 writing image sha256:d7c4f461839b65c85db524c4b58d4d033c3775b9da379ee3dabf8d0956d516f3 done
+#89 naming to docker.io/library/eventhub-registration done
+#89 DONE 0.0s
+
+#90 [registration] resolving provenance for metadata file
+#90 DONE 0.0s
+ attendance  Built
+ billing-mock  Built
+ event-management  Built
+ identity-mock  Built
+ notification-mock  Built
+ registration  Built
+ reporting  Built
+ Network eventhub_default  Creating
+ Network eventhub_default  Created
+ Volume eventhub_postgres-data  Creating
+ Volume eventhub_postgres-data  Created
+ Volume eventhub_billing-data  Creating
+ Volume eventhub_billing-data  Created
+ Volume eventhub_notification-data  Creating
+ Volume eventhub_notification-data  Created
+ Volume eventhub_rabbitmq-data  Creating
+ Volume eventhub_rabbitmq-data  Created
+ Container eventhub-identity-mock-1  Creating
+ Container eventhub-rabbitmq-1  Creating
+ Container eventhub-postgres-1  Creating
+ Container eventhub-identity-mock-1  Created
+ Container eventhub-rabbitmq-1  Created
+ Container eventhub-postgres-1  Created
+ Container eventhub-billing-mock-1  Creating
+ Container eventhub-attendance-1  Creating
+ Container eventhub-notification-mock-1  Creating
+ Container eventhub-reporting-1  Creating
+ Container eventhub-event-management-1  Creating
+ Container eventhub-billing-mock-1  Created
+ Container eventhub-reporting-1  Created
+ Container eventhub-attendance-1  Created
+ Container eventhub-notification-mock-1  Created
+ Container eventhub-event-management-1  Created
+ Container eventhub-registration-1  Creating
+ Container eventhub-registration-1  Created
+ Container eventhub-rabbitmq-1  Starting
+ Container eventhub-identity-mock-1  Starting
+ Container eventhub-postgres-1  Starting
+ Container eventhub-rabbitmq-1  Started
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Started
+ Container eventhub-postgres-1  Started
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-notification-mock-1  Starting
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-billing-mock-1  Starting
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-event-management-1  Starting
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-reporting-1  Starting
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-attendance-1  Starting
+ Container eventhub-billing-mock-1  Started
+ Container eventhub-notification-mock-1  Started
+ Container eventhub-event-management-1  Started
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-event-management-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-attendance-1  Started
+ Container eventhub-reporting-1  Started
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-event-management-1  Healthy
+ Container eventhub-registration-1  Starting
+ Container eventhub-registration-1  Started
+ Container eventhub-notification-mock-1  Waiting
+ Container eventhub-reporting-1  Waiting
+ Container eventhub-attendance-1  Waiting
+ Container eventhub-registration-1  Waiting
+ Container eventhub-billing-mock-1  Waiting
+ Container eventhub-event-management-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-attendance-1  Healthy
+ Container eventhub-event-management-1  Healthy
+ Container eventhub-reporting-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-billing-mock-1  Healthy
+ Container eventhub-notification-mock-1  Healthy
+ Container eventhub-registration-1  Healthy
+Starting the presentation app.
+time="2026-11-12T16:46:40-03:00" level=warning msg="Docker Compose is configured to build using Bake, but buildx isn't installed"
+#0 building with "default" instance using docker driver
+
+#1 [billing-mock internal] load build definition from Dockerfile
+#1 transferring dockerfile: 906B done
+#1 DONE 0.0s
+
+#2 [identity-mock internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.03kB done
+#2 DONE 0.0s
+
+#3 [notification-mock internal] load build definition from Dockerfile
+#3 transferring dockerfile: 926B done
+#3 DONE 0.0s
+
+#4 [notification-mock internal] load metadata for docker.io/library/python:3.12.9-slim-bookworm
+#4 DONE 0.0s
+
+#5 [billing-mock internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [identity-mock internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [notification-mock dependencies 1/5] FROM docker.io/library/python:3.12.9-slim-bookworm
+#7 DONE 0.0s
+
+#8 [notification-mock internal] load .dockerignore
+#8 transferring context: 2B done
+#8 DONE 0.0s
+
+#9 [billing-mock internal] load build context
+#9 transferring context: 1.83kB done
+#9 DONE 0.0s
+
+#10 [notification-mock internal] load build context
+#10 transferring context: 2.12kB done
+#10 DONE 0.0s
+
+#11 [identity-mock internal] load build context
+#11 transferring context: 1.61kB done
+#11 DONE 0.0s
+
+#12 [billing-mock dependencies 3/5] COPY pyproject.toml constraints.txt ./
+#12 CACHED
+
+#13 [billing-mock runtime 3/5] COPY --from=dependencies /wheels /wheels
+#13 CACHED
+
+#14 [billing-mock dependencies 5/5] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#14 CACHED
+
+#15 [billing-mock dependencies 4/5] COPY src src
+#15 CACHED
+
+#16 [billing-mock runtime 4/5] RUN pip install --no-cache-dir --no-index --find-links=/wheels eventhub-billing-mock==0.1.0 && rm -r /wheels
+#16 CACHED
+
+#17 [billing-mock runtime 5/5] RUN mkdir -p /data && chown 10001:10001 /data
+#17 CACHED
+
+#18 [identity-mock dependencies 6/6] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#18 CACHED
+
+#19 [identity-mock dependencies 3/6] COPY pyproject.toml constraints.txt ./
+#19 CACHED
+
+#20 [identity-mock dependencies 5/6] COPY scenario-participants.json scenario-participants.json
+#20 CACHED
+
+#21 [identity-mock runtime 4/5] COPY --from=dependencies /wheels /wheels
+#21 CACHED
+
+#22 [identity-mock runtime 3/5] COPY --from=dependencies /workspace/scenario-participants.json /app/scenario-participants.json
+#22 CACHED
+
+#23 [identity-mock dependencies 4/6] COPY src src
+#23 CACHED
+
+#24 [notification-mock runtime 3/5] COPY --from=dependencies /wheels /wheels
+#24 CACHED
+
+#25 [notification-mock runtime 2/5] WORKDIR /app
+#25 CACHED
+
+#26 [notification-mock dependencies 3/5] COPY pyproject.toml constraints.txt ./
+#26 CACHED
+
+#27 [notification-mock dependencies 5/5] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#27 CACHED
+
+#28 [notification-mock dependencies 2/5] WORKDIR /workspace
+#28 CACHED
+
+#29 [notification-mock dependencies 4/5] COPY src src
+#29 CACHED
+
+#30 [notification-mock runtime 4/5] RUN pip install --no-cache-dir --no-index --find-links=/wheels eventhub-notification-mock==0.1.0 && rm -r /wheels
+#30 CACHED
+
+#31 [notification-mock runtime 5/5] RUN mkdir -p /data && chown 10001:10001 /data
+#31 CACHED
+
+#32 [identity-mock runtime 5/5] RUN pip install --no-cache-dir --no-index --find-links=/wheels eventhub-identity-access-mock==0.1.0 && rm -r /wheels
+#32 CACHED
+
+#33 [billing-mock] exporting to image
+#33 exporting layers done
+#33 writing image sha256:b505145d3ab31d56482745420155fcb8bdc6440f2520f867677fb9cdc64ac5da done
+#33 naming to docker.io/library/eventhub-billing-mock done
+#33 DONE 0.0s
+
+#34 [notification-mock] exporting to image
+#34 exporting layers done
+#34 writing image sha256:821d2b0bafde0b16713c7c4c4d477136e52aee15aa34731379d9dc4967908a0c done
+#34 naming to docker.io/library/eventhub-notification-mock done
+#34 DONE 0.0s
+
+#35 [identity-mock] exporting to image
+#35 exporting layers done
+#35 writing image sha256:33b90e010381b79c1b754a063d02eaa650bedd3a2082be651d04fa54a1c36042 done
+#35 naming to docker.io/library/eventhub-identity-mock done
+#35 DONE 0.0s
+
+#36 [billing-mock] resolving provenance for metadata file
+#36 DONE 0.0s
+
+#37 [notification-mock] resolving provenance for metadata file
+#37 DONE 0.0s
+
+#38 [identity-mock] resolving provenance for metadata file
+#38 DONE 0.0s
+
+#39 [attendance internal] load build definition from Dockerfile
+#39 transferring dockerfile: 857B done
+#39 DONE 0.0s
+
+#40 [reporting internal] load build definition from Dockerfile
+#40 transferring dockerfile: 856B done
+#40 DONE 0.0s
+
+#41 [event-management internal] load build definition from Dockerfile
+#41 transferring dockerfile: 457B done
+#41 DONE 0.0s
+
+#4 [reporting internal] load metadata for docker.io/library/python:3.12.9-slim-bookworm
+#4 DONE 0.0s
+
+#42 [event-management internal] load metadata for docker.io/library/eclipse-temurin:21.0.6_7-jre-jammy
+#42 DONE 0.0s
+
+#43 [event-management internal] load metadata for docker.io/library/maven:3.9.9-eclipse-temurin-21
+#43 DONE 0.0s
+
+#44 [attendance internal] load .dockerignore
+#44 transferring context: 100B done
+#44 DONE 0.0s
+
+#45 [reporting internal] load .dockerignore
+#45 transferring context: 100B done
+#45 DONE 0.0s
+
+#7 [reporting dependencies 1/6] FROM docker.io/library/python:3.12.9-slim-bookworm
+#7 DONE 0.0s
+
+#46 [event-management internal] load .dockerignore
+#46 transferring context: 52B done
+#46 DONE 0.0s
+
+#47 [attendance internal] load build context
+#47 transferring context: 3.26kB done
+#47 DONE 0.0s
+
+#48 [reporting internal] load build context
+#48 transferring context: 3.06kB done
+#48 DONE 0.0s
+
+#49 [attendance dependencies 3/6] COPY pyproject.toml .
+#49 CACHED
+
+#50 [attendance runtime 4/6] RUN pip install --no-cache-dir /wheels/* && rm -r /wheels
+#50 CACHED
+
+#51 [attendance runtime 3/6] COPY --from=dependencies /wheels /wheels
+#51 CACHED
+
+#52 [attendance runtime 5/6] COPY migrations migrations
+#52 CACHED
+
+#53 [attendance dependencies 6/6] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#53 CACHED
+
+#54 [attendance dependencies 5/6] COPY src src
+#54 CACHED
+
+#55 [attendance dependencies 4/6] COPY constraints.txt .
+#55 CACHED
+
+#56 [event-management runtime 1/3] FROM docker.io/library/eclipse-temurin:21.0.6_7-jre-jammy
+#56 DONE 0.0s
+
+#57 [event-management test 1/5] FROM docker.io/library/maven:3.9.9-eclipse-temurin-21
+#57 DONE 0.0s
+
+#58 [attendance runtime 6/6] COPY alembic.ini .
+#58 CACHED
+
+#59 [reporting dependencies 6/6] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#59 CACHED
+
+#25 [reporting runtime 2/6] WORKDIR /app
+#25 CACHED
+
+#60 [reporting dependencies 4/6] COPY constraints.txt .
+#60 CACHED
+
+#61 [reporting dependencies 5/6] COPY src src
+#61 CACHED
+
+#62 [reporting runtime 5/6] COPY migrations migrations
+#62 CACHED
+
+#63 [reporting dependencies 3/6] COPY pyproject.toml .
+#63 CACHED
+
+#64 [reporting runtime 3/6] COPY --from=dependencies /wheels /wheels
+#64 CACHED
+
+#28 [reporting dependencies 2/6] WORKDIR /workspace
+#28 CACHED
+
+#65 [reporting runtime 4/6] RUN pip install --no-cache-dir /wheels/* && rm -r /wheels
+#65 CACHED
+
+#66 [attendance] exporting to image
+#66 exporting layers done
+#66 writing image sha256:0a425d76865773efaa5126c271e3157e5abe6e89f0cba0207ea31ec9ef5da3b4 done
+#66 naming to docker.io/library/eventhub-attendance done
+#66 DONE 0.0s
+
+#67 [reporting runtime 6/6] COPY alembic.ini .
+#67 CACHED
+
+#68 [reporting] exporting to image
+#68 exporting layers done
+#68 writing image sha256:d3f4204aa6502aa4efcef21a6ec0a2558bdfd9fefe1dbc54b5c8f60fdfac7172
+#68 writing image sha256:d3f4204aa6502aa4efcef21a6ec0a2558bdfd9fefe1dbc54b5c8f60fdfac7172 done
+#68 naming to docker.io/library/eventhub-reporting done
+#68 DONE 0.0s
+
+#69 [event-management internal] load build context
+#69 transferring context: 2.73kB done
+#69 DONE 0.0s
+
+#70 [event-management test 5/5] RUN mvn -B -ff spotless:check test
+#70 CACHED
+
+#71 [event-management build 1/1] RUN mvn -B -ff -DskipTests package
+#71 CACHED
+
+#72 [event-management runtime 2/3] WORKDIR /app
+#72 CACHED
+
+#73 [event-management test 4/5] COPY src src
+#73 CACHED
+
+#74 [event-management test 3/5] COPY pom.xml .
+#74 CACHED
+
+#75 [event-management test 2/5] WORKDIR /workspace
+#75 CACHED
+
+#76 [event-management runtime 3/3] COPY --from=build /workspace/target/event-management-0.1.0.jar app.jar
+#76 CACHED
+
+#77 [event-management] exporting to image
+#77 exporting layers done
+#77 writing image sha256:898077bc46f3396db6dd0062f2bdb57028aabd20c618d592d802a39da46fdb94 done
+#77 naming to docker.io/library/eventhub-event-management done
+#77 DONE 0.0s
+
+#78 [reporting] resolving provenance for metadata file
+#78 DONE 0.0s
+
+#79 [attendance] resolving provenance for metadata file
+#79 DONE 0.0s
+
+#80 [event-management] resolving provenance for metadata file
+#80 DONE 0.0s
+
+#81 [registration internal] load build definition from Dockerfile
+#81 transferring dockerfile: 453B done
+#81 DONE 0.0s
+
+#43 [registration internal] load metadata for docker.io/library/maven:3.9.9-eclipse-temurin-21
+#43 DONE 0.0s
+
+#42 [registration internal] load metadata for docker.io/library/eclipse-temurin:21.0.6_7-jre-jammy
+#42 DONE 0.0s
+
+#82 [registration internal] load .dockerignore
+#82 transferring context: 52B done
+#82 DONE 0.0s
+
+#56 [registration runtime 1/3] FROM docker.io/library/eclipse-temurin:21.0.6_7-jre-jammy
+#56 DONE 0.0s
+
+#57 [registration test 1/5] FROM docker.io/library/maven:3.9.9-eclipse-temurin-21
+#57 DONE 0.0s
+
+#83 [registration internal] load build context
+#83 transferring context: 3.57kB done
+#83 DONE 0.0s
+
+#84 [registration test 5/5] RUN mvn -B -ff spotless:check test
+#84 CACHED
+
+#85 [registration build 1/1] RUN mvn -B -ff -DskipTests package
+#85 CACHED
+
+#86 [registration test 3/5] COPY pom.xml .
+#86 CACHED
+
+#87 [registration test 4/5] COPY src src
+#87 CACHED
+
+#72 [registration runtime 2/3] WORKDIR /app
+#72 CACHED
+
+#75 [registration test 2/5] WORKDIR /workspace
+#75 CACHED
+
+#88 [registration runtime 3/3] COPY --from=build /workspace/target/registration-0.1.0.jar app.jar
+#88 CACHED
+
+#89 [registration] exporting to image
+#89 exporting layers done
+#89 writing image sha256:d7c4f461839b65c85db524c4b58d4d033c3775b9da379ee3dabf8d0956d516f3 done
+#89 naming to docker.io/library/eventhub-registration done
+#89 DONE 0.0s
+
+#90 [registration] resolving provenance for metadata file
+#90 DONE 0.0s
+
+#91 [demo-web internal] load build definition from Dockerfile
+#91 transferring dockerfile: 740B done
+#91 DONE 0.0s
+
+#4 [demo-web internal] load metadata for docker.io/library/python:3.12.9-slim-bookworm
+#4 DONE 0.0s
+
+#92 [demo-web internal] load .dockerignore
+#92 transferring context: 143B done
+#92 DONE 0.0s
+
+#7 [demo-web dependencies 1/5] FROM docker.io/library/python:3.12.9-slim-bookworm
+#7 DONE 0.0s
+
+#93 [demo-web internal] load build context
+#93 transferring context: 3.35kB done
+#93 DONE 0.0s
+
+#94 [demo-web dependencies 5/5] RUN pip wheel --no-cache-dir -c constraints.txt --wheel-dir /wheels .
+#94 CACHED
+
+#95 [demo-web runtime 3/4] COPY --from=dependencies /wheels /wheels
+#95 CACHED
+
+#28 [demo-web dependencies 2/5] WORKDIR /workspace
+#28 CACHED
+
+#96 [demo-web dependencies 3/5] COPY pyproject.toml constraints.txt ./
+#96 CACHED
+
+#25 [demo-web runtime 2/4] WORKDIR /app
+#25 CACHED
+
+#97 [demo-web dependencies 4/5] COPY src src
+#97 CACHED
+
+#98 [demo-web runtime 4/4] RUN pip install --no-cache-dir /wheels/* && rm -r /wheels
+#98 CACHED
+
+#99 [demo-web] exporting to image
+#99 exporting layers done
+#99 writing image sha256:e9369f15d7f8dc28e2caeabec650684f09b27accb75f0f3199e3a9e4bff590b5 done
+#99 naming to docker.io/library/eventhub-demo-web done
+#99 DONE 0.0s
+
+#100 [demo-web] resolving provenance for metadata file
+#100 DONE 0.0s
+ attendance  Built
+ billing-mock  Built
+ demo-web  Built
+ event-management  Built
+ identity-mock  Built
+ notification-mock  Built
+ registration  Built
+ reporting  Built
+ Container eventhub-identity-mock-1  Running
+ Container eventhub-postgres-1  Running
+ Container eventhub-rabbitmq-1  Running
+ Container eventhub-notification-mock-1  Running
+ Container eventhub-billing-mock-1  Running
+ Container eventhub-attendance-1  Running
+ Container eventhub-reporting-1  Running
+ Container eventhub-event-management-1  Running
+ Container eventhub-registration-1  Running
+ Container eventhub-demo-web-1  Creating
+ Container eventhub-demo-web-1  Created
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-event-management-1  Waiting
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-event-management-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-event-management-1  Waiting
+ Container eventhub-registration-1  Waiting
+ Container eventhub-attendance-1  Waiting
+ Container eventhub-reporting-1  Waiting
+ Container eventhub-event-management-1  Healthy
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-reporting-1  Healthy
+ Container eventhub-attendance-1  Healthy
+ Container eventhub-registration-1  Healthy
+ Container eventhub-demo-web-1  Starting
+ Container eventhub-demo-web-1  Started
+ Container eventhub-billing-mock-1  Waiting
+ Container eventhub-rabbitmq-1  Waiting
+ Container eventhub-identity-mock-1  Waiting
+ Container eventhub-event-management-1  Waiting
+ Container eventhub-reporting-1  Waiting
+ Container eventhub-postgres-1  Waiting
+ Container eventhub-demo-web-1  Waiting
+ Container eventhub-notification-mock-1  Waiting
+ Container eventhub-attendance-1  Waiting
+ Container eventhub-registration-1  Waiting
+ Container eventhub-attendance-1  Healthy
+ Container eventhub-event-management-1  Healthy
+ Container eventhub-identity-mock-1  Healthy
+ Container eventhub-registration-1  Healthy
+ Container eventhub-rabbitmq-1  Healthy
+ Container eventhub-reporting-1  Healthy
+ Container eventhub-billing-mock-1  Healthy
+ Container eventhub-postgres-1  Healthy
+ Container eventhub-notification-mock-1  Healthy
+ Container eventhub-demo-web-1  Healthy
+EventHub presentation app is ready at http://localhost:8085
+Prerequisites: healthy Event Management, Registration, Attendance, Reporting, and Identity services; Billing and Notification mocks are started for domain flows.
+Load scenarios are enabled; run: bash scripts/cenario.sh [pico-inscricoes|ultima-vaga|envios-repetidos] (no argument: all in parallel)
+Pronto: dados restaurados ao estado inicial. Entre novamente no navegador.
