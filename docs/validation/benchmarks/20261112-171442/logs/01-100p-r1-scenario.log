@@ -1,0 +1,698 @@
+Todos os cenários em paralelo, durante cerca de 30 s
+Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.
+
+[pico-inscricoes ] Cenário: Pico de inscrições
+[pico-inscricoes ] Muitos participantes se inscrevem em poucos segundos numa atividade com vagas para 25% deles.
+[pico-inscricoes ] 100 participantes em 30 s · 25 vagas
+[ultima-vaga     ] Cenário: Última vaga
+[ultima-vaga     ] Dois participantes disputam, ao mesmo tempo, a única vaga de uma atividade.
+[envios-repetidos] Cenário: Envios repetidos
+[envios-repetidos] Um participante envia a mesma inscrição 10 vezes ao mesmo tempo (duplo clique).
+[carga-mista     ] Cenário: Carga mista
+[carga-mista     ] 3 eventos · 9 atividades (3 pagas) · 310 inscrições aleatórias em 30 s
+[carga-mista     ] Cada atividade começa e termina durante o cenário: o organizador a abre depois das inscrições e desistências; check-ins durante, certificados depois.
+[carga-mista     ] Check-in por atividade: 40–90% das inscrições confirmadas · certificado: 50–100% dos check-ins
+[carga-mista     ] Desistência: 20% das inscrições gratuitas · ofertas ignoradas: 20%
+[pico-inscricoes ] Evento publicado: [CENÁRIO] Pico de inscrições · 17:15:27
+[pico-inscricoes ] Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.
+[envios-repetidos] Evento publicado: [CENÁRIO] Envios repetidos · 17:15:27
+[envios-repetidos] Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.
+[ultima-vaga     ] Evento publicado: [CENÁRIO] Última vaga · 17:15:27
+[ultima-vaga     ] Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.
+[pico-inscricoes ] [  0.0s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[ultima-vaga     ] [  0.1s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[ultima-vaga     ] [  0.1s] Participante de cenário 02 → WAITLISTED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[envios-repetidos] [  0.1s] Participante de cenário 01 → CONFIRMED
+[ultima-vaga     ] Resultado: 1 CONFIRMED, 1 WAITLISTED
+[ultima-vaga     ] Vagas ocupadas: 1 de 1 — sem overbooking.
+[ultima-vaga     ] Esperado: exatamente 1 CONFIRMED e 1 WAITLISTED.
+[ultima-vaga     ] Veredito: OK
+[envios-repetidos] Resultado: 10 CONFIRMED
+[envios-repetidos] Vagas ocupadas: 1 de 1 — sem overbooking.
+[envios-repetidos] Inscrições distintas criadas: 1 (esperado: 1, mesma chave de idempotência).
+[envios-repetidos] Veredito: OK
+[carga-mista     ] Eventos publicados: [CENÁRIO] Carga mista · …
+[pico-inscricoes ] [  0.3s] Participante de cenário 02 → CONFIRMED
+[pico-inscricoes ] [  0.6s] Participante de cenário 03 → CONFIRMED
+[pico-inscricoes ] [  0.9s] Participante de cenário 04 → CONFIRMED
+[pico-inscricoes ] [  1.2s] Participante de cenário 05 → CONFIRMED
+[pico-inscricoes ] [  1.5s] Participante de cenário 06 → CONFIRMED
+[pico-inscricoes ] [  1.8s] Participante de cenário 07 → CONFIRMED
+[pico-inscricoes ] [  2.1s] Participante de cenário 08 → CONFIRMED
+[pico-inscricoes ] [  2.4s] Participante de cenário 09 → CONFIRMED
+[pico-inscricoes ] [  2.7s] Participante de cenário 10 → CONFIRMED
+[pico-inscricoes ] [  3.0s] Participante de cenário 11 → CONFIRMED
+[pico-inscricoes ] [  3.3s] Participante de cenário 12 → CONFIRMED
+[pico-inscricoes ] [  3.6s] Participante de cenário 13 → CONFIRMED
+[pico-inscricoes ] [  3.9s] Participante de cenário 14 → CONFIRMED
+[pico-inscricoes ] [  4.2s] Participante de cenário 15 → CONFIRMED
+[pico-inscricoes ] [  4.5s] Participante de cenário 16 → CONFIRMED
+[pico-inscricoes ] [  4.8s] Participante de cenário 17 → CONFIRMED
+[carga-mista     ] [  0.0s] Participante de cenário 27 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  0.1s] Participante de cenário 17 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  0.1s] Participante de cenário 31 · Palestra: Observabilidade → CONFIRMED
+[pico-inscricoes ] [  5.1s] Participante de cenário 18 → CONFIRMED
+[carga-mista     ] [  0.2s] Participante de cenário 25 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  0.2s] Participante de cenário 18 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  0.3s] Participante de cenário 43 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  0.4s] Participante de cenário 29 · Sessão de pôsteres → CONFIRMED
+[pico-inscricoes ] [  5.4s] Participante de cenário 19 → CONFIRMED
+[carga-mista     ] [  0.5s] Participante de cenário 30 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  0.5s] Participante de cenário 53 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  0.6s] Participante de cenário 29 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  0.7s] Participante de cenário 23 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  0.7s] Participante de cenário 16 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  0.7s] Participante de cenário 60 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[carga-mista     ] [  0.7s] Participante de cenário 36 · Palestra: Microsserviços → CONFIRMED
+[pico-inscricoes ] [  5.7s] Participante de cenário 20 → CONFIRMED
+[carga-mista     ] [  0.8s] Participante de cenário 70 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  0.9s] Participante de cenário 56 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[carga-mista     ] [  0.9s] Participante de cenário 08 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  0.9s] Participante de cenário 71 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  0.9s] Participante de cenário 80 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  1.0s] Participante de cenário 42 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  1.0s] Participante de cenário 72 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[carga-mista     ] [  1.0s] Participante de cenário 89 · Oficina: Escrita científica → PENDING_PAYMENT
+[pico-inscricoes ] [  6.0s] Participante de cenário 21 → CONFIRMED
+[carga-mista     ] [  1.1s] Participante de cenário 06 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  1.2s] Participante de cenário 53 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  1.2s] Participante de cenário 93 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  1.2s] Participante de cenário 37 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  1.2s] Participante de cenário 11 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  1.2s] Participante de cenário 38 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  1.2s] Participante de cenário 65 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  1.3s] Participante de cenário 32 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[carga-mista     ] [  1.3s] Participante de cenário 29 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[pico-inscricoes ] [  6.3s] Participante de cenário 22 → CONFIRMED
+[carga-mista     ] [  1.4s] Participante de cenário 98 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  1.4s] Participante de cenário 54 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  1.5s] Participante de cenário 90 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  1.5s] Participante de cenário 57 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  1.5s] Participante de cenário 49 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  1.5s] Participante de cenário 59 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  1.6s] Participante de cenário 69 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  1.6s] Participante de cenário 13 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[pico-inscricoes ] [  6.6s] Participante de cenário 23 → CONFIRMED
+[carga-mista     ] [  1.7s] Participante de cenário 63 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  1.7s] Participante de cenário 48 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  1.8s] Participante de cenário 55 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[carga-mista     ] [  1.8s] Participante de cenário 28 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  1.9s] Participante de cenário 72 · Oficina: Testes automatizados → PENDING_PAYMENT
+[pico-inscricoes ] [  6.9s] Participante de cenário 24 → CONFIRMED
+[carga-mista     ] [  2.0s] Participante de cenário 54 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  2.0s] Participante de cenário 34 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  2.1s] Participante de cenário 04 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[carga-mista     ] [  2.1s] Participante de cenário 83 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  2.2s] Participante de cenário 13 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  2.2s] Participante de cenário 45 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  2.2s] Participante de cenário 07 · Palestra: Microsserviços → CONFIRMED
+[pico-inscricoes ] [  7.2s] Participante de cenário 25 → CONFIRMED
+[carga-mista     ] [  2.3s] Participante de cenário 45 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  2.3s] Participante de cenário 19 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  2.4s] Participante de cenário 52 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  2.4s] Participante de cenário 75 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  2.4s] Participante de cenário 84 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  2.5s] Participante de cenário 50 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[carga-mista     ] [  2.5s] Participante de cenário 40 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  2.5s] Participante de cenário 35 · Mesa-redonda: Carreira em TI → CONFIRMED
+[pico-inscricoes ] [  7.5s] Participante de cenário 26 → WAITLISTED
+[carga-mista     ] [  2.6s] Participante de cenário 96 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  2.6s] Participante de cenário 43 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  2.6s] Participante de cenário 66 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  2.6s] Participante de cenário 42 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  2.7s] Participante de cenário 65 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  2.8s] Participante de cenário 76 · Oficina: Mensageria com RabbitMQ → PENDING_PAYMENT
+[carga-mista     ] [  2.8s] Participante de cenário 91 · Sessão de pôsteres → CONFIRMED
+[pico-inscricoes ] [  7.8s] Participante de cenário 27 → WAITLISTED
+[carga-mista     ] [  2.9s] Participante de cenário 65 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  2.9s] Participante de cenário 74 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  3.0s] Participante de cenário 91 · Painel: Pesquisa em ES → CONFIRMED
+[carga-mista     ] [  3.1s] Participante de cenário 70 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  3.1s] Participante de cenário 68 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  3.1s] Participante de cenário 88 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  3.1s] Participante de cenário 79 · Oficina: Escrita científica → PENDING_PAYMENT
+[pico-inscricoes ] [  8.1s] Participante de cenário 28 → WAITLISTED
+[carga-mista     ] [  3.2s] Participante de cenário 43 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  3.2s] Participante de cenário 09 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  3.2s] Participante de cenário 46 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  3.3s] Participante de cenário 24 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  3.4s] Participante de cenário 14 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  3.4s] Participante de cenário 09 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  3.4s] Participante de cenário 46 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  3.4s] Participante de cenário 77 · Sessão de pôsteres → CONFIRMED
+[pico-inscricoes ] [  8.4s] Participante de cenário 29 → WAITLISTED
+[carga-mista     ] [  3.5s] Participante de cenário 25 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  3.5s] Participante de cenário 30 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  3.5s] Participante de cenário 02 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  3.5s] Participante de cenário 99 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  3.6s] Participante de cenário 04 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  3.6s] Participante de cenário 05 · Oficina: Testes automatizados → PENDING_PAYMENT
+[carga-mista     ] [  3.6s] Participante de cenário 45 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  3.6s] Participante de cenário 20 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  3.6s] Participante de cenário 71 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  3.6s] Participante de cenário 80 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  3.7s] Participante de cenário 36 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  3.7s] Participante de cenário 86 · Oficina: Testes automatizados → WAITLISTED
+[pico-inscricoes ] [  8.7s] Participante de cenário 30 → WAITLISTED
+[carga-mista     ] [  3.8s] Participante de cenário 01 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  3.8s] Participante de cenário 62 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  3.9s] Participante de cenário 37 · Palestra: Observabilidade → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  3.9s] Participante de cenário 47 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  3.9s] Participante de cenário 57 · Palestra: Observabilidade → CONFIRMED
+[carga-mista     ] [  3.9s] Participante de cenário 88 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  3.9s] Participante de cenário 89 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  3.9s] Participante de cenário 48 · Palestra: Microsserviços → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  4.0s] Participante de cenário 94 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  4.0s] Participante de cenário 09 · Oficina: Testes automatizados → WAITLISTED
+[pico-inscricoes ] [  9.0s] Participante de cenário 31 → WAITLISTED
+[carga-mista     ] [  4.1s] Participante de cenário 25 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  4.2s] Participante de cenário 53 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  4.2s] Participante de cenário 05 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  4.2s] Participante de cenário 09 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  4.2s] Participante de cenário 85 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  4.2s] Participante de cenário 18 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  4.2s] Participante de cenário 91 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  4.2s] Participante de cenário 26 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  4.3s] Participante de cenário 18 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  4.3s] Participante de cenário 58 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  4.3s] Participante de cenário 74 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  4.3s] Participante de cenário 73 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  4.3s] Participante de cenário 83 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  4.4s] Participante de cenário 29 · Oficina: Mensageria com RabbitMQ → REFUSED
+[pico-inscricoes ] [  9.3s] Participante de cenário 32 → WAITLISTED
+[carga-mista     ] [  4.4s] Participante de cenário 82 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  4.4s] Participante de cenário 97 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  4.4s] Participante de cenário 41 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  4.5s] Participante de cenário 57 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  4.5s] Participante de cenário 80 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  4.6s] Participante de cenário 15 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  4.6s] Participante de cenário 42 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  4.6s] Participante de cenário 74 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  4.6s] Participante de cenário 95 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[pico-inscricoes ] [  9.6s] Participante de cenário 33 → WAITLISTED
+[carga-mista     ] [  4.7s] Participante de cenário 36 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  4.7s] Participante de cenário 21 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  4.7s] Participante de cenário 10 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  4.8s] Participante de cenário 07 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  4.8s] Participante de cenário 35 · Mesa-redonda: Carreira em TI → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  4.8s] Participante de cenário 23 · Palestra: Microsserviços → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  4.9s] Participante de cenário 25 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  4.9s] Participante de cenário 75 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  4.9s] Participante de cenário 82 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  4.9s] Participante de cenário 75 · Palestra: Microsserviços → desistiu (CANCELLED) · vaga liberada
+[pico-inscricoes ] [  9.9s] Participante de cenário 34 → WAITLISTED
+[carga-mista     ] [  5.0s] Participante de cenário 02 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  5.0s] Participante de cenário 28 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  5.0s] Participante de cenário 61 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  5.0s] Participante de cenário 72 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  5.1s] Participante de cenário 27 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  5.1s] Participante de cenário 16 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  5.2s] Participante de cenário 24 · Palestra: Observabilidade → WAITLISTED
+[pico-inscricoes ] [ 10.2s] Participante de cenário 35 → WAITLISTED
+[carga-mista     ] [  5.3s] Participante de cenário 84 · Mesa-redonda: Carreira em TI → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  5.4s] Participante de cenário 14 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  5.5s] Participante de cenário 10 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  5.5s] Participante de cenário 93 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  5.5s] Participante de cenário 03 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  5.5s] Participante de cenário 26 · Mesa-redonda: Carreira em TI → desistiu (CANCELLED) · vaga liberada
+[pico-inscricoes ] [ 10.5s] Participante de cenário 36 → WAITLISTED
+[carga-mista     ] [  5.6s] Participante de cenário 32 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  5.6s] Participante de cenário 50 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  5.6s] Participante de cenário 78 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  5.6s] Participante de cenário 56 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  5.6s] Participante de cenário 76 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  5.7s] Participante de cenário 13 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  5.7s] Participante de cenário 69 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  5.7s] Participante de cenário 68 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  5.7s] Participante de cenário 98 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  5.8s] Participante de cenário 97 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  5.8s] Participante de cenário 64 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  5.8s] Participante de cenário 38 · Palestra: Microsserviços → CONFIRMED
+[pico-inscricoes ] [ 10.8s] Participante de cenário 37 → WAITLISTED
+[carga-mista     ] [  5.9s] Participante de cenário 03 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  5.9s] Participante de cenário 09 · Mesa-redonda: Carreira em TI → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  6.0s] Participante de cenário 56 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  6.0s] Participante de cenário 12 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  6.0s] Participante de cenário 37 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  6.1s] Participante de cenário 72 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  6.1s] Participante de cenário 62 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  6.1s] Participante de cenário 100 · Painel: Pesquisa em ES → WAITLISTED
+[pico-inscricoes ] [ 11.1s] Participante de cenário 38 → WAITLISTED
+[carga-mista     ] [  6.2s] Participante de cenário 34 · Oficina: Escrita científica → PENDING_PAYMENT
+[carga-mista     ] [  6.3s] Participante de cenário 85 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  6.3s] Participante de cenário 19 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  6.3s] Participante de cenário 17 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  6.4s] Participante de cenário 32 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  6.4s] Participante de cenário 86 · Oficina: Escrita científica → WAITLISTED
+[pico-inscricoes ] [ 11.4s] Participante de cenário 39 → WAITLISTED
+[carga-mista     ] [  6.5s] Participante de cenário 19 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  6.5s] Participante de cenário 02 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  6.6s] Participante de cenário 50 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  6.6s] Participante de cenário 45 · Painel: Pesquisa em ES → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  6.7s] Participante de cenário 68 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  6.8s] Participante de cenário 65 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[pico-inscricoes ] [ 11.7s] Participante de cenário 40 → WAITLISTED
+[carga-mista     ] [  6.8s] Participante de cenário 95 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  6.8s] Participante de cenário 67 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  6.9s] Participante de cenário 31 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  6.9s] Participante de cenário 24 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [  6.9s] Participante de cenário 98 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  6.9s] Participante de cenário 89 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  6.9s] Participante de cenário 33 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  7.0s] Participante de cenário 34 · Palestra: Observabilidade → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  7.1s] Participante de cenário 80 · Palestra: Observabilidade → desistiu (CANCELLED) · vaga liberada
+[pico-inscricoes ] [ 12.0s] Participante de cenário 41 → WAITLISTED
+[carga-mista     ] [  7.1s] Participante de cenário 42 · Oficina: Testes automatizados → REFUSED
+[carga-mista     ] [  7.1s] Participante de cenário 82 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  7.1s] Participante de cenário 34 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  7.1s] Participante de cenário 88 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  7.1s] Participante de cenário 83 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  7.2s] Participante de cenário 61 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  7.3s] Participante de cenário 13 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  7.3s] Participante de cenário 11 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  7.3s] Participante de cenário 20 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  7.3s] Participante de cenário 17 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  7.3s] Participante de cenário 33 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  7.3s] Participante de cenário 43 · Painel: Pesquisa em ES → WAITLISTED
+[pico-inscricoes ] [ 12.3s] Participante de cenário 42 → WAITLISTED
+[carga-mista     ] [  7.4s] Participante de cenário 30 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  7.4s] Participante de cenário 89 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  7.5s] Participante de cenário 71 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  7.5s] Participante de cenário 20 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  7.5s] Participante de cenário 92 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  7.6s] Participante de cenário 33 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [  7.6s] Participante de cenário 28 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  7.6s] Participante de cenário 92 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  7.6s] Participante de cenário 41 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  7.6s] Participante de cenário 70 · Painel: Pesquisa em ES → ignorou a oferta (vai expirar)
+[pico-inscricoes ] [ 12.6s] Participante de cenário 43 → WAITLISTED
+[carga-mista     ] [  7.7s] Participante de cenário 45 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  7.7s] Participante de cenário 39 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  7.7s] Participante de cenário 97 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  7.8s] Participante de cenário 60 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  7.9s] Participante de cenário 70 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  7.9s] Participante de cenário 28 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  7.9s] Participante de cenário 31 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  7.9s] Participante de cenário 86 · Mesa-redonda: Carreira em TI → CONFIRMED
+[pico-inscricoes ] [ 12.9s] Participante de cenário 44 → WAITLISTED
+[carga-mista     ] [  8.0s] Participante de cenário 47 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [  8.0s] Participante de cenário 08 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  8.0s] Participante de cenário 79 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  8.1s] Participante de cenário 05 · Palestra: Observabilidade → saiu da lista de espera → CONFIRMED
+[carga-mista     ] [  8.1s] Participante de cenário 25 · Palestra: Observabilidade → saiu da lista de espera → CONFIRMED
+[carga-mista     ] [  8.1s] Participante de cenário 54 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  8.1s] Participante de cenário 89 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  8.1s] Participante de cenário 51 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [  8.1s] Participante de cenário 04 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  8.2s] Participante de cenário 25 · Oficina: Escrita científica → REFUSED
+[carga-mista     ] [  8.2s] Participante de cenário 97 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  8.2s] Participante de cenário 100 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  8.2s] Participante de cenário 87 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  8.2s] Participante de cenário 11 · Mesa-redonda: Carreira em TI → CONFIRMED
+[carga-mista     ] [  8.2s] Participante de cenário 02 · Sessão de pôsteres → desistiu (CANCELLED) · vaga liberada
+[pico-inscricoes ] [ 13.2s] Participante de cenário 45 → WAITLISTED
+[carga-mista     ] [  8.3s] Participante de cenário 34 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  8.3s] Participante de cenário 38 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  8.3s] Participante de cenário 71 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [  8.3s] Participante de cenário 61 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  8.3s] Participante de cenário 90 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  8.4s] Participante de cenário 41 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  8.4s] Participante de cenário 44 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  8.4s] Participante de cenário 01 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  8.5s] Participante de cenário 41 · Oficina: Escrita científica → REFUSED
+[carga-mista     ] [  8.5s] Participante de cenário 26 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  8.5s] Participante de cenário 22 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [  8.5s] Participante de cenário 83 · Palestra: Microsserviços → CONFIRMED
+[carga-mista     ] [  8.5s] Participante de cenário 59 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  8.5s] Participante de cenário 70 · Mesa-redonda: Carreira em TI → WAITLISTED
+[carga-mista     ] [  8.5s] Participante de cenário 40 · Painel: Pesquisa em ES → desistiu (CANCELLED) · vaga liberada
+[pico-inscricoes ] [ 13.5s] Participante de cenário 46 → WAITLISTED
+[carga-mista     ] [  8.6s] Participante de cenário 61 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  8.6s] Participante de cenário 02 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [  8.6s] Participante de cenário 29 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  8.6s] Participante de cenário 84 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [  8.7s] Participante de cenário 45 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  8.7s] Participante de cenário 96 · Oficina: Testes automatizados → REFUSED
+[carga-mista     ] [  8.8s] Participante de cenário 63 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  8.8s] Participante de cenário 06 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  8.8s] Participante de cenário 98 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  8.8s] Participante de cenário 40 · Minicurso: Docker e Compose → CONFIRMED
+[pico-inscricoes ] [ 13.8s] Participante de cenário 47 → WAITLISTED
+[carga-mista     ] [  8.9s] Participante de cenário 55 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  8.9s] Participante de cenário 27 · Mesa-redonda: Carreira em TI → WAITLISTED
+[carga-mista     ] [  9.0s] Participante de cenário 35 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  9.1s] Participante de cenário 66 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [  9.1s] Participante de cenário 78 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[pico-inscricoes ] [ 14.1s] Participante de cenário 48 → WAITLISTED
+[carga-mista     ] [  9.2s] Participante de cenário 04 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  9.2s] Participante de cenário 76 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [  9.3s] Participante de cenário 60 · Mesa-redonda: Carreira em TI → WAITLISTED
+[carga-mista     ] [  9.3s] Participante de cenário 81 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [  9.3s] Participante de cenário 75 · Mesa-redonda: Carreira em TI → WAITLISTED
+[carga-mista     ] [  9.4s] Participante de cenário 15 · Palestra: Observabilidade → WAITLISTED
+[pico-inscricoes ] [ 14.4s] Participante de cenário 49 → WAITLISTED
+[carga-mista     ] [  9.5s] Participante de cenário 24 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  9.5s] Participante de cenário 66 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [  9.6s] Participante de cenário 62 · Painel: Pesquisa em ES → ignorou a oferta (vai expirar)
+[carga-mista     ] [  9.6s] Participante de cenário 70 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  9.6s] Participante de cenário 59 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  9.6s] Participante de cenário 93 · Mesa-redonda: Carreira em TI → WAITLISTED
+[carga-mista     ] [  9.7s] Participante de cenário 05 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  9.7s] Participante de cenário 04 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  9.7s] Participante de cenário 73 · Oficina: Testes automatizados → WAITLISTED
+[pico-inscricoes ] [ 14.7s] Participante de cenário 50 → WAITLISTED
+[carga-mista     ] [  9.8s] Participante de cenário 21 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [  9.8s] Participante de cenário 39 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  9.8s] Participante de cenário 49 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [  9.8s] Participante de cenário 51 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  9.8s] Participante de cenário 78 · Oficina: Testes automatizados → WAITLISTED
+[carga-mista     ] [  9.8s] Participante de cenário 19 · Painel: Pesquisa em ES → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [  9.9s] Participante de cenário 86 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 10.0s] Participante de cenário 12 · Mesa-redonda: Carreira em TI → WAITLISTED
+[carga-mista     ] [ 10.0s] Participante de cenário 35 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 10.0s] Participante de cenário 53 · Mesa-redonda: Carreira em TI → WAITLISTED
+[carga-mista     ] [ 10.0s] Participante de cenário 69 · Mesa-redonda: Carreira em TI → WAITLISTED
+[pico-inscricoes ] [ 15.0s] Participante de cenário 51 → WAITLISTED
+[carga-mista     ] [ 10.1s] Participante de cenário 72 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 10.2s] Participante de cenário 83 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 10.2s] Participante de cenário 55 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [ 10.3s] Participante de cenário 44 · Mesa-redonda: Carreira em TI → WAITLISTED
+[pico-inscricoes ] [ 15.3s] Participante de cenário 52 → WAITLISTED
+[carga-mista     ] [ 10.4s] Participante de cenário 60 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [ 10.5s] Participante de cenário 59 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [ 10.6s] Participante de cenário 30 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 10.6s] Participante de cenário 99 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 10.6s] Participante de cenário 16 · Mesa-redonda: Carreira em TI → WAITLISTED
+[pico-inscricoes ] [ 15.6s] Participante de cenário 53 → WAITLISTED
+[carga-mista     ] [ 10.7s] Participante de cenário 99 · Mesa-redonda: Carreira em TI → WAITLISTED
+[carga-mista     ] [ 10.7s] Participante de cenário 51 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [ 10.7s] Participante de cenário 85 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [ 10.8s] Participante de cenário 80 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [ 10.8s] Participante de cenário 67 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 10.9s] Participante de cenário 42 · Sessão de pôsteres → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [ 10.9s] Participante de cenário 100 · Painel: Pesquisa em ES → ignorou a oferta (vai expirar)
+[carga-mista     ] [ 10.9s] Participante de cenário 56 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 10.9s] Participante de cenário 65 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [ 10.9s] Participante de cenário 87 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [ 10.9s] Participante de cenário 32 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 10.9s] Participante de cenário 96 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 10.9s] Participante de cenário 78 · Painel: Pesquisa em ES → WAITLISTED
+[pico-inscricoes ] [ 15.9s] Participante de cenário 54 → WAITLISTED
+[carga-mista     ] [ 11.0s] Participante de cenário 74 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 11.0s] Participante de cenário 72 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 11.0s] Participante de cenário 54 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 11.1s] Participante de cenário 15 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 11.1s] Participante de cenário 92 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [ 11.1s] Participante de cenário 21 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [ 11.1s] Participante de cenário 27 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 11.1s] Participante de cenário 79 · Sessão de pôsteres → desistiu (CANCELLED) · vaga liberada
+[carga-mista     ] [ 11.2s] Participante de cenário 79 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 11.2s] Participante de cenário 68 · Oficina: Testes automatizados → pagamento aprovado → CONFIRMED
+[pico-inscricoes ] [ 16.2s] Participante de cenário 55 → WAITLISTED
+[carga-mista     ] [ 11.3s] Participante de cenário 48 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 11.4s] Participante de cenário 85 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 11.4s] Participante de cenário 27 · Minicurso: Docker e Compose → CONFIRMED
+[carga-mista     ] [ 11.4s] Participante de cenário 63 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 11.4s] Participante de cenário 77 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [ 11.5s] Participante de cenário 22 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[pico-inscricoes ] [ 16.5s] Participante de cenário 56 → WAITLISTED
+[carga-mista     ] [ 11.6s] Participante de cenário 66 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 11.6s] Participante de cenário 20 · Painel: Pesquisa em ES → WAITLISTED
+[pico-inscricoes ] [ 16.8s] Participante de cenário 57 → WAITLISTED
+[carga-mista     ] [ 11.9s] Participante de cenário 76 · Oficina: Mensageria com RabbitMQ → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 11.9s] Participante de cenário 44 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[carga-mista     ] [ 11.9s] Participante de cenário 49 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 11.9s] Participante de cenário 100 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [ 12.0s] Organizador · Palestra: Microsserviços → atividade começou (dura 5 s)
+[carga-mista     ] [ 12.0s] Participante de cenário 73 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [ 12.0s] Participante de cenário 46 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [ 12.1s] Participante de cenário 12 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[pico-inscricoes ] [ 17.1s] Participante de cenário 58 → WAITLISTED
+[carga-mista     ] [ 12.2s] Participante de cenário 79 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 12.2s] Participante de cenário 10 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [ 12.3s] Participante de cenário 34 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 12.3s] Participante de cenário 46 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 12.3s] Participante de cenário 58 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 12.4s] Participante de cenário 06 · Oficina: Mensageria com RabbitMQ → WAITLISTED
+[pico-inscricoes ] [ 17.4s] Participante de cenário 59 → WAITLISTED
+[carga-mista     ] [ 12.5s] Participante de cenário 81 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 12.5s] Participante de cenário 21 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 12.6s] Participante de cenário 96 · Sessão de pôsteres → CONFIRMED
+[carga-mista     ] [ 12.6s] Participante de cenário 91 · Oficina: Escrita científica → WAITLISTED
+[pico-inscricoes ] [ 17.7s] Participante de cenário 60 → WAITLISTED
+[carga-mista     ] [ 12.9s] Organizador · Oficina: Testes automatizados → atividade começou (dura 5 s)
+[carga-mista     ] [ 13.0s] Participante de cenário 36 · Sessão de pôsteres → WAITLISTED
+[carga-mista     ] [ 13.0s] Participante de cenário 47 · Painel: Pesquisa em ES → WAITLISTED
+[pico-inscricoes ] [ 18.0s] Participante de cenário 61 → WAITLISTED
+[carga-mista     ] [ 13.1s] Participante de cenário 06 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 13.2s] Participante de cenário 16 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 13.2s] Participante de cenário 94 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 13.3s] Participante de cenário 52 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 13.3s] Participante de cenário 60 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 13.3s] Participante de cenário 77 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 13.3s] Participante de cenário 77 · Painel: Pesquisa em ES → WAITLISTED
+[pico-inscricoes ] [ 18.3s] Participante de cenário 62 → WAITLISTED
+[carga-mista     ] [ 13.4s] Participante de cenário 55 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 13.4s] Participante de cenário 63 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 13.5s] Participante de cenário 74 · Palestra: Observabilidade → WAITLISTED
+[carga-mista     ] [ 13.5s] Participante de cenário 83 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 13.6s] Participante de cenário 100 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 13.6s] Participante de cenário 23 · Sessão de pôsteres → WAITLISTED
+[pico-inscricoes ] [ 18.6s] Participante de cenário 63 → WAITLISTED
+[carga-mista     ] [ 13.7s] Participante de cenário 81 · Sessão de pôsteres → WAITLISTED
+[carga-mista     ] [ 13.8s] Organizador · Mesa-redonda: Carreira em TI → atividade começou (dura 5 s)
+[carga-mista     ] [ 13.9s] Participante de cenário 56 · Palestra: Microsserviços → check-in registrado
+[pico-inscricoes ] [ 18.9s] Participante de cenário 64 → WAITLISTED
+[carga-mista     ] [ 14.0s] Participante de cenário 75 · Oficina: Escrita científica → pagamento aprovado → CONFIRMED
+[carga-mista     ] [ 14.0s] Participante de cenário 92 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [ 14.1s] Participante de cenário 56 · Oficina: Escrita científica → WAITLISTED
+[pico-inscricoes ] [ 19.2s] Participante de cenário 65 → WAITLISTED
+[carga-mista     ] [ 14.3s] Participante de cenário 05 · Oficina: Testes automatizados → check-in registrado
+[carga-mista     ] [ 14.3s] Participante de cenário 33 · Sessão de pôsteres → WAITLISTED
+[carga-mista     ] [ 14.3s] Participante de cenário 37 · Painel: Pesquisa em ES → WAITLISTED
+[carga-mista     ] [ 14.4s] Participante de cenário 31 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [ 14.5s] Participante de cenário 64 · Oficina: Escrita científica → WAITLISTED
+[pico-inscricoes ] [ 19.5s] Participante de cenário 66 → WAITLISTED
+[carga-mista     ] [ 14.6s] Participante de cenário 07 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 14.7s] Organizador · Minicurso: Docker e Compose → atividade começou (dura 5 s)
+[carga-mista     ] [ 14.7s] Participante de cenário 01 · Oficina: Escrita científica → WAITLISTED
+[carga-mista     ] [ 14.8s] Participante de cenário 54 · Oficina: Testes automatizados → check-in registrado
+[pico-inscricoes ] [ 19.8s] Participante de cenário 67 → WAITLISTED
+[carga-mista     ] [ 14.9s] Participante de cenário 43 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 15.1s] Participante de cenário 41 · Sessão de pôsteres → WAITLISTED
+[carga-mista     ] [ 15.1s] Participante de cenário 54 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 15.1s] Participante de cenário 65 · Palestra: Microsserviços → check-in registrado
+[pico-inscricoes ] [ 20.1s] Participante de cenário 68 → WAITLISTED
+[carga-mista     ] [ 15.2s] Participante de cenário 38 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 15.2s] Participante de cenário 98 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 15.3s] Participante de cenário 46 · Mesa-redonda: Carreira em TI → check-in registrado
+[carga-mista     ] [ 15.4s] Participante de cenário 86 · Mesa-redonda: Carreira em TI → check-in registrado
+[pico-inscricoes ] [ 20.4s] Participante de cenário 69 → WAITLISTED
+[carga-mista     ] [ 15.5s] Participante de cenário 53 · Oficina: Testes automatizados → check-in registrado
+[carga-mista     ] [ 15.6s] Organizador · Oficina: Mensageria com RabbitMQ → atividade começou (dura 5 s)
+[carga-mista     ] [ 15.7s] Participante de cenário 83 · Oficina: Testes automatizados → check-in registrado
+[carga-mista     ] [ 15.7s] Participante de cenário 11 · Mesa-redonda: Carreira em TI → check-in registrado
+[carga-mista     ] [ 15.7s] Participante de cenário 24 · Mesa-redonda: Carreira em TI → check-in registrado
+[pico-inscricoes ] [ 20.7s] Participante de cenário 70 → WAITLISTED
+[carga-mista     ] [ 15.8s] Participante de cenário 27 · Oficina: Testes automatizados → check-in registrado
+[carga-mista     ] [ 15.9s] Participante de cenário 28 · Mesa-redonda: Carreira em TI → check-in registrado
+[pico-inscricoes ] [ 21.0s] Participante de cenário 71 → WAITLISTED
+[carga-mista     ] [ 16.1s] Participante de cenário 83 · Minicurso: Docker e Compose → check-in registrado
+[carga-mista     ] [ 16.1s] Participante de cenário 68 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 16.2s] Participante de cenário 65 · Oficina: Testes automatizados → check-in registrado
+[carga-mista     ] [ 16.3s] Participante de cenário 36 · Palestra: Microsserviços → check-in registrado
+[pico-inscricoes ] [ 21.3s] Participante de cenário 72 → WAITLISTED
+[carga-mista     ] [ 16.5s] Organizador · Palestra: Observabilidade → atividade começou (dura 5 s)
+[carga-mista     ] [ 16.5s] Participante de cenário 59 · Mesa-redonda: Carreira em TI → check-in registrado
+[carga-mista     ] [ 16.5s] Participante de cenário 06 · Minicurso: Docker e Compose → check-in registrado
+[pico-inscricoes ] [ 21.6s] Participante de cenário 73 → WAITLISTED
+[pico-inscricoes ] [ 21.9s] Participante de cenário 74 → WAITLISTED
+[carga-mista     ] [ 17.1s] Participante de cenário 55 · Oficina: Mensageria com RabbitMQ → check-in registrado
+[carga-mista     ] [ 17.2s] Participante de cenário 78 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 17.2s] Participante de cenário 74 · Palestra: Microsserviços → check-in registrado
+[pico-inscricoes ] [ 22.2s] Participante de cenário 75 → WAITLISTED
+[carga-mista     ] [ 17.3s] Participante de cenário 70 · Oficina: Testes automatizados → check-in registrado
+[carga-mista     ] [ 17.3s] Participante de cenário 49 · Mesa-redonda: Carreira em TI → check-in registrado
+[carga-mista     ] [ 17.3s] Participante de cenário 97 · Mesa-redonda: Carreira em TI → check-in registrado
+[carga-mista     ] [ 17.4s] Organizador · Painel: Pesquisa em ES → atividade começou (dura 5 s)
+[pico-inscricoes ] [ 22.5s] Participante de cenário 76 → WAITLISTED
+[carga-mista     ] [ 17.7s] Participante de cenário 13 · Oficina: Testes automatizados → check-in registrado
+[carga-mista     ] [ 17.7s] Participante de cenário 53 · Palestra: Observabilidade → check-in registrado
+[carga-mista     ] [ 17.8s] Participante de cenário 50 · Oficina: Mensageria com RabbitMQ → check-in registrado
+[carga-mista     ] [ 17.8s] Participante de cenário 04 · Palestra: Observabilidade → check-in registrado
+[carga-mista     ] [ 17.8s] Participante de cenário 28 · Palestra: Microsserviços → check-in registrado
+[pico-inscricoes ] [ 22.8s] Participante de cenário 77 → WAITLISTED
+[carga-mista     ] [ 17.9s] Participante de cenário 68 · Oficina: Testes automatizados → check-in registrado
+[carga-mista     ] [ 17.9s] Participante de cenário 04 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 18.1s] Participante de cenário 80 · Minicurso: Docker e Compose → check-in registrado
+[pico-inscricoes ] [ 23.1s] Participante de cenário 78 → WAITLISTED
+[carga-mista     ] [ 18.2s] Participante de cenário 69 · Palestra: Microsserviços → check-in registrado
+[carga-mista     ] [ 18.3s] Organizador · Oficina: Escrita científica → atividade começou (dura 5 s)
+[carga-mista     ] [ 18.3s] Participante de cenário 98 · Mesa-redonda: Carreira em TI → check-in registrado
+[pico-inscricoes ] [ 23.4s] Participante de cenário 79 → WAITLISTED
+[carga-mista     ] [ 18.7s] Participante de cenário 66 · Minicurso: Docker e Compose → check-in registrado
+[pico-inscricoes ] [ 23.7s] Participante de cenário 80 → WAITLISTED
+[carga-mista     ] [ 18.8s] Participante de cenário 45 · Palestra: Observabilidade → check-in registrado
+[pico-inscricoes ] [ 24.0s] Participante de cenário 81 → WAITLISTED
+[carga-mista     ] [ 19.1s] Participante de cenário 18 · Minicurso: Docker e Compose → check-in registrado
+[carga-mista     ] [ 19.1s] Participante de cenário 05 · Palestra: Observabilidade → check-in registrado
+[carga-mista     ] [ 19.2s] Organizador · Sessão de pôsteres → atividade começou (dura 5 s)
+[carga-mista     ] [ 19.2s] Participante de cenário 64 · Mesa-redonda: Carreira em TI → check-in registrado
+[carga-mista     ] [ 19.3s] Participante de cenário 14 · Palestra: Observabilidade → check-in registrado
+[pico-inscricoes ] [ 24.3s] Participante de cenário 82 → WAITLISTED
+[carga-mista     ] [ 19.5s] Participante de cenário 60 · Oficina: Mensageria com RabbitMQ → check-in registrado
+[carga-mista     ] [ 19.5s] Participante de cenário 24 · Minicurso: Docker e Compose → check-in registrado
+[pico-inscricoes ] [ 24.6s] Participante de cenário 83 → WAITLISTED
+[carga-mista     ] [ 19.8s] Participante de cenário 25 · Palestra: Observabilidade → check-in registrado
+[carga-mista     ] [ 19.9s] Participante de cenário 61 · Mesa-redonda: Carreira em TI → check-in registrado
+[carga-mista     ] [ 19.9s] Participante de cenário 90 · Minicurso: Docker e Compose → check-in registrado
+[carga-mista     ] [ 19.9s] Participante de cenário 31 · Palestra: Observabilidade → check-in registrado
+[carga-mista     ] [ 19.9s] Participante de cenário 57 · Palestra: Observabilidade → check-in registrado
+[pico-inscricoes ] [ 24.9s] Participante de cenário 84 → WAITLISTED
+[pico-inscricoes ] [ 25.2s] Participante de cenário 85 → WAITLISTED
+[carga-mista     ] [ 20.3s] Participante de cenário 12 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 20.4s] Participante de cenário 34 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 20.4s] Participante de cenário 68 · Oficina: Testes automatizados → certificado emitido
+[carga-mista     ] [ 20.5s] Participante de cenário 32 · Oficina: Mensageria com RabbitMQ → check-in registrado
+[carga-mista     ] [ 20.5s] Participante de cenário 52 · Painel: Pesquisa em ES → check-in registrado
+[pico-inscricoes ] [ 25.5s] Participante de cenário 86 → WAITLISTED
+[carga-mista     ] [ 20.6s] Participante de cenário 05 · Oficina: Testes automatizados → certificado emitido
+[carga-mista     ] [ 20.7s] Participante de cenário 79 · Oficina: Escrita científica → check-in registrado
+[pico-inscricoes ] [ 25.8s] Participante de cenário 87 → WAITLISTED
+[carga-mista     ] [ 20.9s] Participante de cenário 25 · Sessão de pôsteres → check-in registrado
+[carga-mista     ] [ 21.0s] Participante de cenário 89 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 21.1s] Participante de cenário 01 · Minicurso: Docker e Compose → check-in registrado
+[pico-inscricoes ] [ 26.1s] Participante de cenário 88 → WAITLISTED
+[carga-mista     ] [ 21.2s] Participante de cenário 72 · Oficina: Mensageria com RabbitMQ → check-in registrado
+[carga-mista     ] [ 21.2s] Participante de cenário 43 · Palestra: Observabilidade → check-in registrado
+[carga-mista     ] [ 21.3s] Participante de cenário 16 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 21.3s] Participante de cenário 46 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 21.3s] Participante de cenário 45 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 21.4s] Participante de cenário 20 · Palestra: Observabilidade → check-in registrado
+[pico-inscricoes ] [ 26.4s] Participante de cenário 89 → WAITLISTED
+[carga-mista     ] [ 21.5s] Participante de cenário 68 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 21.7s] Participante de cenário 99 · Oficina: Escrita científica → check-in registrado
+[pico-inscricoes ] [ 26.7s] Participante de cenário 90 → WAITLISTED
+[carga-mista     ] [ 21.8s] Participante de cenário 80 · Sessão de pôsteres → check-in registrado
+[carga-mista     ] [ 21.8s] Participante de cenário 86 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 21.9s] Participante de cenário 72 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 21.9s] Participante de cenário 09 · Palestra: Observabilidade → check-in registrado
+[carga-mista     ] [ 22.0s] Participante de cenário 66 · Painel: Pesquisa em ES → check-in registrado
+[pico-inscricoes ] [ 27.0s] Participante de cenário 91 → WAITLISTED
+[carga-mista     ] [ 22.1s] Participante de cenário 42 · Palestra: Observabilidade → check-in registrado
+[carga-mista     ] [ 22.3s] Participante de cenário 57 · Painel: Pesquisa em ES → check-in registrado
+[pico-inscricoes ] [ 27.3s] Participante de cenário 92 → WAITLISTED
+[carga-mista     ] [ 22.4s] Participante de cenário 46 · Sessão de pôsteres → check-in registrado
+[carga-mista     ] [ 22.5s] Participante de cenário 30 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 22.6s] Participante de cenário 98 · Mesa-redonda: Carreira em TI → certificado emitido
+[pico-inscricoes ] [ 27.6s] Participante de cenário 93 → WAITLISTED
+[carga-mista     ] [ 22.7s] Participante de cenário 20 · Sessão de pôsteres → check-in registrado
+[carga-mista     ] [ 22.7s] Participante de cenário 24 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 22.8s] Participante de cenário 65 · Oficina: Testes automatizados → certificado emitido
+[pico-inscricoes ] [ 27.9s] Participante de cenário 94 → WAITLISTED
+[carga-mista     ] [ 23.0s] Participante de cenário 28 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 23.2s] Participante de cenário 96 · Sessão de pôsteres → check-in registrado
+[pico-inscricoes ] [ 28.2s] Participante de cenário 95 → WAITLISTED
+[carga-mista     ] [ 23.3s] Participante de cenário 24 · Minicurso: Docker e Compose → certificado emitido
+[carga-mista     ] [ 23.4s] Participante de cenário 49 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 23.5s] Participante de cenário 01 · Minicurso: Docker e Compose → certificado emitido
+[pico-inscricoes ] [ 28.5s] Participante de cenário 96 → WAITLISTED
+[carga-mista     ] [ 23.6s] Participante de cenário 75 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 23.6s] Participante de cenário 90 · Minicurso: Docker e Compose → certificado emitido
+[carga-mista     ] [ 23.7s] Participante de cenário 98 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 23.7s] Participante de cenário 92 · Sessão de pôsteres → check-in registrado
+[carga-mista     ] [ 23.7s] Participante de cenário 18 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 23.7s] Participante de cenário 83 · Minicurso: Docker e Compose → certificado emitido
+[pico-inscricoes ] [ 28.8s] Participante de cenário 97 → WAITLISTED
+[carga-mista     ] [ 23.9s] Participante de cenário 55 · Oficina: Mensageria com RabbitMQ → certificado emitido
+[carga-mista     ] [ 24.0s] Participante de cenário 64 · Mesa-redonda: Carreira em TI → certificado emitido
+[pico-inscricoes ] [ 29.1s] Participante de cenário 98 → WAITLISTED
+[carga-mista     ] [ 24.2s] Participante de cenário 74 · Oficina: Escrita científica → check-in registrado
+[carga-mista     ] [ 24.2s] Participante de cenário 45 · Palestra: Observabilidade → certificado emitido
+[pico-inscricoes ] [ 29.4s] Participante de cenário 99 → WAITLISTED
+[carga-mista     ] [ 24.5s] Participante de cenário 25 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 24.7s] Participante de cenário 95 · Sessão de pôsteres → check-in registrado
+[carga-mista     ] [ 24.7s] Participante de cenário 36 · Palestra: Microsserviços → certificado emitido
+[pico-inscricoes ] [ 29.7s] Participante de cenário 100 → WAITLISTED
+[pico-inscricoes ] Resultado: 25 CONFIRMED, 75 WAITLISTED
+[pico-inscricoes ] Vagas ocupadas: 25 de 25 — sem overbooking.
+[pico-inscricoes ] Esperado: 25 CONFIRMED e o restante na lista de espera.
+[pico-inscricoes ] Veredito: OK
+[carga-mista     ] [ 25.1s] Participante de cenário 60 · Oficina: Mensageria com RabbitMQ → certificado emitido
+[carga-mista     ] [ 25.2s] Participante de cenário 29 · Sessão de pôsteres → check-in registrado
+[carga-mista     ] [ 25.2s] Participante de cenário 69 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 25.3s] Participante de cenário 77 · Sessão de pôsteres → check-in registrado
+[carga-mista     ] [ 25.6s] Participante de cenário 54 · Oficina: Testes automatizados → certificado emitido
+[carga-mista     ] [ 25.6s] Participante de cenário 65 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 25.7s] Participante de cenário 72 · Oficina: Mensageria com RabbitMQ → certificado emitido
+[carga-mista     ] [ 25.9s] Participante de cenário 59 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 25.9s] Participante de cenário 07 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 26.3s] Participante de cenário 53 · Oficina: Testes automatizados → certificado emitido
+[carga-mista     ] [ 26.3s] Participante de cenário 83 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 26.4s] Participante de cenário 100 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 26.7s] Participante de cenário 74 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 26.9s] Participante de cenário 79 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 26.9s] Participante de cenário 92 · Sessão de pôsteres → certificado emitido
+[carga-mista     ] [ 27.0s] Participante de cenário 12 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 27.0s] Participante de cenário 18 · Minicurso: Docker e Compose → certificado emitido
+[carga-mista     ] [ 27.2s] Participante de cenário 70 · Oficina: Testes automatizados → certificado emitido
+[carga-mista     ] [ 27.3s] Participante de cenário 53 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 27.7s] Participante de cenário 14 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 27.8s] Participante de cenário 06 · Minicurso: Docker e Compose → certificado emitido
+[carga-mista     ] [ 28.1s] Participante de cenário 46 · Sessão de pôsteres → certificado emitido
+[carga-mista     ] [ 28.1s] Participante de cenário 43 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 28.2s] Participante de cenário 11 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 28.2s] Participante de cenário 09 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 28.3s] Participante de cenário 13 · Oficina: Testes automatizados → certificado emitido
+[carga-mista     ] [ 28.3s] Participante de cenário 20 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 28.4s] Participante de cenário 89 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 28.4s] Participante de cenário 34 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 28.5s] Participante de cenário 75 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 28.6s] Participante de cenário 43 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 28.8s] Participante de cenário 96 · Sessão de pôsteres → certificado emitido
+[carga-mista     ] [ 28.8s] Participante de cenário 97 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 29.1s] Participante de cenário 99 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 29.1s] Participante de cenário 66 · Minicurso: Docker e Compose → certificado emitido
+[carga-mista     ] [ 29.1s] Participante de cenário 52 · Painel: Pesquisa em ES → certificado emitido
+[carga-mista     ] [ 29.2s] Participante de cenário 16 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 29.2s] Participante de cenário 32 · Oficina: Mensageria com RabbitMQ → certificado emitido
+[carga-mista     ] [ 29.3s] Participante de cenário 45 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 29.3s] Participante de cenário 72 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 29.3s] Participante de cenário 05 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 29.5s] Participante de cenário 80 · Sessão de pôsteres → certificado emitido
+[carga-mista     ] [ 29.5s] Participante de cenário 38 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 29.6s] Participante de cenário 18 · Oficina: Escrita científica → certificado emitido
+[carga-mista     ] [ 29.6s] Participante de cenário 61 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 29.6s] Participante de cenário 80 · Minicurso: Docker e Compose → certificado emitido
+[carga-mista     ] [ 29.6s] Participante de cenário 31 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 29.6s] Participante de cenário 57 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 29.7s] Participante de cenário 42 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 29.7s] Participante de cenário 74 · Palestra: Microsserviços → certificado emitido
+[carga-mista     ] [ 30.0s] Participante de cenário 28 · Mesa-redonda: Carreira em TI → certificado emitido
+[carga-mista     ] [ 30.0s] Participante de cenário 04 · Palestra: Observabilidade → certificado emitido
+[carga-mista     ] [ 30.0s] Participante de cenário 95 · Sessão de pôsteres → certificado emitido
+[carga-mista     ] Resultado: 100 CONFIRMED, 40 PENDING_PAYMENT, 170 WAITLISTED
+[carga-mista     ] Desistências: 16 · vagas repassadas da lista de espera: 2
+[carga-mista     ] Ofertas da lista de espera ignoradas (expiram depois): 3
+[carga-mista     ] Pagamentos recusados: 5
+[carga-mista     ] Check-ins: 85 de 121 inscrições confirmadas
+[carga-mista     ] Certificados emitidos: 71 de 85 check-ins
+[carga-mista     ] Atividades sem overbooking: 9 de 9.
+[carga-mista     ] Veredito: OK
+
+Resumo
+  pico-inscricoes  OK
+  ultima-vaga      OK
+  envios-repetidos OK
+  carga-mista      OK
+Veredito geral: OK
+METRICS {"durationSeconds":35.1,"requests":911,"requestsPerSecond":25.9,"failures":0,"resent":0,"latencyMs":{"p50":14,"p95":26,"p99":97,"max":118},"services":{"attendance":{"requests":156,"failures":0,"latencyMs":{"p50":12,"p95":22,"p99":37,"max":40}},"event-management":{"requests":33,"failures":0,"latencyMs":{"p50":16,"p95":43,"p99":81,"max":81}},"registration":{"requests":722,"failures":0,"latencyMs":{"p50":14,"p95":26,"p99":101,"max":118}}}}
