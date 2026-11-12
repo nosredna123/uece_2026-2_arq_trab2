@@ -99,6 +99,47 @@ def scenario_clients(settings: Settings) -> DemoClients:
     return DemoClients(settings, wait_for_connection=True)
 
 
+TRANSPORT_RESENDS = 3
+
+
+class ResendingClients:
+    """Resend a call after a timeout or lost connection, keeping its Idempotency-Key.
+
+    Every scenario write carries an Idempotency-Key, so under saturation a resend
+    either replays the stored result or performs the write exactly once.
+    """
+
+    def __init__(self, clients, sleep: Callable[[float], Awaitable[None]]):
+        self._clients = clients
+        self._sleep = sleep
+        self.resent = 0
+
+    async def aclose(self) -> None:
+        await self._clients.aclose()
+
+    def __getattr__(self, name: str):
+        method = getattr(self._clients, name)
+        if not asyncio.iscoroutinefunction(method):
+            return method
+
+        async def call(*args, **kwargs):
+            for attempt in range(TRANSPORT_RESENDS + 1):
+                try:
+                    return await method(*args, **kwargs)
+                except TransportError:
+                    if attempt == TRANSPORT_RESENDS:
+                        raise
+                    self.resent += 1
+                    await self._sleep(1)
+
+        return call
+
+
+def _report_resends(clients: ResendingClients, out: Callable[[str], None]) -> None:
+    if clients.resent:
+        out(f"Reenvios após timeout (mesma Idempotency-Key): {clients.resent}")
+
+
 def participant_label(index: int) -> str:
     return f"Participante de cenário {index:02}"
 
@@ -409,7 +450,7 @@ async def run_scenario(
         out(f"Erro de configuração: {error}")
         return 2
 
-    clients = clients_factory(settings)
+    clients = ResendingClients(clients_factory(settings), sleep)
     try:
         passed = await _run_single(
             scenario,
@@ -424,6 +465,7 @@ async def run_scenario(
         )
     finally:
         await clients.aclose()
+    _report_resends(clients, out)
     return 0 if passed else 1
 
 
@@ -431,6 +473,30 @@ MIXED_KEY = "carga-mista"
 DEFAULT_MIXED_DURATION_SECONDS = 60
 MIN_MIXED_DURATION_SECONDS = 10
 MIXED_CANCEL_RATE = 0.2
+MIXED_CHECK_IN_RATES = (0.4, 0.9)
+MIXED_CERTIFICATE_RATES = (0.5, 1.0)
+# Staggered timeline, as fractions of the run: activity k of event e starts at
+# FIRST_START + e * EVENT_STEP + k * ACTIVITY_STEP and lasts ACTIVITY_LENGTH.
+# Under heavy load an activity starts later: the organizer only opens it after
+# its registrations, cancellations and promotions finish, and its check-ins and
+# certificates shift by the same delay.
+MIXED_FIRST_START = 0.40
+MIXED_EVENT_STEP = 0.09
+MIXED_ACTIVITY_STEP = 0.03
+MIXED_ACTIVITY_LENGTH = 0.18
+MIXED_CERTIFICATE_DEADLINE = 0.97
+# Registration rejects admissions, cancellations and offers once an activity starts.
+MIXED_ADMISSION_MARGIN_SECONDS = 3.0
+MIXED_PROMOTION_SECONDS = 4.0
+MIXED_PREPARATION_SECONDS = 5.0
+# Until opened, activities sit this far in the future so registrations are never late.
+MIXED_PARKED_SECONDS = 3600
+RETRY_ATTEMPTS = 30
+PAYMENT_CONFIRMATION_ATTEMPTS = 20
+# Attendance learns about registrations and activities asynchronously, and the
+# service clocks can differ slightly from the script; these clear on retry.
+CHECK_IN_RETRYABLE = frozenset({"ELIGIBILITY_NOT_READY", "REGISTRATION_NOT_CONFIRMED"})
+CERTIFICATE_RETRYABLE = CHECK_IN_RETRYABLE | {"ACTIVITY_NOT_ENDED"}
 MIXED_EVENTS = (
     (
         "Semana de Engenharia de Software",
@@ -455,14 +521,22 @@ class MixedActivity:
     title: str
     capacity: int
     price_minor: int
+    starts_at_seconds: float = 0.0
+    ends_at_seconds: float = 0.0
+    check_in_rate: float = 0.0
+    certificate_rate: float = 0.0
 
 
 @dataclass(frozen=True)
 class MixedAction:
+    """Times are seconds from the start of the run, except cancel_after_seconds."""
+
     participant_index: int
     activity_index: int
     delay_seconds: float
     cancel_after_seconds: float | None
+    check_in_at_seconds: float | None = None
+    certificate_at_seconds: float | None = None
 
 
 @dataclass(frozen=True)
@@ -487,25 +561,36 @@ def mixed_duration(environ: Mapping[str, str]) -> int:
 
 
 def plan_mixed_load(participants: int, duration_seconds: int, rng: random.Random) -> MixedPlan:
-    """Random registrations over 3 events x 3 activities, with some cancellations.
+    """Random registrations, cancellations, check-ins and certificates over 3 x 3 activities.
 
     Seats (2-5 per activity for 20 participants) scale with the participant count.
+    Activities start and end at staggered moments within the run. Registrations
+    and cancellations happen before an activity starts, check-ins while it runs
+    (40-90% of the seats kept, drawn per activity) and certificates after it ends
+    (50-100% of the check-ins, drawn per activity).
     """
     scale = participants / MIXED_BASE_PARTICIPANTS
     activities = []
     for event_index, (_, titles) in enumerate(MIXED_EVENTS):
         paid_index = rng.randrange(len(titles))
         for index, title in enumerate(titles):
+            starts_at = duration_seconds * (
+                MIXED_FIRST_START + event_index * MIXED_EVENT_STEP + index * MIXED_ACTIVITY_STEP
+            )
             activities.append(
                 MixedActivity(
                     event_index,
                     title,
                     capacity=max(1, round(rng.randint(2, 5) * scale)),
                     price_minor=rng.choice(MIXED_PRICES_MINOR) if index == paid_index else 0,
+                    starts_at_seconds=round(starts_at, 1),
+                    ends_at_seconds=round(starts_at + duration_seconds * MIXED_ACTIVITY_LENGTH, 1),
+                    check_in_rate=round(rng.uniform(*MIXED_CHECK_IN_RATES), 2),
+                    certificate_rate=round(rng.uniform(*MIXED_CERTIFICATE_RATES), 2),
                 )
             )
     popularity = [rng.randint(1, 5) for _ in activities]
-    register_window = duration_seconds * 0.7
+    certificate_deadline = duration_seconds * MIXED_CERTIFICATE_DEADLINE
     actions = []
     for participant_index in range(participants):
         target = rng.randint(2, 4)
@@ -515,53 +600,79 @@ def plan_mixed_load(participants: int, duration_seconds: int, rng: random.Random
             if pick not in chosen:
                 chosen.append(pick)
         for activity_index in chosen:
-            delay = round(rng.uniform(0, register_window), 1)
+            spec = activities[activity_index]
+            closes = max(0.0, spec.starts_at_seconds - MIXED_ADMISSION_MARGIN_SECONDS)
+            delay = round(rng.uniform(0, closes), 1)
             cancel_after = None
-            if activities[activity_index].price_minor == 0 and rng.random() < MIXED_CANCEL_RATE:
-                cancel_after = round(rng.uniform(2, max(2, duration_seconds - delay - 3)), 1)
-            actions.append(MixedAction(participant_index, activity_index, delay, cancel_after))
+            cancel_room = closes - delay - MIXED_PROMOTION_SECONDS
+            if spec.price_minor == 0 and cancel_room >= 1 and rng.random() < MIXED_CANCEL_RATE:
+                cancel_after = round(rng.uniform(1, cancel_room), 1)
+            check_in_at = certificate_at = None
+            if cancel_after is None and rng.random() < spec.check_in_rate:
+                check_in_at = round(rng.uniform(spec.starts_at_seconds, spec.ends_at_seconds), 1)
+                if rng.random() < spec.certificate_rate:
+                    certificate_at = round(
+                        rng.uniform(
+                            spec.ends_at_seconds + 1,
+                            max(spec.ends_at_seconds + 1, certificate_deadline),
+                        ),
+                        1,
+                    )
+            actions.append(
+                MixedAction(
+                    participant_index,
+                    activity_index,
+                    delay,
+                    cancel_after,
+                    check_in_at,
+                    certificate_at,
+                )
+            )
     actions.sort(key=lambda item: item.delay_seconds)
     return MixedPlan(tuple(activities), tuple(actions))
 
 
-async def _prepare_mixed_events(clients, plan: MixedPlan, organizer, run_id: UUID, now: datetime):
+async def _prepare_mixed_events(
+    clients, plan: MixedPlan, organizer, run_id: UUID, now: datetime, duration: int
+):
+    """Create the events with parked activities; return (activity, input) pairs."""
     stamp = now.strftime("%H:%M:%S")
+    origin = now + timedelta(seconds=MIXED_PREPARATION_SECONDS)
+    parked = origin + timedelta(seconds=MIXED_PARKED_SECONDS)
     created = []
     for event_index, (event_title, _) in enumerate(MIXED_EVENTS):
-        starts_at = now + timedelta(minutes=15, hours=4 * event_index)
         event = await clients.create_event(
             EventInput(
                 organizationId=UUID(organizer["organizationId"]),
                 title=f"[CENÁRIO] Carga mista · {event_title} · {stamp}",
                 description="Evento fictício do GESAD/UECE gerado pelo script de cenário "
-                "(carga mista: inscrições, desistências e lista de espera).",
-                startsAt=starts_at,
-                endsAt=starts_at + timedelta(hours=3, minutes=5),
+                "(carga mista: inscrições, desistências, lista de espera, check-ins e "
+                "certificados, tudo em poucos segundos).",
+                startsAt=origin,
+                endsAt=parked + timedelta(seconds=duration + 60),
             ),
             token=organizer["token"],
             idempotency_key=f"scenario-{run_id}-event-{event_index}",
         )
-        slot = 0
         for activity_index, spec in enumerate(plan.activities):
             if spec.event_index != event_index:
                 continue
-            activity_start = starts_at + timedelta(hours=slot)
-            slot += 1
+            activity_input = ActivityInput(
+                title=f"[CENÁRIO] {spec.title}",
+                startsAt=parked + timedelta(seconds=spec.starts_at_seconds),
+                endsAt=parked + timedelta(seconds=spec.ends_at_seconds),
+                location="Laboratório GESAD/UECE",
+                responsible="Equipe GESAD/UECE",
+                capacity=spec.capacity,
+                price=Money(amountMinor=spec.price_minor, currency="BRL"),
+            )
             activity = await clients.create_activity(
                 event.id,
-                ActivityInput(
-                    title=f"[CENÁRIO] {spec.title}",
-                    startsAt=activity_start,
-                    endsAt=activity_start + timedelta(minutes=55),
-                    location="Laboratório GESAD/UECE",
-                    responsible="Equipe GESAD/UECE",
-                    capacity=spec.capacity,
-                    price=Money(amountMinor=spec.price_minor, currency="BRL"),
-                ),
+                activity_input,
                 token=organizer["token"],
                 idempotency_key=f"scenario-{run_id}-activity-{activity_index}",
             )
-            created.append(activity)
+            created.append((activity, activity_input))
         await clients.publish_event(
             event.id,
             token=organizer["token"],
@@ -590,33 +701,175 @@ async def _run_mixed_load(
     out("Cenário: Carga mista")
     out(
         f"{len(MIXED_EVENTS)} eventos · {len(plan.activities)} atividades ({paid} pagas) · "
-        f"{len(plan.actions)} inscrições e desistências aleatórias em {duration} s"
+        f"{len(plan.actions)} inscrições aleatórias em {duration} s"
     )
+    out(
+        "Cada atividade começa e termina durante o cenário: o organizador a abre depois das "
+        "inscrições e desistências; check-ins durante, certificados depois."
+    )
+    preparing = clock()
     try:
-        activities = await _prepare_mixed_events(clients, plan, organizer, run_id, now())
+        prepared = await _prepare_mixed_events(
+            clients, plan, organizer, run_id, now(), duration
+        )
     except SERVICE_ERRORS as error:
         out(f"Não foi possível preparar os eventos: {_error_code(error)}")
         return False
+    activities = [activity for activity, _ in prepared]
     out("Eventos publicados: [CENÁRIO] Carga mista · …")
     out("")
+    await sleep(max(0.0, MIXED_PREPARATION_SECONDS - (clock() - preparing)))
 
     started = clock()
     statuses: Counter[str] = Counter()
     errors: Counter[str] = Counter()
     cancelled = 0
     promoted = 0
-    waiting: dict[int, list[tuple[UUID, Mapping[str, str], str]]] = {}
+    checked_in = 0
+    certificates = 0
+    confirmed = 0
+    payments_pending = 0
+    waiting: dict[int, list[tuple[UUID, Mapping[str, str], str, MixedAction]]] = {}
+    pending = Counter(action.activity_index for action in plan.actions)
+    ready = [asyncio.Event() for _ in plan.activities]
+    opened = [asyncio.Event() for _ in plan.activities]
+    # Seconds each activity started after its planned moment; None if it never opened.
+    shifts: list[float | None] = [None] * len(plan.activities)
+    for activity_index in range(len(plan.activities)):
+        if not pending[activity_index]:
+            ready[activity_index].set()
 
     def log(participant: str, activity_index: int, text: str) -> None:
         title = plan.activities[activity_index].title
         out(f"[{clock() - started:5.1f}s] {participant} · {title} → {text}")
 
-    async def promote(activity_index: int) -> None:
-        nonlocal promoted
+    async def wait_until(seconds: float) -> None:
+        await sleep(max(0.0, seconds - (clock() - started)))
+
+    def phase_done(activity_index: int) -> None:
+        pending[activity_index] -= 1
+        if not pending[activity_index]:
+            ready[activity_index].set()
+
+    async def open_activity(activity_index: int) -> None:
+        spec = plan.activities[activity_index]
+        activity, activity_input = prepared[activity_index]
+        await ready[activity_index].wait()
+        await wait_until(spec.starts_at_seconds)
+        length = spec.ends_at_seconds - spec.starts_at_seconds
+        starts_at = now() + timedelta(seconds=1)
+        try:
+            await clients.update_activity(
+                activity.id,
+                activity_input.model_copy(
+                    update={
+                        "starts_at": starts_at,
+                        "ends_at": starts_at + timedelta(seconds=length),
+                    }
+                ),
+                token=organizer["token"],
+                idempotency_key=f"scenario-{run_id}-open-{activity_index}",
+            )
+        except SERVICE_ERRORS as error:
+            errors[_error_code(error)] += 1
+            out(f"[{clock() - started:5.1f}s] Organizador · {spec.title} → erro "
+                f"{_error_code(error)}")
+        else:
+            shifts[activity_index] = clock() - started + 1 - spec.starts_at_seconds
+            out(f"[{clock() - started:5.1f}s] Organizador · {spec.title} → atividade "
+                f"começou (dura {length:.0f} s)")
+        opened[activity_index].set()
+
+    async def with_retries(call, retryable, participant: str, action: MixedAction, what: str):
+        for attempt in range(RETRY_ATTEMPTS):
+            try:
+                return await call()
+            except SERVICE_ERRORS as error:
+                code = _error_code(error)
+                if code in retryable and attempt < RETRY_ATTEMPTS - 1:
+                    await sleep(1)
+                    continue
+                errors[code] += 1
+                log(participant, action.activity_index, f"erro {what} {code}")
+                return None
+        return None
+
+    async def attend(
+        registration_id: UUID, identity: Mapping[str, str], participant: str, action: MixedAction
+    ) -> None:
+        nonlocal checked_in, certificates
+        if action.check_in_at_seconds is None:
+            return
+        await opened[action.activity_index].wait()
+        shift = shifts[action.activity_index]
+        if shift is None:
+            return
+        await wait_until(action.check_in_at_seconds + shift)
+        recorded = await with_retries(
+            lambda: clients.check_in(
+                registration_id,
+                token=identity["token"],
+                idempotency_key=f"scenario-{run_id}-check-in-{registration_id}",
+                correlation_id=uuid4(),
+            ),
+            CHECK_IN_RETRYABLE,
+            participant,
+            action,
+            "no check-in",
+        )
+        if recorded is None:
+            return
+        checked_in += 1
+        log(participant, action.activity_index, "check-in registrado")
+        if action.certificate_at_seconds is None:
+            return
+        await wait_until(action.certificate_at_seconds + shift)
+        issued = await with_retries(
+            lambda: clients.issue_certificate(
+                registration_id,
+                token=identity["token"],
+                idempotency_key=f"scenario-{run_id}-certificate-{registration_id}",
+                correlation_id=uuid4(),
+            ),
+            CERTIFICATE_RETRYABLE,
+            participant,
+            action,
+            "no certificado",
+        )
+        if issued is not None:
+            certificates += 1
+            log(participant, action.activity_index, "certificado emitido")
+
+    async def await_payment(
+        registration_id: UUID, identity: Mapping[str, str], participant: str, action: MixedAction
+    ) -> bool:
+        nonlocal confirmed, payments_pending
+        for _ in range(PAYMENT_CONFIRMATION_ATTEMPTS):
+            await sleep(1)
+            try:
+                current = await clients.get_registration(registration_id, token=identity["token"])
+            except SERVICE_ERRORS as error:
+                errors[_error_code(error)] += 1
+                log(participant, action.activity_index, f"erro {_error_code(error)}")
+                return False
+            if current.status == "CONFIRMED":
+                confirmed += 1
+                log(participant, action.activity_index, "pagamento aprovado → CONFIRMED")
+                return True
+            if current.status != "PENDING_PAYMENT":
+                log(participant, action.activity_index, current.status)
+                return False
+        payments_pending += 1
+        return False
+
+    Attendee = tuple[UUID, Mapping[str, str], str, MixedAction]
+
+    async def promote(activity_index: int) -> Attendee | None:
+        nonlocal promoted, confirmed
         for _ in range(3):
             await sleep(1)
             for entry in list(waiting.get(activity_index, ())):
-                registration_id, identity, participant = entry
+                registration_id, identity, participant, waiting_action = entry
                 try:
                     current = await clients.get_registration(
                         registration_id, token=identity["token"]
@@ -633,13 +886,26 @@ async def _run_mixed_load(
                 except SERVICE_ERRORS as error:
                     errors[_error_code(error)] += 1
                     log(participant, activity_index, f"erro {_error_code(error)}")
-                    return
+                    return None
                 promoted += 1
                 log(participant, activity_index, f"saiu da lista de espera → {accepted.status}")
-                return
+                if accepted.status != "CONFIRMED":
+                    return None
+                confirmed += 1
+                return registration_id, identity, participant, waiting_action
+        return None
 
     async def act(index: int, action: MixedAction) -> None:
-        nonlocal cancelled
+        try:
+            attendee = await register(index, action)
+        finally:
+            phase_done(action.activity_index)
+        if attendee is not None:
+            await attend(*attendee)
+
+    async def register(index: int, action: MixedAction) -> Attendee | None:
+        """Everything that must happen before the activity starts."""
+        nonlocal cancelled, confirmed
         await sleep(action.delay_seconds)
         identity = identities[action.participant_index]
         participant = participant_label(action.participant_index + 1)
@@ -654,15 +920,22 @@ async def _run_mixed_load(
         except SERVICE_ERRORS as error:
             errors[_error_code(error)] += 1
             log(participant, action.activity_index, f"erro {_error_code(error)}")
-            return
+            return None
         statuses[registration.status] += 1
         log(participant, action.activity_index, registration.status)
         if registration.status == "WAITLISTED":
             waiting.setdefault(action.activity_index, []).append(
-                (registration.id, identity, participant)
+                (registration.id, identity, participant, action)
             )
-        if registration.status != "CONFIRMED" or action.cancel_after_seconds is None:
-            return
+        if registration.status == "PENDING_PAYMENT":
+            if await await_payment(registration.id, identity, participant, action):
+                return registration.id, identity, participant, action
+            return None
+        if registration.status != "CONFIRMED":
+            return None
+        confirmed += 1
+        if action.cancel_after_seconds is None:
+            return registration.id, identity, participant, action
         await sleep(action.cancel_after_seconds)
         try:
             await clients.cancel_registration(
@@ -673,12 +946,16 @@ async def _run_mixed_load(
         except SERVICE_ERRORS as error:
             errors[_error_code(error)] += 1
             log(participant, action.activity_index, f"erro {_error_code(error)}")
-            return
+            return None
         cancelled += 1
+        confirmed -= 1
         log(participant, action.activity_index, "desistiu (CANCELLED) · vaga liberada")
-        await promote(action.activity_index)
+        return await promote(action.activity_index)
 
-    await asyncio.gather(*(act(index, action) for index, action in enumerate(plan.actions)))
+    await asyncio.gather(
+        *(act(index, action) for index, action in enumerate(plan.actions)),
+        *(open_activity(index) for index in range(len(plan.activities))),
+    )
 
     overbooked = 0
     unreadable = 0
@@ -695,6 +972,10 @@ async def _run_mixed_load(
         + (", ".join(f"{count} {status}" for status, count in sorted(statuses.items())) or "nenhum")
     )
     out(f"Desistências: {cancelled} · vagas repassadas da lista de espera: {promoted}")
+    out(f"Check-ins: {checked_in} de {confirmed} inscrições confirmadas")
+    out(f"Certificados emitidos: {certificates} de {checked_in} check-ins")
+    if payments_pending:
+        out(f"Pagamentos ainda não confirmados ao fim do cenário: {payments_pending}")
     if errors:
         out("Erros: " + ", ".join(f"{count} {code}" for code, count in errors.items()))
     if unreadable:
@@ -733,7 +1014,7 @@ async def run_all(
     out(f"Todos os cenários em paralelo, durante cerca de {duration} s")
     out("Acompanhe em Relatórios, entrando como Organizador — GESAD/UECE.")
     out("")
-    clients = clients_factory(settings)
+    clients = ResendingClients(clients_factory(settings), sleep)
     try:
         single = [
             _run_single(
@@ -765,6 +1046,7 @@ async def run_all(
         await clients.aclose()
 
     out("")
+    _report_resends(clients, out)
     out("Resumo")
     for key, passed in zip(PARALLEL_KEYS, results):
         out(f"  {key:<{width}} {'OK' if passed else 'VERIFICAR'}")

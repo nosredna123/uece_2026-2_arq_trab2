@@ -247,7 +247,7 @@ Other scenarios, if time allows (each one creates its own fresh event):
 |---|---|---|
 | `bash scripts/cenario.sh ultima-vaga` | Two participants submit at the same time for the single seat. | Exactly 1 `CONFIRMED` and 1 `WAITLISTED`. |
 | `bash scripts/cenario.sh envios-repetidos` | One participant submits the same registration 10 times at once (double click). | One registration; all replies are the same `CONFIRMED`. |
-| `bash scripts/cenario.sh` (no argument) | All three scenarios in parallel, plus a random mixed load: 3 more events × 3 activities, paid seats, cancellations and waiting-list offers, for about 60 s. Watch the overview panel arrows move in every direction. | Each scenario `OK` and `Veredito geral: OK`. |
+| `bash scripts/cenario.sh` (no argument) | All three scenarios in parallel, plus a random mixed load: 3 more events × 3 activities, paid seats, cancellations, waiting-list offers, check-ins and certificates (each activity starts and ends during the run), for about 60 s, longer with many participants. Watch the overview panel arrows move in every direction. | Each scenario `OK` and `Veredito geral: OK`. |
 
 To make the peak slower or smaller for this run only:
 

@@ -141,7 +141,18 @@ freed seat is offered to the next person on the waiting list, who accepts it.
 Paid registrations show as `PENDING_PAYMENT` until the Billing mock approves
 them. Paid confirmed seats are never cancelled: the refund workflow is a known
 limitation (ADR-005 1.1.0), and Registration answers `409 REFUND_WORKFLOW_REQUIRED`.
-In this mode the peak also lasts `SCENARIO_MIXED_DURATION_SECONDS`. Each output
+Every activity also starts and ends during the run, at staggered moments (from
+about 40% of the duration on). The activities are created far in the future,
+and the organizer moves each one to "now" only after its registrations,
+cancellations and waiting-list offers finish, so a saturated system starts them
+later instead of rejecting late registrations. While an activity runs, a random
+40–90% of its kept seats (paid ones included, once confirmed) check in. After it
+ends, a random 50–100% of those check-ins get a certificate. The output adds
+`Check-ins: N de M inscrições confirmadas` and `Certificados emitidos: N de M
+check-ins`, so the Attendance and Certificates cards in Reports move as well.
+Under heavy load a request may time out. The script then resends it with the same
+`Idempotency-Key` (up to 3 times) and reports `Reenvios após timeout (mesma
+Idempotency-Key): N`. In this mode the peak also lasts `SCENARIO_MIXED_DURATION_SECONDS`. Each output
 line is prefixed with its scenario, and the run ends with a summary and
 `Veredito geral: OK` or `Veredito geral: VERIFICAR`. The mixed load is random,
 so every run differs.

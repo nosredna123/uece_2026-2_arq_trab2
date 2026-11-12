@@ -1,13 +1,20 @@
 import asyncio
 import random
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
 
-from demo_web.errors import ServiceError
-from demo_web.models import Activity, Availability, Event, Registration
+from demo_web.errors import ServiceError, TransportError
+from demo_web.models import (
+    Activity,
+    Availability,
+    Certificate,
+    CheckIn,
+    Event,
+    Registration,
+)
 from demo_web.scenarios import (
     SCENARIOS,
     MixedAction,
@@ -331,6 +338,32 @@ class FakeEventHub(FakeRegistration):
         self.activities = {}
         self.registrations = {}
         self.queues = {}
+        self.check_ins = set()
+        self.certificates = set()
+        self.attendance_lag = set()
+        self.opened = {}
+
+    def _closed(self, activity_id):
+        """Registration rejects admissions, cancellations and offers once an activity starts."""
+        if activity_id in self.opened:
+            raise ServiceError(
+                service="registration",
+                method="POST",
+                status_code=409,
+                code="ACTIVITY_INELIGIBLE",
+                message="started",
+                correlation_id=uuid4(),
+            )
+
+    async def update_activity(self, activity_id, activity_input, *, token, idempotency_key):
+        await asyncio.sleep(0)
+        assert activity_id not in self.opened
+        updated = self.activities[activity_id].model_copy(
+            update={"starts_at": activity_input.starts_at, "ends_at": activity_input.ends_at}
+        )
+        self.activities[activity_id] = updated
+        self.opened[activity_id] = (activity_input.starts_at, activity_input.ends_at)
+        return updated
 
     async def create_activity(self, event_id, activity_input, *, token, idempotency_key):
         activity = await super().create_activity(
@@ -356,6 +389,7 @@ class FakeEventHub(FakeRegistration):
         await asyncio.sleep(0)
         if idempotency_key in self.by_key:
             return self.registrations[self.by_key[idempotency_key]]
+        self._closed(activity_id)
         activity = self.activities[activity_id]
         seat = self.overbook or self._occupied(activity_id) < activity.capacity
         paid = activity.price.amount_minor > 0
@@ -377,6 +411,7 @@ class FakeEventHub(FakeRegistration):
         return registration
 
     async def cancel_registration(self, registration_id, *, token, idempotency_key):
+        self._closed(self.registrations[registration_id].activity_id)
         registration = self._store(self.registrations[registration_id], "CANCELLED")
         queue = self.queues[registration.activity_id]
         if queue:
@@ -385,10 +420,52 @@ class FakeEventHub(FakeRegistration):
 
     async def get_registration(self, registration_id, *, token):
         await asyncio.sleep(0)
-        return self.registrations[registration_id]
+        registration = self.registrations[registration_id]
+        if registration.status == "PENDING_PAYMENT":
+            return self._store(registration, "CONFIRMED")
+        return registration
+
+    def _attendance_error(self, code):
+        return ServiceError(
+            service="attendance",
+            method="POST",
+            status_code=409 if code == "ELIGIBILITY_NOT_READY" else 422,
+            code=code,
+            message=code,
+            correlation_id=uuid4(),
+        )
+
+    async def check_in(self, registration_id, *, token, idempotency_key, correlation_id):
+        await asyncio.sleep(0)
+        if self.registrations[registration_id].activity_id not in self.opened:
+            raise self._attendance_error("ACTIVITY_NOT_OPEN")
+        if registration_id not in self.attendance_lag:
+            self.attendance_lag.add(registration_id)
+            raise self._attendance_error("ELIGIBILITY_NOT_READY")
+        if self.registrations[registration_id].status != "CONFIRMED":
+            raise self._attendance_error("REGISTRATION_NOT_CONFIRMED")
+        self.check_ins.add(registration_id)
+        return CheckIn(
+            registrationId=registration_id, participantId=uuid4(), checkedInAt=NOW
+        )
+
+    async def issue_certificate(self, registration_id, *, token, idempotency_key, correlation_id):
+        await asyncio.sleep(0)
+        if registration_id not in self.check_ins:
+            raise self._attendance_error("CHECK_IN_REQUIRED")
+        self.certificates.add(registration_id)
+        registration = self.registrations[registration_id]
+        return Certificate(
+            id=uuid4(),
+            registrationId=registration_id,
+            participantId=uuid4(),
+            activityId=registration.activity_id,
+            issuedAt=NOW,
+        )
 
     async def accept_offer(self, registration_id, *, token, idempotency_key):
         await asyncio.sleep(0)
+        self._closed(self.registrations[registration_id].activity_id)
         return self._store(self.registrations[registration_id], "CONFIRMED")
 
     async def get_availability(self, activity_id):
@@ -435,11 +512,34 @@ def test_mixed_plan_spreads_load_over_nine_activities():
     assert {action.participant_index for action in plan.actions} == set(range(20))
     pairs = [(action.participant_index, action.activity_index) for action in plan.actions]
     assert len(pairs) == len(set(pairs))
-    assert all(0 <= action.delay_seconds <= 42 for action in plan.actions)
     cancelling = [action for action in plan.actions if action.cancel_after_seconds is not None]
     assert cancelling
     assert all(plan.activities[action.activity_index].price_minor == 0 for action in cancelling)
+    assert all(0.4 <= spec.check_in_rate <= 0.9 for spec in plan.activities)
+    assert all(0.5 <= spec.certificate_rate <= 1.0 for spec in plan.activities)
+    assert len({spec.starts_at_seconds for spec in plan.activities}) == 9
+    assert any(action.check_in_at_seconds is not None for action in plan.actions)
+    assert any(action.certificate_at_seconds is not None for action in plan.actions)
     assert plan_mixed_load(20, 60, random.Random(3)) == plan
+
+
+@pytest.mark.parametrize("duration", [10, 60, 300])
+def test_mixed_plan_follows_each_activity_timeline(duration):
+    plan = plan_mixed_load(200, duration, random.Random(5))
+    for action in plan.actions:
+        spec = plan.activities[action.activity_index]
+        assert 0 < spec.starts_at_seconds < spec.ends_at_seconds < duration
+        assert action.delay_seconds <= spec.starts_at_seconds - 3 + 1e-9
+        if action.cancel_after_seconds is not None:
+            # The freed seat must be offered and accepted before the activity starts.
+            finished = action.delay_seconds + action.cancel_after_seconds + 4
+            assert finished <= spec.starts_at_seconds - 3 + 1e-9
+            assert action.check_in_at_seconds is None
+        if action.check_in_at_seconds is not None:
+            assert spec.starts_at_seconds <= action.check_in_at_seconds <= spec.ends_at_seconds
+        if action.certificate_at_seconds is not None:
+            assert action.check_in_at_seconds is not None
+            assert spec.ends_at_seconds < action.certificate_at_seconds <= duration
 
 
 def test_mixed_plan_scales_seats_with_the_participants():
@@ -465,7 +565,57 @@ def test_run_all_runs_every_scenario_in_parallel(web_environment):
     assert any("desistiu (CANCELLED)" in line for line in mixed)
     assert any("saiu da lista de espera → CONFIRMED" in line for line in mixed)
     assert any("Atividades sem overbooking: 9 de 9." in line for line in mixed)
+    assert any("pagamento aprovado → CONFIRMED" in line for line in mixed)
+    assert fake.check_ins and fake.certificates
+    assert fake.certificates <= fake.check_ins
+    assert f"[carga-mista     ] Certificados emitidos: {len(fake.certificates)} de "
+    f"{len(fake.check_ins)} check-ins" in lines
+    assert sum("check-in registrado" in line for line in mixed) == len(fake.check_ins)
     assert lines[-1] == "Veredito geral: OK"
+
+
+def test_mixed_load_opens_each_activity_after_its_registrations(web_environment):
+    fake = FakeEventHub()
+    code, lines = _run_all(web_environment, fake, SCENARIO_MIXED_DURATION_SECONDS="60")
+
+    assert code == 0
+    mixed = {
+        activity_id: activity
+        for activity_id, activity in fake.activities.items()
+        if "Carga mista" not in activity.title and activity_id in fake.opened
+    }
+    assert len(mixed) == 9
+    for starts_at, ends_at in (fake.opened[activity_id] for activity_id in mixed):
+        assert starts_at == NOW + timedelta(seconds=1)
+        assert timedelta(seconds=10) <= ends_at - starts_at <= timedelta(seconds=11)
+    assert sum("atividade começou (dura 11 s)" in line for line in lines) == 9
+
+
+def test_activities_are_parked_until_opened(web_environment):
+    class Recording(FakeEventHub):
+        created = []
+
+        async def create_activity(self, event_id, activity_input, **kwargs):
+            self.created.append(activity_input.starts_at)
+            return await super().create_activity(event_id, activity_input, **kwargs)
+
+    fake = Recording()
+    _run_all(web_environment, fake)
+    assert all(
+        starts_at >= NOW + timedelta(seconds=scenarios.MIXED_PARKED_SECONDS)
+        for starts_at in fake.created[-9:]
+    )
+
+
+def test_unexpected_check_in_error_fails_the_mixed_verdict(web_environment):
+    class Broken(FakeEventHub):
+        async def check_in(self, registration_id, **kwargs):
+            raise self._attendance_error("FORBIDDEN")
+
+    code, lines = _run_all(web_environment, Broken())
+    assert code == 1
+    assert f"  {'carga-mista':<16} VERIFICAR" in lines
+    assert any("erro no check-in FORBIDDEN" in line for line in lines)
 
 
 def test_run_all_scales_with_many_participants(web_environment):
@@ -483,7 +633,11 @@ def test_run_all_scales_with_many_participants(web_environment):
 
 def test_simultaneous_cancellations_promote_distinct_waiting_participants(monkeypatch):
     plan = MixedPlan(
-        (MixedActivity(0, "Oficina", capacity=2, price_minor=0),),
+        (
+            MixedActivity(
+                0, "Oficina", capacity=2, price_minor=0, starts_at_seconds=20, ends_at_seconds=25
+            ),
+        ),
         tuple(
             MixedAction(index, 0, delay_seconds=0.0, cancel_after_seconds=cancel)
             for index, cancel in ((0, 1.0), (1, 1.0), (2, None), (3, None))
@@ -513,6 +667,51 @@ def test_simultaneous_cancellations_promote_distinct_waiting_participants(monkey
         "Participante de cenário 03",
         "Participante de cenário 04",
     }
+
+
+def test_timeouts_are_resent_with_the_same_idempotency_key(web_environment):
+    class Flaky(FakeEventHub):
+        keys = []
+
+        async def request_registration(self, activity_id, *, idempotency_key, **kwargs):
+            self.keys.append(idempotency_key)
+            if self.keys.count(idempotency_key) == 1:
+                raise TransportError(
+                    service="registration",
+                    method="POST",
+                    code="HTTP_TIMEOUT",
+                    message="timeout",
+                    correlation_id=uuid4(),
+                    outcome_unknown=True,
+                )
+            return await super().request_registration(
+                activity_id, idempotency_key=idempotency_key, **kwargs
+            )
+
+    fake = Flaky()
+    code, lines = _run_all(web_environment, fake)
+
+    assert code == 0, [line for line in lines if "erro" in line]
+    resent = len(set(fake.keys))
+    assert all(fake.keys.count(key) >= 2 for key in fake.keys)
+    assert f"Reenvios após timeout (mesma Idempotency-Key): {resent}" in lines
+
+
+def test_persistent_timeouts_still_fail_the_scenario(web_environment):
+    class Down(FakeRegistration):
+        async def request_registration(self, *args, **kwargs):
+            raise TransportError(
+                service="registration",
+                method="POST",
+                code="HTTP_TIMEOUT",
+                message="timeout",
+                correlation_id=uuid4(),
+                outcome_unknown=True,
+            )
+
+    code, lines = _run(web_environment, "ultima-vaga", Down())
+    assert code == 1
+    assert "Reenvios após timeout (mesma Idempotency-Key): 6" in lines
 
 
 def test_scenario_clients_wait_for_a_free_connection(web_environment):
