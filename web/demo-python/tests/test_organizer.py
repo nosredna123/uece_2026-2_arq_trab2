@@ -362,6 +362,11 @@ def test_reports_join_published_events_activities_and_counters(client, backend):
             "occupancy": "23%",
             "attendance": "67%",
         }
+        trend_by_key = {key: trend for trend, key in re.findall(r'data-trend="([\w-]+)" data-summary="(\w+)"', html)}
+        assert trend_by_key["confirmed"] == "up-good"
+        assert trend_by_key["waiting"] == "down-good"
+        assert trend_by_key["free_seats"] == "neutral"
+        assert html.count("data-summary-delta") == 11
     assert "<html" not in fragment.text
 
 

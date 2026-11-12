@@ -220,6 +220,10 @@ GESAD/UECE seminar activities; select one and click **View certificate**.
 
 3. Watch the Reports page refresh: in the new event's table **Confirmed** stops
    at 5 and **Waiting list** grows to 15; the overview panel totals rise with it.
+   Each changed card shows an arrow and the difference from the previous update
+   (`▲ +1`, `▼ −1 pp`) until that card changes again. Green means good news
+   (more confirmed, check-ins, certificates, occupancy, attendance; a shorter
+   waiting list), amber means a warning, and blue marks neutral counts.
    Each registration appears about 2 s after the terminal line, because
    `run-demo-web.sh` runs the Registration outbox relay every 1 s instead of the
    default 30 s.

@@ -1,22 +1,23 @@
 <p class="card-copy report-updated">Updated at <span data-report-updated>{{ updated_at }}</span></p>
 <section class="report-summary" data-report-summary aria-label="Overview of published events">
   <dl class="summary-grid">
-    {% for key, label in [
-      ("events", "Events"),
-      ("activities", "Activities"),
-      ("capacity", "Capacity"),
-      ("confirmed", "Confirmed"),
-      ("pending_payment", "Pending payment"),
-      ("waiting", "Waiting list"),
-      ("free_seats", "Free seats"),
-      ("checked_in", "Checked in"),
-      ("certificates", "Certificates"),
-      ("occupancy", "Occupancy"),
-      ("attendance", "Attendance"),
+    {% for key, label, trend in [
+      ("events", "Events", "neutral"),
+      ("activities", "Activities", "neutral"),
+      ("capacity", "Capacity", "neutral"),
+      ("confirmed", "Confirmed", "up-good"),
+      ("pending_payment", "Pending payment", "neutral"),
+      ("waiting", "Waiting list", "down-good"),
+      ("free_seats", "Free seats", "neutral"),
+      ("checked_in", "Checked in", "up-good"),
+      ("certificates", "Certificates", "up-good"),
+      ("occupancy", "Occupancy", "up-good"),
+      ("attendance", "Attendance", "up-good"),
     ] %}
-    <div class="summary-card" data-summary="{{ key }}">
+    <div class="summary-card" data-trend="{{ trend }}" data-summary="{{ key }}">
       <dt>{{ label }}</dt>
       <dd>{{ summary[key] }}</dd>
+      <dd class="summary-delta" data-summary-delta></dd>
     </div>
     {% endfor %}
   </dl>
