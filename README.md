@@ -72,8 +72,7 @@ O sistema **não** é um produto pronto para produção. Ficaram fora do escopo:
 
 - autenticação real;
 - liquidação financeira;
-- entrega de e-mail/SMS;
-- alta disponibilidade.
+- entrega de e-mail/SMS.
 
 A seção 12 lista essas limitações. O processo de engenharia está descrito em
 [processo.md](processo.md): saneamento do domínio, contextos delimitados,
@@ -707,8 +706,6 @@ invariante. Depois de corrigir o gerador e subir para 200 conexões, a varredura
    - Nossa hipótese para o *catch-up* menor nas execuções mais longas é que o
      consumidor drena a fila enquanto o cenário ainda está em andamento.
 
-Esses resultados vêm de um único notebook. Eles são comparativos e
-reproduzíveis, mas não constituem uma promessa de capacidade em produção.
 
 ### 10.7 Capturas de tela
 
