@@ -94,7 +94,7 @@ decisão que a trata e à evidência que a sustenta.
 | **Segurança mínima e isolamento de dados** | RN06, RN07, RQ07 | Cada serviço valida a identidade no Identity mock e aplica sua própria autorização. Há um banco lógico por serviço, com credenciais próprias. | Testes de autorização e de configuração |
 | **Rastreabilidade e diagnóstico** | RQ08 | `X-Correlation-ID` em HTTP, mensagens e logs JSON estruturados. | [observability.md](docs/validation/observability.md) |
 | **Heterogeneidade tecnológica** | Parte II | Java e Python integrados só por HTTP e mensagens versionadas. Não há biblioteca de domínio compartilhada. | Fluxo pago de ponta a ponta Java ↔ Python (§10.4) |
-| **Simplicidade (KISS) e custo local** | Restrição do trabalho | Docker Compose. Sem *gateway*, Kubernetes ou orquestrador de saga. | Execução em um único notebook (§10.6) |
+| **Simplicidade (KISS) e custo** | Restrição do trabalho | Docker Compose local, sem *gateway*, Kubernetes ou orquestrador de saga; na nuvem, isolamento lógico e escala seletiva evitam infraestrutura fixa desnecessária. | Execução em um único notebook (§10.6) e estimativa de TCO (§10.8) |
 
 **Tensões principais.** As forças acima entram em conflito em três pontos:
 
@@ -727,11 +727,43 @@ com dados sintéticos. Os identificadores do certificado foram ocultados.
 As exportações JSON dos cenários (`scenario-*.json`) estão em
 [artifacts/webapp](docs/validation/artifacts/webapp).
 
+### 10.8 Impacto financeiro e TCO em nuvem
+
+Para estimar o custo de operar a topologia distribuída, os *benchmarks* da
+§10.6 foram usados para dimensionar três faixas mensais. A comparação considera
+preços *Pay-As-You-Go* em uma região de referência dos EUA, por 730 horas/mês,
+sem descontos de compromisso e com implantação *Single-AZ*:
+
+| Inscrições/mês | GCP (Cloud Run + Cloud SQL) | Azure (Container Apps + PostgreSQL Flexible Server) | AWS (Fargate + RDS + MQ) |
+|---:|---:|---:|---:|
+| 1.000 | ≈ US$ 42/mês | ≈ US$ 45/mês | ≈ US$ 68/mês |
+| 5.000 | ≈ US$ 95/mês | ≈ US$ 98/mês | ≈ US$ 135/mês |
+| 20.000 | ≈ US$ 185/mês | ≈ US$ 195/mês | ≈ US$ 260/mês |
+
+O custo variável estimado para processar o pico de 20.000 inscrições é de
+aproximadamente **US$ 0,14–0,15**. A maior parte do TCO mensal vem da capacidade
+persistente para PostgreSQL e RabbitMQ e das instâncias aquecidas necessárias
+para atender os picos, não do volume de requisições isoladamente. Na comparação
+contrafactual do relatório, um cluster PostgreSQL com quatro bancos lógicos,
+escala seletiva e sem componentes adicionais 24/7 custa cerca de US$ 42, US$ 95
+e US$ 185/mês no GCP, contra US$ 137, US$ 210 e US$ 440/mês para quatro bancos
+físicos e sete serviços sempre ativos: reduções estimadas de 69%, 55% e 58%,
+respectivamente.
+
+Esses valores são **estimativas comparativas**, não custos medidos em uma conta
+de nuvem nem orçamento de produção. O modelo não inclui alta disponibilidade
+multi-AZ, descontos reservados ou todos os custos que dependem do tráfego e da
+configuração final; a adoção deve ser reestimada nas calculadoras dos
+provedores. O [relatório de FinOps e TCO](docs/validation/cloud-finops-tco-report.md)
+detalha o mapeamento de serviços, premissas, memória de cálculo e fontes
+oficiais de preços.
+
 ## 11. Trade-offs: o que ganhamos e o que pagamos
 
 | Ganhamos | Pagamos |
 |---|---|
 | **Isolamento de falhas.** Notification, Reporting e Billing podem cair sem desfazer ou bloquear inscrições (§10.3). | **Consistência eventual.** O relatório pode atrasar segundos ou minutos (§10.6), e a interface precisa explicar isso. |
+| **Elasticidade com custo variável baixo no pico.** Cloud Run e Azure Container Apps podem escalar serviços sob demanda; o pico de 20 000 inscrições foi estimado em cerca de US$ 0,15 de computação variável. | **Há um custo-base contínuo.** PostgreSQL, RabbitMQ, observabilidade e instâncias aquecidas mantêm o TCO mensal mesmo fora dos picos (estimativas na §10.8). |
 | **Escala e evolução independentes.** Catálogo, inscrição e relatórios têm perfis de carga distintos, e cada serviço pode ganhar réplicas ou mudar de tecnologia. | **Mais peças em movimento.** São 7 serviços, 2 *brokers*/bancos, 6 contratos e 6 tópicos, com *outbox*, *inbox* e quarentena para operar. |
 | **Heterogeneidade real** (Java e Python) sem biblioteca compartilhada. | **Duplicação deliberada.** Projeções e validações ficam repetidas em cada serviço. |
 | **Correção da vaga sem transação distribuída**, graças ao *snapshot* congelado e ao *lock* local. | A capacidade fica **imutável após a ativação**, e uma atividade disputada serializa as escritas (p95 de segundos no pico). |
@@ -770,6 +802,9 @@ forte onde ela é obrigatória e a consistência eventual em todo o resto.
 - **Sem retenção ou expurgo.** Não há expurgo automático de *inbox*, *outbox*
   e recibos.
 - **Sessões em memória na Demo Web.** Há um único *worker*.
+- **Custos de nuvem estimados, não medidos.** O comparativo da §10.8 usa
+  implantação *Single-AZ* e preços *Pay-As-You-Go*; alta disponibilidade,
+  tráfego real, região e descontos mudam a conta.
 
 **Evolução sugerida pelas medições:**
 
@@ -1158,4 +1193,5 @@ entregue e pela demonstração.
 | Cenários de demonstração | [web/demo-python](web/demo-python/README.md) | `bash scripts/cenario.sh [cenário]` |
 | Testes de mutação | [mutation-testing.md](docs/validation/mutation-testing.md) | Ver o guia de CI |
 | Evidências da Demo Web | [webapp-evidence.md](docs/validation/webapp-evidence.md), [artifacts/webapp](docs/validation/artifacts/webapp) | `bash tests/webapp/run.sh` |
+| Impacto financeiro e estimativa de TCO | [cloud-finops-tco-report.md](docs/validation/cloud-finops-tco-report.md) | Reproduzir as premissas nas calculadoras oficiais |
 | Correlação e logs | [observability.md](docs/validation/observability.md) | — |
