@@ -709,11 +709,22 @@ invariante. Depois de corrigir o gerador e subir para 200 conexões, a varredura
 
 ### 10.7 Capturas de tela
 
-| Página do organizador (projetor) | Registro de certificado |
-|---|---|
-| ![Desktop](docs/validation/artifacts/webapp/webapp-desktop-projector.png) | ![Certificado](docs/validation/artifacts/webapp/webapp-certificate-record.png) |
+As telas foram capturadas no demo em execução, em viewport de 1366 × 900,
+com dados sintéticos. Os identificadores do certificado foram ocultados.
 
-As exportações JSON dos cenários (`scenario-*.json`) e a versão móvel estão em
+| Organizador — eventos | Organizador — relatórios |
+|---|---|
+| ![Eventos da organização](docs/validation/artifacts/webapp/webapp-organizer-events.png) | ![Relatórios da organização](docs/validation/artifacts/webapp/webapp-organizer-reports.png) |
+
+| Participante — catálogo | Participante — inscrições |
+|---|---|
+| ![Catálogo de eventos](docs/validation/artifacts/webapp/webapp-participant-events.png) | ![Minhas inscrições](docs/validation/artifacts/webapp/webapp-participant-registrations.png) |
+
+| Participante — certificado |
+|---|
+| ![Certificado de participação com identificadores ocultos](docs/validation/artifacts/webapp/webapp-participant-certificate.png) |
+
+As exportações JSON dos cenários (`scenario-*.json`) estão em
 [artifacts/webapp](docs/validation/artifacts/webapp).
 
 ## 11. Trade-offs: o que ganhamos e o que pagamos
